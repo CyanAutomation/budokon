@@ -1,0 +1,28 @@
+[
+  {
+    "gender": "male",
+    "description": "Men\u2019s weight categories",
+    "categories": [
+      { "weight": "-60", "descriptor": "Extra Lightweight" },
+      { "weight": "-66", "descriptor": "Half Lightweight" },
+      { "weight": "-73", "descriptor": "Lightweight" },
+      { "weight": "-81", "descriptor": "Half Middleweight" },
+      { "weight": "-90", "descriptor": "Middleweight" },
+      { "weight": "-100", "descriptor": "Half Heavyweight" },
+      { "weight": "+100", "descriptor": "Heavyweight" }
+    ]
+  },
+  {
+    "gender": "female",
+    "description": "Women\u2019s weight categories",
+    "categories": [
+      { "weight": "-48", "descriptor": "Extra Lightweight" },
+      { "weight": "-52", "descriptor": "Half Lightweight" },
+      { "weight": "-57", "descriptor": "Lightweight" },
+      { "weight": "-63", "descriptor": "Half Middleweight" },
+      { "weight": "-70", "descriptor": "Middleweight" },
+      { "weight": "-78", "descriptor": "Half Heavyweight" },
+      { "weight": "+78", "descriptor": "Heavyweight" }
+    ]
+  }
+]
