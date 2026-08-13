@@ -126,8 +126,11 @@ After changing source data, rebuild the runtime aggregates with:
 npm run build
 ```
 
-The build reads every source record, sorts each aggregate by its stable `id`, and
-writes deterministic `dist/judoka.json` and `dist/techniques.json` artifacts.
+The build reads every source record, validates judoka UUIDs, slugs, aliases, and
+their uniqueness, sorts each aggregate by its stable `id`, and writes
+deterministic `dist/judoka.json` and `dist/techniques.json` artifacts. The
+one-time `migrations/judoka-legacy-id-map.json` file maps IDs from the legacy
+aggregate to immutable UUIDs and must be retained for downstream migrations.
 
 ⸻
 
@@ -138,7 +141,7 @@ Each judoka contains a curated representation intended to be useful across multi
 Example:
 
 {
-  "id": 776,
+  "id": "57a86958-73c3-4dd3-b8b8-f0bbaab58b67",
   "slug": "shozo-fujii",
   "firstname": "Shōzō",
   "surname": "Fujii",
@@ -196,20 +199,20 @@ BU-DO-KON therefore defines a useful shared baseline rather than attempting to m
 
 🆔 Identity
 
-Judoka use the stable numeric identifiers inherited from the source catalogue.
+Judoka use immutable UUID identifiers. Legacy numeric identifiers are retained
+only in `migrations/judoka-legacy-id-map.json` for consumer migrations.
 
 Recommended structure:
 
 {
-  "id": 783,
+  "id": "38690882-06a3-4d98-9b06-2789da1015db",
   "slug": "ilia-sulamanidze"
 }
 
 id
 
-An immutable integer used as the canonical identity. Although these identifiers
-are numeric, they are opaque catalogue keys rather than positions in an array or
-values that consumers should generate from database sequences.
+An immutable UUID assigned in the canonical source record. UUIDs are stored
+explicitly and must not be derived dynamically during builds.
 
 It should never change once assigned.
 
@@ -221,7 +224,7 @@ For example:
 
 /v1/judoka/ilia-sulamanidze
 
-If a name correction requires a slug change, the numeric ID remains unchanged
+If a name correction requires a slug change, the UUID remains unchanged
 and the previous slug may optionally be retained as an alias.
 
 ⸻
