@@ -20,10 +20,6 @@
     "gender": "female",
     "isHidden": false,
     "rarity": "Common",
-    "cardCode": "VZLG-AELB-Q55C-892T-34QX-NWUJ-249V-XDZB-YMN9-TH3B-W22H-K",
-    "matchesWon": 0,
-    "matchesLost": 0,
-    "matchesDrawn": 0,
     "slug": "nina-cutro-kelly"
   },
   {
@@ -47,10 +43,6 @@
     "gender": "male",
     "isHidden": false,
     "rarity": "Common",
-    "cardCode": "VZLB-FDLB-85DT-6V77-T9P7-W78V-R3YB-NRUW-XMYF-SUVX-4",
-    "matchesWon": 0,
-    "matchesLost": 0,
-    "matchesDrawn": 0,
     "slug": "ilia-sulamanidize"
   },
   {
@@ -74,10 +66,6 @@
     "gender": "male",
     "isHidden": false,
     "rarity": "Epic",
-    "cardCode": "VZL5-BGTA-AJ44-2588-WGYY-WZDP-SPU2-34W6",
-    "matchesWon": 0,
-    "matchesLost": 0,
-    "matchesDrawn": 0,
     "slug": "shozo-fujii"
   },
   {
@@ -101,10 +89,6 @@
     "gender": "male",
     "isHidden": true,
     "rarity": "Legendary",
-    "cardCode": "VZL6-J823-2DQ7-EB57-NZ43-WN4U-J9MX-NKUW-XMZF-SVUX-W",
-    "matchesWon": 0,
-    "matchesLost": 0,
-    "matchesDrawn": 0,
     "slug": "tatsuuma-ushiyama"
   },
   {
@@ -128,10 +112,6 @@
     "gender": "male",
     "isHidden": false,
     "rarity": "Common",
-    "cardCode": "VZLK-4BHK-WDCV-4Z7Q-6V4U-2Z4X-89UP-ZUQZ-JT98-8U",
-    "matchesWon": 0,
-    "matchesLost": 0,
-    "matchesDrawn": 0,
     "slug": "askley-mckenzie"
   },
   {
@@ -155,10 +135,6 @@
     "gender": "male",
     "isHidden": true,
     "rarity": "Common",
-    "cardCode": "VZLF-S39K-9ZC4-EY69-W5XS-NQ4U-SXQS-TRVK-XYZ2-3",
-    "matchesWon": 0,
-    "matchesLost": 0,
-    "matchesDrawn": 0,
     "slug": "mystery-judoka"
   },
   {
@@ -182,10 +158,6 @@
     "gender": "female",
     "isHidden": false,
     "rarity": "Common",
-    "cardCode": "VZLC-GMFP-A6Q7-8B8E-4EDP-85ZT-SMPP-SRXV-7TT",
-    "matchesWon": 0,
-    "matchesLost": 0,
-    "matchesDrawn": 0,
     "slug": "joana-ramos"
   },
   {
@@ -209,10 +181,6 @@
     "gender": "female",
     "isHidden": false,
     "rarity": "Common",
-    "cardCode": "VZLE-NDHP-DHCT-45LX-2Z4P-ZVR3-38NW-AYGZ-JMU9-E5G4-433G",
-    "matchesWon": 0,
-    "matchesLost": 0,
-    "matchesDrawn": 0,
     "slug": "leilani-akiyama"
   }
 ]
