@@ -79,8 +79,8 @@ Individual games remain responsible for their own:
 │   │   └── ...
 │   │
 │   ├── techniques/
-│   │   ├── 1.json
-│   │   ├── 2.json
+│   │   ├── uchi-mata.json
+│   │   ├── seoi-nage.json
 │   │   └── ...
 │   │
 │   └── reference/
@@ -130,7 +130,9 @@ The build reads every source record, validates judoka UUIDs, slugs, aliases, and
 their uniqueness, sorts each aggregate by its stable `id`, and writes
 deterministic `dist/judoka.json` and `dist/techniques.json` artifacts. The
 one-time `migrations/judoka-legacy-id-map.json` file maps IDs from the legacy
-aggregate to immutable UUIDs and must be retained for downstream migrations.
+aggregate to immutable UUIDs. `migrations/technique-legacy-id-map.json` likewise
+maps legacy numeric technique IDs to stable slugs. Both files must be retained
+for downstream migrations.
 
 ⸻
 
@@ -156,7 +158,7 @@ Example:
     "kumikata": 7,
     "newaza": 8
   },
-  "signatureMoveId": 3,
+  "signatureMoveId": "seoi-nage",
   "rarity": "Epic",
   "bio": "Biography text...",
   "profileUrl": "https://example.com",
@@ -294,7 +296,7 @@ Techniques are maintained independently from judoka so they can be reused throug
 Example:
 
 {
-  "id": 1,
+  "id": "uchi-mata",
   "name": "Uchi-mata",
   "japanese": "内股",
   "style": "Judo",
@@ -306,13 +308,15 @@ Example:
 Judoka reference techniques by identifier:
 
 {
-  "signatureMoveId": 1
+  "signatureMoveId": "uchi-mata"
 }
 
-Technique identifiers are stable integers inherited from the source catalogue.
-`signatureMoveId` must equal the numeric `id` of a record under
-`data/techniques/`. Technique names are display values and must not be used as
-foreign keys.
+Technique identifiers are stable kebab-case slugs. `signatureMoveId` must equal
+the string `id` of a record under `data/techniques/`. Technique names are
+display values and must not be used as foreign keys. Legacy numeric identifiers
+are retained only in `migrations/technique-legacy-id-map.json`; a `null` mapping
+means the legacy record was not a recognized technique and has no direct
+equivalent.
 
 Technique terminology and classification should normally follow recognised Kodokan or IJF conventions.
 
