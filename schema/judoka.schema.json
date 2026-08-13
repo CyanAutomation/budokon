@@ -16,6 +16,33 @@
     "slug": {
       "$ref": "#/$defs/slug"
     },
+    "firstname": {
+      "type": "string"
+    },
+    "surname": {
+      "type": "string"
+    },
+    "countryCode": {
+      "type": "string",
+      "pattern": "^[A-Z]{2}$"
+    },
+    "weightClass": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string"
+    },
+    "stats": {
+      "type": "object",
+      "properties": {
+        "power": { "type": "number" },
+        "speed": { "type": "number" },
+        "technique": { "type": "number" },
+        "kumikata": { "type": "number" },
+        "newaza": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
     "aliases": {
       "type": "array",
       "items": {
@@ -25,9 +52,29 @@
     },
     "signatureMoveId": {
       "$ref": "#/$defs/slug"
+    },
+    "lastUpdated": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "profileUrl": {
+      "type": "string",
+      "format": "uri"
+    },
+    "bio": {
+      "type": "string"
+    },
+    "gender": {
+      "type": "string"
+    },
+    "isHidden": {
+      "type": "boolean"
+    },
+    "rarity": {
+      "type": "string"
     }
   },
-  "additionalProperties": true,
+  "additionalProperties": false,
   "$defs": {
     "slug": {
       "type": "string",
