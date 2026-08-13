@@ -12,7 +12,11 @@ async function readRecords(directory) {
 
   return Promise.all(files.map(async (file) => {
     const contents = await readFile(path.join(sourceDirectory, file), 'utf8');
-    return JSON.parse(contents);
+    try {
+      return JSON.parse(contents);
+    } catch (error) {
+      throw new Error(`Failed to parse JSON in ${file}: ${error.message}`);
+    }
   }));
 }
 
