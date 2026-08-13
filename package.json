@@ -1,0 +1,8 @@
+{
+  "name": "budokon-data",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs"
+  }
+}
