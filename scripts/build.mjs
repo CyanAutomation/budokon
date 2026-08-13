@@ -97,11 +97,13 @@ function validateTechniques(records) {
 }
 
 function validateTechniqueReferences(judoka, techniqueIds) {
+function validateTechniqueReferences(judoka, techniqueIds) {
   for (const record of judoka) {
-    if (!techniqueIds.has(record.signatureMoveId)) {
+    if (record.signatureMoveId && !techniqueIds.has(record.signatureMoveId)) {
       throw new Error(`Judoka ${record.slug} references unknown technique ${JSON.stringify(record.signatureMoveId)}`);
     }
   }
+}
 }
 
 async function emit(records, outputFile) {
