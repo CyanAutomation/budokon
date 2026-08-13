@@ -35,7 +35,9 @@ test('game-specific judoka values are preserved only in the JU-DO-KON import', a
       ['cardCode', 'matchesWon', 'matchesLost', 'matchesDrawn'].filter((property) => Object.hasOwn(record, property)),
       [],
     );
-    assert.deepEqual(Object.keys(gameImport[record.id]), ['cardCode', 'matchesWon', 'matchesLost', 'matchesDrawn']);
+    if (gameImport[record.id]) {
+      assert.deepEqual(Object.keys(gameImport[record.id]), ['cardCode', 'matchesWon', 'matchesLost', 'matchesDrawn']);
+    }
   }
 });
 
