@@ -3,18 +3,28 @@
   "$id": "https://budokon.example/schema/judoka.schema.json",
   "title": "Judoka",
   "type": "object",
-  "required": ["id", "slug"],
+  "required": [
+    "id",
+    "slug"
+  ],
   "properties": {
     "id": {
       "type": "string",
       "format": "uuid",
       "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
     },
-    "slug": { "$ref": "#/$defs/slug" },
+    "slug": {
+      "$ref": "#/$defs/slug"
+    },
     "aliases": {
       "type": "array",
-      "items": { "$ref": "#/$defs/slug" },
+      "items": {
+        "$ref": "#/$defs/slug"
+      },
       "uniqueItems": true
+    },
+    "signatureMoveId": {
+      "$ref": "#/$defs/slug"
     }
   },
   "additionalProperties": true,

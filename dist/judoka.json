@@ -13,7 +13,7 @@
       "kumikata": 7,
       "newaza": 8
     },
-    "signatureMoveId": 2,
+    "signatureMoveId": "o-soto-gari",
     "lastUpdated": "2025-08-08T14:35:39.339Z",
     "profileUrl": "https://en.wikipedia.org/wiki/Nina_Cutro-Kelly",
     "bio": "More info to come...",
@@ -40,7 +40,7 @@
       "kumikata": 9,
       "newaza": 7
     },
-    "signatureMoveId": 1,
+    "signatureMoveId": "uchi-mata",
     "lastUpdated": "2025-08-08T14:35:39.339Z",
     "profileUrl": "https://en.wikipedia.org/wiki/Ilia_Sulamanidze",
     "bio": "More info to come...",
@@ -67,7 +67,7 @@
       "kumikata": 7,
       "newaza": 8
     },
-    "signatureMoveId": 3,
+    "signatureMoveId": "seoi-nage",
     "lastUpdated": "2025-08-08T14:35:39.339Z",
     "profileUrl": "https://en.wikipedia.org/wiki/Sh%C5%8Dz%C5%8D_Fujii",
     "bio": "More info to come...",
@@ -94,7 +94,7 @@
       "kumikata": 9,
       "newaza": 9
     },
-    "signatureMoveId": 0,
+    "signatureMoveId": "ura-nage",
     "lastUpdated": "2025-08-08T14:35:39.339Z",
     "profileUrl": "https://goldenkamuy.fandom.com/wiki/Tatsuuma_Ushiyama",
     "bio": "Tatsuuma Ushiyama (牛山 辰馬, Ushiyama Tatsuuma), also known as Ushiyama the Undefeated (不敗の牛山, Fuhai no Ushiyama), is one of the Abashiri Convicts. He is a master judoka and one of the strongest and most dangerous fighters in Hokkaido.",
@@ -121,7 +121,7 @@
       "kumikata": 7,
       "newaza": 8
     },
-    "signatureMoveId": 3,
+    "signatureMoveId": "seoi-nage",
     "lastUpdated": "2025-08-08T14:35:39.339Z",
     "profileUrl": "https://en.wikipedia.org/wiki/Ashley_McKenzie",
     "bio": "More info to come...",
@@ -148,7 +148,7 @@
       "kumikata": 0,
       "newaza": 0
     },
-    "signatureMoveId": 0,
+    "signatureMoveId": "ura-nage",
     "lastUpdated": "2025-08-08T14:35:39.339Z",
     "profileUrl": "https://en.wikipedia.org/wiki/Judo_Boy",
     "bio": "After the death of his father, a young man seeks revenge for an unknown one-eyed man who killed his father, master of Kurenai style judo. He trains in the mountains of Bhutan, where he meets a mysterious judoka who teaches him the ways of judo.",
@@ -175,7 +175,7 @@
       "kumikata": 7,
       "newaza": 6
     },
-    "signatureMoveId": 1,
+    "signatureMoveId": "uchi-mata",
     "lastUpdated": "2025-08-08T14:35:39.339Z",
     "profileUrl": "https://en.wikipedia.org/wiki/Joana_Ramos",
     "bio": "More info to come...",
@@ -202,7 +202,7 @@
       "kumikata": 6,
       "newaza": 6
     },
-    "signatureMoveId": 1,
+    "signatureMoveId": "uchi-mata",
     "lastUpdated": "2025-08-08T14:35:39.339Z",
     "profileUrl": "https://en.wikipedia.org/wiki/Leilani_Akiyama",
     "bio": "More info to come...",
