@@ -1,0 +1,28 @@
+{
+  "id": 0,
+  "firstname": "Tatsuuma",
+  "surname": "Ushiyama",
+  "country": "Vanuatu",
+  "countryCode": "VU",
+  "weightClass": "+100",
+  "category": "Judo",
+  "stats": {
+    "power": 9,
+    "speed": 9,
+    "technique": 9,
+    "kumikata": 9,
+    "newaza": 9
+  },
+  "signatureMoveId": 0,
+  "lastUpdated": "2025-08-08T14:35:39.339Z",
+  "profileUrl": "https://goldenkamuy.fandom.com/wiki/Tatsuuma_Ushiyama",
+  "bio": "Tatsuuma Ushiyama (牛山 辰馬, Ushiyama Tatsuuma), also known as Ushiyama the Undefeated (不敗の牛山, Fuhai no Ushiyama), is one of the Abashiri Convicts. He is a master judoka and one of the strongest and most dangerous fighters in Hokkaido.",
+  "gender": "male",
+  "isHidden": true,
+  "rarity": "Legendary",
+  "cardCode": "VZL6-J823-2DQ7-EB57-NZ43-WN4U-J9MX-NKUW-XMZF-SVUX-W",
+  "matchesWon": 0,
+  "matchesLost": 0,
+  "matchesDrawn": 0,
+  "slug": "tatsuuma-ushiyama"
+}

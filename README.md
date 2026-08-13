@@ -114,6 +114,21 @@ dist/
 
 These generated files are runtime artefacts rather than the primary editorial source.
 
+### Editing and building the data
+
+The individual JSON records under `data/judoka/` and `data/techniques/`, together
+with the files under `data/reference/`, are the canonical editorial sources. Do
+not edit generated files in `dist/` directly.
+
+After changing source data, rebuild the runtime aggregates with:
+
+```sh
+npm run build
+```
+
+The build reads every source record, sorts each aggregate by its stable `id`, and
+writes deterministic `dist/judoka.json` and `dist/techniques.json` artifacts.
+
 ⸻
 
 🧑‍🤝‍🧑 Judoka Data Model
