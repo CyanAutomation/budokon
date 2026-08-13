@@ -1,0 +1,28 @@
+{
+  "id": 114,
+  "firstname": "Nina",
+  "surname": "Cutro-Kelly",
+  "country": "United States",
+  "countryCode": "US",
+  "weightClass": "+78",
+  "category": "Judo",
+  "stats": {
+    "power": 9,
+    "speed": 6,
+    "technique": 7,
+    "kumikata": 7,
+    "newaza": 8
+  },
+  "signatureMoveId": 2,
+  "lastUpdated": "2025-08-08T14:35:39.339Z",
+  "profileUrl": "https://en.wikipedia.org/wiki/Nina_Cutro-Kelly",
+  "bio": "More info to come...",
+  "gender": "female",
+  "isHidden": false,
+  "rarity": "Common",
+  "cardCode": "VZLG-AELB-Q55C-892T-34QX-NWUJ-249V-XDZB-YMN9-TH3B-W22H-K",
+  "matchesWon": 0,
+  "matchesLost": 0,
+  "matchesDrawn": 0,
+  "slug": "nina-cutro-kelly"
+}
