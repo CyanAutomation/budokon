@@ -79,8 +79,8 @@ Individual games remain responsible for their own:
 │   │   └── ...
 │   │
 │   ├── techniques/
-│   │   ├── uchi-mata.json
-│   │   ├── seoi-nage.json
+│   │   ├── 1.json
+│   │   ├── 2.json
 │   │   └── ...
 │   │
 │   └── reference/
@@ -138,7 +138,7 @@ Each judoka contains a curated representation intended to be useful across multi
 Example:
 
 {
-  "id": "9cc78bb7-0000-0000-0000-000000000000",
+  "id": 776,
   "slug": "shozo-fujii",
   "firstname": "Shōzō",
   "surname": "Fujii",
@@ -153,7 +153,7 @@ Example:
     "kumikata": 7,
     "newaza": 8
   },
-  "signatureMoveId": "seoi-nage",
+  "signatureMoveId": 3,
   "rarity": "Epic",
   "bio": "Biography text...",
   "profileUrl": "https://example.com",
@@ -196,18 +196,20 @@ BU-DO-KON therefore defines a useful shared baseline rather than attempting to m
 
 🆔 Identity
 
-Judoka should use stable identifiers that are independent of database sequence numbers.
+Judoka use the stable numeric identifiers inherited from the source catalogue.
 
 Recommended structure:
 
 {
-  "id": "9cc78bb7-...",
+  "id": 783,
   "slug": "ilia-sulamanidze"
 }
 
 id
 
-An immutable UUID used as the canonical identity.
+An immutable integer used as the canonical identity. Although these identifiers
+are numeric, they are opaque catalogue keys rather than positions in an array or
+values that consumers should generate from database sequences.
 
 It should never change once assigned.
 
@@ -219,7 +221,8 @@ For example:
 
 /v1/judoka/ilia-sulamanidze
 
-If a name correction requires a slug change, the UUID remains unchanged and the previous slug may optionally be retained as an alias.
+If a name correction requires a slug change, the numeric ID remains unchanged
+and the previous slug may optionally be retained as an alias.
 
 ⸻
 
@@ -288,7 +291,7 @@ Techniques are maintained independently from judoka so they can be reused throug
 Example:
 
 {
-  "id": "uchi-mata",
+  "id": 1,
   "name": "Uchi-mata",
   "japanese": "内股",
   "style": "Judo",
@@ -300,10 +303,13 @@ Example:
 Judoka reference techniques by identifier:
 
 {
-  "signatureMoveId": "uchi-mata"
+  "signatureMoveId": 1
 }
 
-Technique identifiers should be stable, human-readable slugs.
+Technique identifiers are stable integers inherited from the source catalogue.
+`signatureMoveId` must equal the numeric `id` of a record under
+`data/techniques/`. Technique names are display values and must not be used as
+foreign keys.
 
 Technique terminology and classification should normally follow recognised Kodokan or IJF conventions.
 
