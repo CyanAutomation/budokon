@@ -1,8 +1,10 @@
 [
   {
     "id": "1d200634-eb36-4f5e-b5c0-28734b96ac62",
+    "slug": "nina-cutro-kelly",
     "firstname": "Nina",
     "surname": "Cutro-Kelly",
+    "personType": "real",
     "countryCode": "US",
     "weightClass": "+78",
     "category": "Judo",
@@ -14,19 +16,23 @@
       "newaza": 8
     },
     "signatureMoveId": "o-soto-gari",
-    "lastUpdated": "2025-08-08T14:35:39.339Z",
+    "lastUpdated": "2026-08-14T00:00:00Z",
     "profileUrl": "https://en.wikipedia.org/wiki/Nina_Cutro-Kelly",
-    "bio": "A competitive judoka represented in the curated BU-DO-KON catalogue.",
+    "bio": "Nina Cutro-Kelly represented the United States in the women’s heavyweight division at the Tokyo 2020 Olympic Games.",
     "gender": "female",
     "isHidden": false,
     "rarity": "Common",
-    "slug": "nina-cutro-kelly",
     "country": "United States"
   },
   {
     "id": "38690882-06a3-4d98-9b06-2789da1015db",
+    "slug": "ilia-sulamanidze",
+    "aliases": [
+      "ilia-sulamanidize"
+    ],
     "firstname": "Ilia",
-    "surname": "Sulamanidize",
+    "surname": "Sulamanidze",
+    "personType": "real",
     "countryCode": "GE",
     "weightClass": "-100",
     "category": "Judo",
@@ -38,19 +44,20 @@
       "newaza": 7
     },
     "signatureMoveId": "uchi-mata",
-    "lastUpdated": "2025-08-08T14:35:39.339Z",
+    "lastUpdated": "2026-08-14T00:00:00Z",
     "profileUrl": "https://en.wikipedia.org/wiki/Ilia_Sulamanidze",
-    "bio": "A competitive judoka represented in the curated BU-DO-KON catalogue.",
+    "bio": "Georgian half-heavyweight Ilia Sulamanidze won Olympic silver at Paris 2024 in the men’s 100 kg division.",
     "gender": "male",
     "isHidden": false,
     "rarity": "Common",
-    "slug": "ilia-sulamanidize",
     "country": "Georgia"
   },
   {
     "id": "57a86958-73c3-4dd3-b8b8-f0bbaab58b67",
+    "slug": "shozo-fujii",
     "firstname": "Shōzō",
     "surname": "Fujii",
+    "personType": "real",
     "countryCode": "JP",
     "weightClass": "-81",
     "category": "Judo",
@@ -62,20 +69,21 @@
       "newaza": 8
     },
     "signatureMoveId": "seoi-nage",
-    "lastUpdated": "2025-08-08T14:35:39.339Z",
+    "lastUpdated": "2026-08-14T00:00:00Z",
     "profileUrl": "https://en.wikipedia.org/wiki/Sh%C5%8Dz%C5%8D_Fujii",
-    "bio": "A competitive judoka represented in the curated BU-DO-KON catalogue.",
+    "bio": "Japanese judoka Shōzō Fujii won four consecutive world titles during the 1970s in the divisions now represented by 81 kg.",
     "gender": "male",
     "isHidden": false,
     "rarity": "Epic",
-    "slug": "shozo-fujii",
     "country": "Japan"
   },
   {
     "id": "84d3b821-0ca8-42de-b42c-2eb8d42c9c3b",
+    "slug": "tatsuuma-ushiyama",
     "firstname": "Tatsuuma",
     "surname": "Ushiyama",
-    "countryCode": "VU",
+    "personType": "fictional",
+    "countryCode": "JP",
     "weightClass": "+100",
     "category": "Judo",
     "stats": {
@@ -86,19 +94,23 @@
       "newaza": 9
     },
     "signatureMoveId": "ura-nage",
-    "lastUpdated": "2025-08-08T14:35:39.339Z",
+    "lastUpdated": "2026-08-14T00:00:00Z",
     "profileUrl": "https://goldenkamuy.fandom.com/wiki/Tatsuuma_Ushiyama",
-    "bio": "Tatsuuma Ushiyama (牛山 辰馬, Ushiyama Tatsuuma), also known as Ushiyama the Undefeated (不敗の牛山, Fuhai no Ushiyama), is one of the Abashiri Convicts. He is a master judoka and one of the strongest and most dangerous fighters in Hokkaido.",
+    "bio": "Tatsuuma Ushiyama is a fictional Golden Kamuy character: an escaped convict and formidable judo master known as “Ushiyama the Undefeated.”",
     "gender": "male",
     "isHidden": true,
     "rarity": "Legendary",
-    "slug": "tatsuuma-ushiyama",
-    "country": "Vanuatu"
+    "country": "Japan"
   },
   {
     "id": "c7218eca-bebe-4508-932c-b9ef4813865b",
-    "firstname": "Askley",
+    "slug": "ashley-mckenzie",
+    "aliases": [
+      "askley-mckenzie"
+    ],
+    "firstname": "Ashley",
     "surname": "McKenzie",
+    "personType": "real",
     "countryCode": "JM",
     "weightClass": "-60",
     "category": "Judo",
@@ -110,19 +122,20 @@
       "newaza": 8
     },
     "signatureMoveId": "seoi-nage",
-    "lastUpdated": "2025-08-08T14:35:39.339Z",
+    "lastUpdated": "2026-08-14T00:00:00Z",
     "profileUrl": "https://en.wikipedia.org/wiki/Ashley_McKenzie",
-    "bio": "A competitive judoka represented in the curated BU-DO-KON catalogue.",
+    "bio": "Ashley McKenzie is a British-born lightweight who has represented both Great Britain and Jamaica in international judo.",
     "gender": "male",
     "isHidden": false,
     "rarity": "Common",
-    "slug": "askley-mckenzie",
     "country": "Jamaica"
   },
   {
     "id": "cd8dcb1d-0193-4dd1-a0b7-d4576602bc67",
+    "slug": "mystery-judoka",
     "firstname": "Mystery",
     "surname": "Judoka",
+    "personType": "fictional",
     "countryCode": "BT",
     "weightClass": "+100",
     "category": "Judo",
@@ -134,19 +147,20 @@
       "newaza": 0
     },
     "signatureMoveId": "ura-nage",
-    "lastUpdated": "2025-08-08T14:35:39.339Z",
+    "lastUpdated": "2026-08-14T00:00:00Z",
     "profileUrl": "https://en.wikipedia.org/wiki/Judo_Boy",
-    "bio": "After the death of his father, a young man seeks revenge for an unknown one-eyed man who killed his father, master of Kurenai style judo. He trains in the mountains of Bhutan, where he meets a mysterious judoka who teaches him the ways of judo.",
+    "bio": "An unnamed mentor from the fictional world of Judo Boy, this judoka teaches the protagonist while he trains in Bhutan.",
     "gender": "male",
     "isHidden": true,
     "rarity": "Common",
-    "slug": "mystery-judoka",
     "country": "Bhutan"
   },
   {
     "id": "e2c7f688-a995-4436-b56c-8e178b0b4bf9",
+    "slug": "joana-ramos",
     "firstname": "Joana",
     "surname": "Ramos",
+    "personType": "real",
     "countryCode": "PT",
     "weightClass": "-52",
     "category": "Judo",
@@ -158,37 +172,12 @@
       "newaza": 6
     },
     "signatureMoveId": "uchi-mata",
-    "lastUpdated": "2025-08-08T14:35:39.339Z",
+    "lastUpdated": "2026-08-14T00:00:00Z",
     "profileUrl": "https://en.wikipedia.org/wiki/Joana_Ramos",
-    "bio": "A competitive judoka represented in the curated BU-DO-KON catalogue.",
+    "bio": "Portuguese lightweight Joana Ramos competed internationally in the 52 kg division across three Olympic Games.",
     "gender": "female",
     "isHidden": false,
     "rarity": "Common",
-    "slug": "joana-ramos",
     "country": "Portugal"
-  },
-  {
-    "id": "f53f7ff7-bdc9-487e-85ed-74558827b260",
-    "firstname": "Leilani",
-    "surname": "Akiyama",
-    "countryCode": "US",
-    "weightClass": "-57",
-    "category": "Judo",
-    "stats": {
-      "power": 6,
-      "speed": 7,
-      "technique": 7,
-      "kumikata": 6,
-      "newaza": 6
-    },
-    "signatureMoveId": "uchi-mata",
-    "lastUpdated": "2025-08-08T14:35:39.339Z",
-    "profileUrl": "https://en.wikipedia.org/wiki/Leilani_Akiyama",
-    "bio": "A competitive judoka represented in the curated BU-DO-KON catalogue.",
-    "gender": "female",
-    "isHidden": false,
-    "rarity": "Common",
-    "slug": "leilani-akiyama",
-    "country": "United States"
   }
 ]

@@ -97,6 +97,9 @@ export async function validateCanonical(root = defaultRoot) {
   validateSchema(weights, weightsSchema, 'data/reference/weight-categories.json');
   const judoka = judokaFiles.map(({ value }) => value), techniques = techniqueFiles.map(({ value }) => value);
   unique(judoka, 'id', 'judoka UUID'); unique(judoka, 'handles', 'judoka slug or alias'); unique(techniques, 'id', 'technique ID');
+  for (const file of judokaFiles) if (path.parse(file.name).name !== file.value.slug) {
+    throw new Error(`data/judoka/${file.name}: filename must match canonical slug ${file.value.slug}`);
+  }
   const techniqueIds = new Set(techniques.map(({ id }) => id));
   const weightMap = new Map();
   for (const group of weights) {
@@ -107,6 +110,7 @@ export async function validateCanonical(root = defaultRoot) {
   }
   for (const [key, country] of Object.entries(countries)) if (country.code !== key) throw new Error(`country key ${key} does not match embedded code ${country.code}`);
   for (const record of judoka) {
+    if (record.personType === 'fictional' && !record.isHidden) throw new Error(`${record.slug}: fictional judoka must be hidden`);
     if (!countries[record.countryCode]?.active) throw new Error(`${record.slug} references unknown or inactive country ${record.countryCode}`);
     if (!techniqueIds.has(record.signatureMoveId)) throw new Error(`${record.slug} references unknown technique ${record.signatureMoveId}`);
     if (!weightMap.get(record.gender)?.has(record.weightClass)) throw new Error(`${record.slug} has invalid ${record.gender} weight class ${record.weightClass}`);

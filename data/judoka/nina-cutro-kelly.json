@@ -1,7 +1,9 @@
 {
   "id": "1d200634-eb36-4f5e-b5c0-28734b96ac62",
+  "slug": "nina-cutro-kelly",
   "firstname": "Nina",
   "surname": "Cutro-Kelly",
+  "personType": "real",
   "countryCode": "US",
   "weightClass": "+78",
   "category": "Judo",
@@ -13,11 +15,10 @@
     "newaza": 8
   },
   "signatureMoveId": "o-soto-gari",
-  "lastUpdated": "2025-08-08T14:35:39.339Z",
+  "lastUpdated": "2026-08-14T00:00:00Z",
   "profileUrl": "https://en.wikipedia.org/wiki/Nina_Cutro-Kelly",
-  "bio": "A competitive judoka represented in the curated BU-DO-KON catalogue.",
+  "bio": "Nina Cutro-Kelly represented the United States in the women’s heavyweight division at the Tokyo 2020 Olympic Games.",
   "gender": "female",
   "isHidden": false,
-  "rarity": "Common",
-  "slug": "nina-cutro-kelly"
+  "rarity": "Common"
 }
