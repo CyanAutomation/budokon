@@ -1,8 +1,11 @@
 export function createMcpTools({ catalog, draw }) {
+  const versioned = body => ({ datasetVersion: catalog.repository.datasetVersion, ...body });
   return {
-    get_judoka: ({ id, includeHidden }, context = {}) => catalog.getJudoka(id, { includeHidden, authorizedInternal: context.authorizedInternal }),
-    search_judoka: ({ filters = {}, exclude = [], includeHidden } = {}, context = {}) => catalog.listJudoka({ filters, exclude, includeHidden, authorizedInternal: context.authorizedInternal }),
+    get_judoka: ({ id, includeHidden }, context = {}) => versioned({ judoka: catalog.getJudoka(id, { includeHidden, authorizedInternal: context.authorizedInternal }) ?? null }),
+    search_judoka: ({ filters = {}, exclude = [], includeHidden } = {}, context = {}) => versioned({ judoka: catalog.listJudoka({ filters, exclude, includeHidden, authorizedInternal: context.authorizedInternal }) }),
     draw_judoka: (input, context = {}) => draw.draw(input, context),
-    list_techniques: () => catalog.listTechniques(), get_technique: ({ id }) => catalog.getTechnique(id)
+    list_techniques: () => versioned({ techniques: catalog.listTechniques() }),
+    get_technique: ({ id }) => versioned({ technique: catalog.getTechnique(id) ?? null }),
+    version: () => catalog.version(),
   };
 }

@@ -1,0 +1,42 @@
+name: Release dataset
+on:
+  push:
+    tags:
+      - 'dataset-v*'
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Validate canonical data
+        run: npm run validate
+      - name: Associate dataset version, tag, and commit
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          npm run verify-release
+          test "$(git rev-parse --verify "$RELEASE_TAG^{commit}")" = "$GITHUB_SHA"
+      - name: Rebuild and verify reproducibility
+        env:
+          SOURCE_GIT_COMMIT: ${{ github.sha }}
+        run: |
+          npm run build
+          find dist -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > /tmp/first-build.sha256
+          npm run build
+          find dist -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > /tmp/second-build.sha256
+          diff -u /tmp/first-build.sha256 /tmp/second-build.sha256
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/judoka.json
+            dist/techniques.json
+            dist/manifest.json
