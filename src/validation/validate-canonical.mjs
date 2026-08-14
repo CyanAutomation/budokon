@@ -13,7 +13,12 @@ function equal(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
 export function validateSchema(value, schema, location = '$', rootSchema = schema) {
   if (schema.$ref) {
     if (!schema.$ref.startsWith('#/')) throw new Error(`${location}: unsupported $ref format ${schema.$ref}`);
-    const target = schema.$ref.slice(2).split('/').reduce((node, key) => node[key], rootSchema);
+    const target = schema.$ref.slice(2).split('/').reduce((node, key) => {
+      if (!node || typeof node !== 'object' || !Object.hasOwn(node, key)) {
+        throw new Error(`${location}: invalid $ref path ${schema.$ref}`);
+      }
+      return node[key];
+    }, rootSchema);
     return validateSchema(value, target, location, rootSchema);
   }
   if (schema.const !== undefined && !equal(value, schema.const)) fail(location, `must equal ${JSON.stringify(schema.const)}`);
