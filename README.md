@@ -29,6 +29,7 @@ Think of BU-DO-KON as the shared judoka library that sits underneath multiple ga
 
 🧱 Architecture
 
+```mermaid
 flowchart TD
     A[BU-DO-KON Repository<br/>Canonical Data] --> B[Validation & Build]
     B --> C[BU-DO-KON Service]
@@ -39,6 +40,7 @@ flowchart TD
     D --> H[Quiz / Card / Simulation Game]
     E --> I[AI Agents]
     E --> J[Conversational Applications]
+```
 
 The architecture is based on three layers:
 
@@ -500,10 +502,12 @@ MCP and REST must use the same underlying domain services.
 
 Business logic should not be duplicated between the two interfaces.
 
+```mermaid
 flowchart LR
     A[REST API] --> C[Application Services]
     B[MCP] --> C
     C --> D[Budukon Repository]
+```
 
 ⸻
 
@@ -618,6 +622,7 @@ Dataset releases should be associated with the corresponding Git commit.
 
 🔄 Build and Release Flow
 
+```mermaid
 flowchart LR
     A[Edit Data] --> B[Pull Request]
     B --> C[JSON Validation]
@@ -628,6 +633,7 @@ flowchart LR
     G --> H[Dataset Release]
     H --> I[Generate Runtime Data]
     I --> J[BU-DO-KON Service]
+```
 
 A failed validation should prevent the dataset from being released.
 
