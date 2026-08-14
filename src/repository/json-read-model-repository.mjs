@@ -6,8 +6,13 @@ export class JsonReadModelRepository extends ReadModelRepository {
   constructor(model, release) { super(); this.model = model; this.release = release; }
   static async load({ judokaUrl = new URL("../../dist/judoka.json", import.meta.url), techniquesUrl = new URL("../../dist/techniques.json", import.meta.url), countriesUrl = new URL("../../data/reference/countries.json", import.meta.url), weightsUrl = new URL("../../data/reference/weight-categories.json", import.meta.url), manifestUrl = new URL("../../dist/manifest.json", import.meta.url) } = {}) {
     try {
-      const values = await Promise.all([judokaUrl, techniquesUrl, countriesUrl, weightsUrl, manifestUrl].map(async url => JSON.parse(await readFile(url, 'utf8'))));
-      const [judoka, techniques, countries, weightCategories, manifest] = values;
+      const [judoka, techniques, countries, weightCategories, manifest] = await Promise.all([
+        readFile(judokaUrl, 'utf8').then(JSON.parse),
+        readFile(techniquesUrl, 'utf8').then(JSON.parse),
+        readFile(countriesUrl, 'utf8').then(JSON.parse),
+        readFile(weightsUrl, 'utf8').then(JSON.parse),
+        readFile(manifestUrl, 'utf8').then(JSON.parse),
+      ]);
       return new this({ judoka: [...judoka].sort(byId), techniques: [...techniques].sort(byId), countries, weightCategories }, manifest);
     } catch (error) {
       throw new Error(`Failed to load read model: ${error.message}`, { cause: error });

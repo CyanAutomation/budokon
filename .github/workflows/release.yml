@@ -23,12 +23,8 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
-      - name: Associate dataset version, tag, and commit
-        env:
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: |
           npm run verify-release
-          test "$(git rev-parse "$RELEASE_TAG^{commit}")" = "$GITHUB_SHA"
+          test "$(git rev-parse --verify "$RELEASE_TAG^{commit}")" = "$GITHUB_SHA"
       - name: Rebuild and verify reproducibility
         env:
           SOURCE_GIT_COMMIT: ${{ github.sha }}
