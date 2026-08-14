@@ -1,16 +1,20 @@
-🥋 BU-DO-KON
+I’ve updated the README to incorporate the architectural recommendations: TypeScript rather than plain JavaScript, Cloudflare/Vercel portability, compiled immutable runtime data, Web API–friendly core logic, bundled JSON as the initial runtime strategy, stronger deterministic draw guarantees, clearer separation of canonical/editing/build/runtime concerns, and delaying SQLite/D1 until justified.
+
+# 🥋 BU-DO-KON
 
 Canonical judoka data for judo games and applications.
 
-BU-DO-KON is a structured, version-controlled library of judoka and related judo data. It is designed to act as a shared source of truth for multiple games and applications that need to select, display, compare, or otherwise work with judoka.
+BU-DO-KON is a structured, version-controlled library of judoka and related judo data. It acts as a shared source of truth for multiple games and applications that need to select, display, compare, search, or otherwise work with judoka.
 
-Games should consume BU-DO-KON through an API or MCP interface rather than maintaining their own separate judoka datasets.
+Games should normally consume BU-DO-KON through its REST API or MCP interface rather than maintaining separate judoka datasets.
 
-BU-DO-KON deliberately includes both factual attributes and a curated set of editorial/game-friendly attributes such as ratings, rarity, signature techniques, and biography text. These values are part of the shared BU-DO-KON representation of each judoka and can be reused consistently across different games.
+BU-DO-KON deliberately includes both factual attributes and a curated set of editorial/game-friendly attributes such as ratings, rarity, signature techniques, and biography text. These values form the shared BU-DO-KON representation of each judoka and can be reused consistently across different games.
 
-⸻
+The canonical dataset is intentionally independent of any particular runtime, database, cloud provider, or consuming game.
 
-🎯 Purpose
+---
+
+## 🎯 Purpose
 
 BU-DO-KON exists to:
 
@@ -18,47 +22,74 @@ BU-DO-KON exists to:
 * Avoid duplicating judoka data between individual games
 * Provide consistent attributes that games can reuse
 * Support random and filtered selection of judoka
+* Support reproducible deterministic draws
 * Keep dataset changes version-controlled and reviewable
-* Allow deterministic dataset releases
+* Produce deterministic, immutable dataset releases
 * Separate shared judo content from individual game logic
-* Support both conventional APIs and AI-oriented MCP integrations
+* Support conventional REST APIs and AI-oriented MCP integrations
+* Remain portable between hosting environments such as Cloudflare, Vercel, Node.js, and containers
 
 Think of BU-DO-KON as the shared judoka library that sits underneath multiple games.
 
-⸻
+---
 
-🧱 Architecture
+## 🧱 Architecture
 
 ```mermaid
 flowchart TD
-    A[BU-DO-KON Repository<br/>Canonical Data] --> B[Validation & Build]
-    B --> C[BU-DO-KON Service]
-    C --> D[REST API]
-    C --> E[MCP Server]
-    D --> F[JU-DO-KON]
-    D --> G[Future Judo Game]
-    D --> H[Quiz / Card / Simulation Game]
-    E --> I[AI Agents]
-    E --> J[Conversational Applications]
+    A[BU-DO-KON Repository<br/>Canonical JSON Data] --> B[Validation & Compilation]
+    B --> C[Compiled Dataset]
+    C --> D[BU-DO-KON Core]
+    D --> E[REST Adapter]
+    D --> F[MCP Adapter]
+
+    E --> G[JU-DO-KON]
+    E --> H[Future Judo Games]
+    E --> I[Quiz / Card / Simulation Games]
+
+    F --> J[AI Agents]
+    F --> K[Conversational Applications]
 ```
 
-The architecture is based on three layers:
+BU-DO-KON is built around four layers.
 
-Canonical data
+### Canonical data
 
 The Git repository is the editorial source of truth.
 
-Judoka, techniques, countries, and weight categories are maintained as structured data and reviewed through normal Git workflows.
+Judoka, techniques, countries, weight categories, and other shared judo content are maintained as structured JSON and reviewed through normal Git workflows.
 
-BU-DO-KON service
+The canonical dataset does not depend on Node.js, TypeScript, Cloudflare, Vercel, SQLite, or any other implementation technology.
 
-A lightweight service provides runtime access to the catalogue.
+### Validation and compilation
 
-The service may use a generated JSON dataset, SQLite database, or another derived read model internally, but these are not the canonical source of truth.
+Canonical source records are validated and compiled during the build process.
 
-Consumers
+The compiler produces immutable runtime artefacts such as aggregate JSON and a manifest describing the dataset release.
 
-Games and other applications consume BU-DO-KON rather than maintaining duplicate judoka records themselves.
+Runtime services should consume these generated artefacts rather than repeatedly reading or assembling the individual canonical files.
+
+### BU-DO-KON Core
+
+The core TypeScript library contains shared application and domain behaviour such as:
+
+* judoka lookup
+* search and filtering
+* exclusions
+* collection membership
+* deterministic drawing
+* dataset metadata
+* technique lookup
+
+The core should remain independent of HTTP, MCP, Cloudflare, Vercel, and game-specific behaviour.
+
+Where practical, runtime code should favour standard Web Platform APIs rather than Node-specific APIs so that the same core can operate across Cloudflare Workers, Vercel, Node.js, and other JavaScript runtimes.
+
+### Interfaces
+
+REST and MCP are thin adapters over the same core application services.
+
+They must not implement separate versions of search, filtering, or drawing behaviour.
 
 Individual games remain responsible for their own:
 
@@ -66,15 +97,41 @@ Individual games remain responsible for their own:
 * scoring systems
 * match state
 * progression
-* player data
+* player ownership
+* player statistics
+* game-specific card identifiers
 * game-specific mechanics
 
-⸻
+---
 
-📂 Proposed Repository Structure
+## 🧭 Architectural Principle
 
+BU-DO-KON should primarily be considered a **versioned judo content catalogue**, rather than a conventional database-backed application.
+
+The relationship is:
+
+```mermaid
+flowchart LR
+    A[Canonical Git Data] --> B[Validator / Compiler]
+    B --> C[Immutable Runtime Dataset]
+    C --> D[BU-DO-KON Core]
+    D --> E[REST]
+    D --> F[MCP]
+```
+
+Databases, caches, indexes, APIs, and MCP servers are projections or adapters over the canonical catalogue.
+
+They are not the source of truth.
+
+---
+
+## 📂 Proposed Repository Structure
+
+```text
 .
 ├── data/
+│   ├── dataset.json
+│   │
 │   ├── judoka/
 │   │   ├── shozo-fujii.json
 │   │   ├── ilia-sulamanidze.json
@@ -85,6 +142,10 @@ Individual games remain responsible for their own:
 │   │   ├── seoi-nage.json
 │   │   └── ...
 │   │
+│   ├── collections/
+│   │   ├── paris-2024.json
+│   │   └── ...
+│   │
 │   └── reference/
 │       ├── countries.json
 │       └── weight-categories.json
@@ -92,91 +153,226 @@ Individual games remain responsible for their own:
 ├── schema/
 │   ├── judoka.schema.json
 │   ├── technique.schema.json
+│   ├── collection.schema.json
 │   ├── countries.schema.json
 │   └── weight-categories.schema.json
 │
 ├── src/
 │   ├── domain/
+│   ├── application/
 │   ├── repository/
 │   ├── draw/
 │   ├── api/
 │   └── mcp/
 │
+├── scripts/
+│   ├── validate.ts
+│   └── build.ts
+│
+├── migrations/
+│   ├── judoka-legacy-id-map.json
+│   └── technique-legacy-id-map.json
+│
 ├── tests/
 │
 ├── README.md
 └── LICENSE
+```
 
-Generated distribution files may also be produced during releases:
+Generated distribution files may be produced during builds and releases:
 
+```text
 dist/
+├── budokon.json
 ├── judoka.json
 ├── techniques.json
-└── budukon.sqlite
+├── collections.json
+└── manifest.json
+```
 
-These generated files are runtime artefacts rather than the primary editorial source.
+An optional derived SQLite database may be added later:
 
-### Editing and building the data
+```text
+dist/
+└── budokon.sqlite
+```
 
-The individual JSON records under `data/judoka/` and `data/techniques/`, together
-with the files under `data/reference/`, are the canonical editorial sources. Do
-not edit generated files in `dist/` directly.
+Generated files are runtime artefacts rather than primary editorial sources.
 
-After changing source data, rebuild the runtime aggregates with:
+---
+
+## 🛠️ Implementation Language
+
+BU-DO-KON uses **TypeScript** for its implementation.
+
+The canonical dataset itself remains plain JSON and JSON Schema and is therefore language-neutral.
+
+TypeScript is used because BU-DO-KON is primarily a structured-data and integration-heavy application rather than a computationally intensive service.
+
+TypeScript provides:
+
+* strong compile-time modelling of domain objects
+* excellent JSON and JSON Schema tooling
+* natural REST and MCP integration
+* first-class support on Cloudflare Workers and Vercel
+* straightforward reuse by JavaScript and TypeScript games
+* portability across serverless and conventional Node.js runtimes
+
+Performance-sensitive systems languages such as Go or Rust are not currently required for BU-DO-KON's expected workload.
+
+The architecture deliberately keeps the canonical dataset independent of the TypeScript implementation so that alternative consumers or service implementations may be introduced later without migrating the underlying content.
+
+---
+
+## ✏️ Editing and Building the Data
+
+The individual JSON records under `data/judoka/` and `data/techniques/`, together with the files under `data/reference/` and `data/collections/`, are the canonical editorial sources.
+
+Do not edit generated files under `dist/` directly.
+
+After changing source data:
 
 ```sh
+npm run validate
 npm run build
 ```
 
-Run `npm run validate` before building. The validator parses every canonical
-JSON source and applies the four schemas before checking cross-record identity,
-references, gender-specific weight classes, and timestamps. Timestamps must be
-valid RFC 3339 UTC instants and must not be in the future.
+The validator parses every canonical source file and applies schema, referential, and semantic validation.
 
-### Canonical content policy
+The compiler then creates deterministic runtime aggregates.
 
-Canonical records must be publishable content, not scaffolding. Required text
-must be non-empty (biographies have a 20-character minimum), and values that
-begin with common placeholder markers (`TODO`, `TBD`, `unknown`, `N/A`, `none`,
-or `more info to come`) are rejected case-insensitively. URLs must be absolute
-HTTPS URLs; stats are integer ratings from 0 through 10. Unknown properties are
-rejected so misspellings and application-specific fields cannot silently enter
-the editorial source. Fictional judoka may be retained when they represent an
-identifiable judo character and contain complete, intentional content. They
-have `personType: "fictional"` and must set `isHidden: true`; consumers should
-exclude hidden records unless explicitly requested. Unverifiable people and
-invented filler identities do not belong in the canonical catalogue. Real
-people use `personType: "real"` and have an independent visibility decision.
+Build output must depend only on:
 
-The build reads every source record, validates judoka UUIDs, slugs, aliases,
-country references, and their uniqueness, sorts each aggregate by its stable `id`, and writes
-deterministic `dist/judoka.json` and `dist/techniques.json` artifacts. The
-canonical `data/dataset.json` calendar version is independent of the service
-package version. Each build also writes `dist/manifest.json` with both versions,
-the source commit, record counts, and SHA-256 artifact checksums. Builds contain
-no wall-clock timestamp; release tags use `dataset-v<datasetVersion>`.
-one-time `migrations/judoka-legacy-id-map.json` file maps IDs from the legacy
-aggregate to immutable UUIDs. `migrations/technique-legacy-id-map.json` likewise
-maps legacy numeric technique IDs to stable slugs. Both files must be retained
-for downstream migrations.
+* canonical source data
+* compiler version
+* defined sorting rules
+* source commit
 
-⸻
+Build output must not depend on wall-clock time or non-deterministic ordering.
 
-🧑‍🤝‍🧑 Judoka Data Model
+---
+
+## 📦 Runtime Dataset
+
+The preferred initial runtime representation is a single compiled immutable JSON dataset.
+
+For example:
+
+```json
+{
+  "datasetVersion": "2026.08.1",
+  "judoka": [],
+  "techniques": [],
+  "collections": [],
+  "countries": {},
+  "weightCategories": []
+}
+```
+
+A hosted BU-DO-KON service may load or bundle this dataset at deployment or process start and keep it in memory.
+
+For the expected size and read-heavy nature of BU-DO-KON, this avoids unnecessary database infrastructure.
+
+The initial runtime model is therefore:
+
+```text
+Canonical JSON
+      ↓
+Validation
+      ↓
+Compilation
+      ↓
+budokon.json
+      ↓
+Runtime memory
+      ↓
+REST / MCP
+```
+
+SQLite, Cloudflare D1, PostgreSQL, or another external database should only be introduced when actual runtime requirements justify the additional complexity.
+
+---
+
+## ☁️ Hosting and Runtime Portability
+
+BU-DO-KON is intended to operate well on serverless platforms such as **Cloudflare Workers** and **Vercel**, while remaining deployable through conventional Node.js or container environments.
+
+The core domain and application logic should therefore avoid provider-specific dependencies.
+
+Where practical, runtime code should favour Web Platform APIs such as:
+
+```text
+fetch
+Request
+Response
+URL
+URLSearchParams
+crypto.subtle
+TextEncoder
+TextDecoder
+```
+
+rather than unnecessary direct dependence on Node-specific APIs.
+
+Node-specific filesystem access is acceptable within build scripts, validation tools, and other development-time tooling.
+
+### Cloudflare
+
+For an initial Cloudflare deployment, the compiled BU-DO-KON dataset may be bundled with the Worker.
+
+```mermaid
+flowchart LR
+    A[Git Repository] --> B[Validate & Build]
+    B --> C[Compiled Dataset]
+    C --> D[Cloudflare Worker]
+    D --> E[REST]
+    D --> F[MCP]
+```
+
+This avoids introducing a database simply to serve a small read-only catalogue.
+
+Cloudflare D1 may be considered later if richer relational querying, indexing, or dataset size makes it useful.
+
+D1 should remain a derived runtime representation rather than the editorial source of truth.
+
+### Vercel
+
+A Vercel deployment may expose the same TypeScript core through Node.js functions.
+
+The hosting environment must not change the semantics of BU-DO-KON operations.
+
+In particular:
+
+* identical dataset versions
+* identical filters
+* identical exclusions
+* identical seeds
+* identical draw algorithm versions
+
+must produce identical deterministic draw results regardless of hosting provider.
+
+---
+
+## 🧑‍🤝‍🧑 Judoka Data Model
 
 Each judoka contains a curated representation intended to be useful across multiple games.
 
 Example:
 
+```json
 {
   "id": "57a86958-73c3-4dd3-b8b8-f0bbaab58b67",
   "slug": "shozo-fujii",
   "firstname": "Shōzō",
   "surname": "Fujii",
+  "aliases": [
+    "Shozo Fujii"
+  ],
   "countryCode": "JP",
   "weightClass": "-81",
   "category": "Judo",
   "gender": "male",
+  "personType": "real",
   "stats": {
     "power": 8,
     "speed": 8,
@@ -184,91 +380,192 @@ Example:
     "kumikata": 7,
     "newaza": 8
   },
-  "signatureMoveId": "seoi-nage",
+  "signatureMoveIds": [
+    "seoi-nage"
+  ],
   "rarity": "Epic",
   "bio": "Biography text...",
   "profileUrl": "https://example.com",
   "isHidden": false,
   "lastUpdated": "2026-08-13T00:00:00Z"
 }
+```
 
-⸻
+The canonical model contains shared judoka attributes only.
 
-🎮 Shared Editorial Attributes
+Game-specific properties such as:
 
-BU-DO-KON intentionally contains some attributes that are not purely objective biographical facts.
+```text
+matchesWon
+matchesLost
+matchesDrawn
+playerOwnership
+experiencePoints
+cardInstanceId
+gameScore
+```
+
+must not appear in canonical judoka records.
+
+---
+
+## 👤 Person Type
+
+BU-DO-KON may contain both real and fictional judoka where they provide useful game content.
+
+Records explicitly identify their type.
+
+```json
+{
+  "personType": "real"
+}
+```
+
+or:
+
+```json
+{
+  "personType": "fictional"
+}
+```
+
+Fictional judoka must represent identifiable, intentional judo characters rather than placeholder identities.
+
+By default, fictional records should be hidden from general draws unless explicitly requested by the consuming application.
+
+This allows consumers to distinguish between:
+
+* factual athlete-oriented experiences
+* fictional or entertainment-oriented experiences
+* mixed game pools
+
+without attempting to infer the distinction from biography or source URLs.
+
+---
+
+## 🎮 Shared Editorial Attributes
+
+BU-DO-KON intentionally contains attributes that are not purely objective biographical facts.
 
 Examples include:
 
-* stats.power
-* stats.speed
-* stats.technique
-* stats.kumikata
-* stats.newaza
-* rarity
-* signatureMoveId
+* `stats.power`
+* `stats.speed`
+* `stats.technique`
+* `stats.kumikata`
+* `stats.newaza`
+* `rarity`
+* `signatureMoveIds`
 * biography text
 
-These are editorial values maintained as part of the BU-DO-KON dataset.
+These are editorial values maintained as part of the shared BU-DO-KON representation.
 
-The purpose of storing them centrally is to avoid every consuming game maintaining its own interpretation of the same judoka.
+The purpose of storing them centrally is to avoid every consuming game maintaining its own baseline interpretation of the same judoka.
 
 Individual games remain free to:
 
 * ignore attributes they do not need
 * transform shared attributes
-* derive new values
+* derive additional values
 * apply their own scoring formulas
-* introduce additional game-specific state
+* maintain their own player and match state
 
 BU-DO-KON therefore defines a useful shared baseline rather than attempting to model every possible game mechanic.
 
-⸻
+---
 
-🆔 Identity
+## 🆔 Identity
 
-Judoka use immutable UUID identifiers. Legacy numeric identifiers are retained
-only in `migrations/judoka-legacy-id-map.json` for consumer migrations.
+Judoka use immutable UUID identifiers.
 
-Recommended structure:
+Legacy numeric identifiers are retained only in:
 
+```text
+migrations/judoka-legacy-id-map.json
+```
+
+for consumer migrations.
+
+Example:
+
+```json
 {
   "id": "38690882-06a3-4d98-9b06-2789da1015db",
   "slug": "ilia-sulamanidze"
 }
+```
 
-id
+### `id`
 
-An immutable UUID assigned in the canonical source record. UUIDs are stored
-explicitly and must not be derived dynamically during builds.
+An immutable UUID assigned in the canonical source record.
 
-It should never change once assigned.
+UUIDs are stored explicitly and must not be dynamically regenerated during builds.
 
-slug
+Once assigned, an ID never changes.
 
-A human-readable identifier suitable for URLs and developer-facing APIs.
+### `slug`
+
+A human-readable identifier suitable for URLs and developer-facing interfaces.
 
 For example:
 
+```text
 /v1/judoka/ilia-sulamanidze
+```
 
-If a name correction requires a slug change, the UUID remains unchanged
-and the previous slug may optionally be retained as an alias.
+A slug may change if a spelling or transliteration is corrected.
 
-⸻
+The UUID must not change.
 
-🌍 Countries
+Previous spellings may be retained in aliases to aid search and backwards compatibility.
 
-Judoka should reference countries using ISO 3166-1 alpha-2 codes.
+---
+
+## 🔤 Names and Aliases
+
+Names may have multiple common transliterations or spellings.
+
+Judoka records may therefore contain aliases:
+
+```json
+{
+  "firstname": "Shōzō",
+  "surname": "Fujii",
+  "aliases": [
+    "Shozo Fujii"
+  ]
+}
+```
+
+Aliases support:
+
+* alternative transliterations
+* diacritic-free spelling
+* historic spelling
+* common English forms
+* improved MCP and search matching
+
+Aliases must not act as alternative canonical identities.
+
+The UUID remains authoritative.
+
+---
+
+## 🌍 Countries
+
+Judoka reference countries using uppercase ISO 3166-1 alpha-2 codes.
 
 For example:
 
+```json
 {
   "countryCode": "JP"
 }
+```
 
-Country names and other descriptive information are maintained separately in the reference dataset.
+Country names and descriptive information are maintained separately.
 
+```json
 {
   "JP": {
     "country": "Japan",
@@ -276,26 +573,27 @@ Country names and other descriptive information are maintained separately in the
     "active": true
   }
 }
+```
 
 This prevents duplicate country names from becoming independent sources of truth.
 
-The catalogue is the subset of ISO 3166-1 alpha-2 countries supported by
-BU-DO-KON; it is not required to contain the complete ISO set and may contain
-countries not currently referenced by a judoka. Keys and embedded `code` values
-must be identical uppercase alpha-2 codes.
+The catalogue represents the subset of ISO countries supported by BU-DO-KON and is not required to contain the complete ISO set.
 
-Inactive entries may be retained for historical compatibility and display, but
-canonical judoka must reference a country that exists and is active. Generated
-judoka views resolve `country` display names from this catalogue, so canonical
-judoka records must not duplicate the `country` property.
+Keys and embedded `code` values must be identical uppercase alpha-2 codes.
 
-⸻
+Inactive entries may be retained for historical compatibility and display, but canonical judoka must reference an existing active country unless historical modelling explicitly requires otherwise.
 
-⚖️ Weight Classes
+Canonical judoka records must not duplicate the full country display name.
 
-BU-DO-KON uses the current senior IJF weight categories.
+Generated/API representations may expand the country reference for convenience.
 
-Men
+---
+
+## ⚖️ Weight Classes
+
+BU-DO-KON currently uses senior IJF weight categories.
+
+### Men
 
 * -60
 * -66
@@ -305,7 +603,7 @@ Men
 * -100
 * +100
 
-Women
+### Women
 
 * -48
 * -52
@@ -315,20 +613,21 @@ Women
 * -78
 * +78
 
-Each judoka is assigned one primary weight class.
+Each judoka is currently assigned one primary weight class.
 
-Where a judoka has competed in multiple divisions, BU-DO-KON uses an editorial judgement to select the division most strongly associated with that judoka.
+Where a judoka has competed in multiple divisions, BU-DO-KON uses editorial judgement to select the division most strongly associated with that judoka.
 
-Historical weight-class modelling is deliberately outside the current scope.
+Historical weight-class modelling is outside the current scope.
 
-⸻
+---
 
-🥋 Techniques
+## 🥋 Techniques
 
-Techniques are maintained independently from judoka so they can be reused throughout the dataset.
+Techniques are maintained independently from judoka so they can be reused throughout the catalogue.
 
 Example:
 
+```json
 {
   "id": "uchi-mata",
   "name": "Uchi-mata",
@@ -338,49 +637,136 @@ Example:
   "subCategory": "Ashi-waza",
   "description": "Inner-thigh throw."
 }
+```
 
-Judoka reference techniques by identifier:
+Technique identifiers are stable kebab-case slugs.
 
+Judoka reference techniques using those identifiers.
+
+```json
 {
-  "signatureMoveId": "uchi-mata"
+  "signatureMoveIds": [
+    "uchi-mata"
+  ]
 }
+```
 
-Technique identifiers are stable kebab-case slugs. `signatureMoveId` must equal
-the string `id` of a record under `data/techniques/`. Technique names are
-display values and must not be used as foreign keys. Legacy numeric identifiers
-are retained only in `migrations/technique-legacy-id-map.json`; a `null` mapping
-means the legacy record was not a recognized technique and has no direct
-equivalent.
+Using an array allows a judoka to have more than one recognised signature technique while retaining a simple model.
+
+Technique names are display values and must not be used as foreign keys.
+
+Legacy numeric technique identifiers are retained only in:
+
+```text
+migrations/technique-legacy-id-map.json
+```
+
+A `null` legacy mapping means that the previous record did not correspond to a recognised technique and has no direct canonical equivalent.
 
 Technique terminology and classification should normally follow recognised Kodokan or IJF conventions.
 
-⸻
+---
 
-✍️ Editorial Philosophy
+## 🗂️ Collections
+
+Collections allow reusable subsets of the catalogue to be maintained centrally.
+
+Examples might include:
+
+```text
+paris-2024
+tokyo-2020
+japanese-legends
+current-world-tour
+fictional
+```
+
+Example:
+
+```json
+{
+  "id": "paris-2024",
+  "name": "Paris 2024 Olympians",
+  "members": [
+    "57a86958-73c3-4dd3-b8b8-f0bbaab58b67"
+  ]
+}
+```
+
+Collections allow games to request meaningful shared pools without independently maintaining athlete lists.
+
+For example:
+
+```json
+{
+  "count": 1,
+  "collection": "paris-2024"
+}
+```
+
+Collections are editorial catalogue metadata and do not contain game progress or player-specific state.
+
+---
+
+## ✍️ Canonical Content Policy
+
+Canonical records must contain intentional, publishable content rather than scaffolding.
+
+Required text must be non-empty.
+
+Biographies should meet a minimum useful content threshold.
+
+Values beginning with common placeholder markers such as:
+
+```text
+TODO
+TBD
+unknown
+N/A
+none
+more info to come
+```
+
+should be rejected case-insensitively where substantive content is required.
+
+URLs must be absolute HTTPS URLs.
+
+Stats are integer ratings from 0 through 10.
+
+Unknown properties should be rejected by schemas so that misspellings or application-specific fields cannot silently enter the canonical source.
+
+Fictional judoka may be retained where they represent identifiable judo characters and contain complete, intentional content.
+
+Unverifiable people and invented filler identities do not belong in the canonical catalogue.
+
+---
+
+## ✍️ Editorial Philosophy
 
 BU-DO-KON is a curated passion project rather than an academic or encyclopaedic database.
 
-Some values are therefore intentionally editorial.
+Some values are intentionally editorial.
 
 This includes decisions such as:
 
 * which weight class best represents a judoka
-* which technique is regarded as their signature technique
+* which techniques are regarded as signature techniques
 * relative ratings
 * rarity
 * biography wording
 * which athletes should be included
 * whether an athlete is hidden or available to consumers
+* which collections an athlete belongs to
 
 Not every individual field requires formal provenance.
 
-Where practical, profile URLs may provide useful external references, but BU-DO-KON does not require source citations for every editorial judgement.
+Where practical, profile URLs may provide useful external references, but BU-DO-KON does not require formal source citations for every editorial judgement.
 
-The objective is a consistent, interesting and useful dataset rather than exhaustive historical documentation.
+The objective is a consistent, interesting, and useful dataset rather than exhaustive historical documentation.
 
-⸻
+---
 
-🎲 Drawing Judoka
+## 🎲 Drawing Judoka
 
 A primary BU-DO-KON capability is selecting one or more judoka from the catalogue.
 
@@ -389,53 +775,86 @@ The draw operation should support:
 * random selection
 * filtering
 * exclusions
-* multiple draws
+* multiple draws without duplicates
+* collections
 * deterministic seeded draws
+* explicit inclusion of hidden content where appropriate
 
 Example:
 
+```http
 POST /v1/draw
+```
+
+```json
 {
   "count": 1,
   "filters": {
     "countryCode": ["JP", "GE"],
     "gender": "male",
-    "weightClass": ["-81", "-90"]
+    "weightClass": ["-81", "-90"],
+    "personType": ["real"]
   },
   "exclude": [],
   "seed": "match-472-round-3"
 }
+```
 
 Example response:
 
+```json
 {
   "datasetVersion": "2026.08.1",
+  "drawAlgorithm": "budokon-v1",
   "seed": "match-472-round-3",
   "poolSize": 37,
   "judoka": [
     {
-      "id": "9cc78bb7-...",
-      "slug": "example-judoka",
-      "firstname": "Example",
-      "surname": "Judoka"
+      "id": "57a86958-73c3-4dd3-b8b8-f0bbaab58b67",
+      "slug": "shozo-fujii",
+      "firstname": "Shōzō",
+      "surname": "Fujii"
     }
   ]
 }
+```
 
-⸻
+---
 
-🎯 Deterministic Randomness
+## 🎯 Deterministic Randomness
 
-Draw operations may optionally accept a seed.
+Deterministic draws are part of the public behaviour of BU-DO-KON.
+
+A seed alone is not sufficient to guarantee reproducibility unless the candidate ordering, random-number generator, and sampling algorithm are also defined.
+
+Each deterministic draw therefore has an explicit draw algorithm version.
+
+For example:
+
+```text
+budokon-v1
+```
+
+A draw algorithm should define:
+
+1. how filters are applied
+2. how excluded records are removed
+3. how candidate records are canonically ordered
+4. how the seed is converted into random state
+5. which deterministic PRNG is used
+6. how records are sampled or shuffled
+7. how multiple results are selected without duplicates
 
 Given:
 
 * the same dataset version
+* the same draw algorithm version
 * the same filters
 * the same exclusions
+* the same collection
 * the same seed
 
-BU-DO-KON should return the same result.
+BU-DO-KON must return the same result.
 
 This enables games to:
 
@@ -447,71 +866,92 @@ This enables games to:
 
 Applications that do not require deterministic behaviour may omit the seed.
 
-⸻
+Changing deterministic draw behaviour requires introducing a new draw algorithm version rather than silently changing the behaviour of an existing version.
 
-🌐 REST API
+---
+
+## 🌐 REST API
 
 The REST API is the primary integration mechanism for conventional games and applications.
 
 Potential endpoints include:
 
+```text
 GET  /v1/judoka
 GET  /v1/judoka/:id
 GET  /v1/techniques
 GET  /v1/techniques/:id
+GET  /v1/collections
+GET  /v1/collections/:id
 GET  /v1/countries
 GET  /v1/weight-categories
 POST /v1/draw
 GET  /v1/version
-
-Judoka queries
+```
 
 Consumers should eventually be able to filter by attributes such as:
 
+```text
 GET /v1/judoka?countryCode=JP
 GET /v1/judoka?gender=female
 GET /v1/judoka?weightClass=-81
 GET /v1/judoka?rarity=Legendary
+GET /v1/judoka?personType=real
+```
 
 Filters may be combined where appropriate.
 
-⸻
+API responses should expose enough version information to identify the dataset and service behaviour involved.
 
-🤖 MCP
+---
 
-BU-DO-KON may expose the same core capabilities through MCP for use by AI agents and conversational applications.
+## 🤖 MCP
+
+BU-DO-KON may expose the same core capabilities through MCP for AI agents and conversational applications.
 
 Potential MCP tools include:
 
+```text
 get_judoka
 search_judoka
 draw_judoka
 list_techniques
 get_technique
+list_collections
+```
 
 Example:
 
+```json
 {
   "count": 2,
   "countryCode": "JP",
   "weightClass": "-81",
-  "exclude": ["shozo-fujii"]
+  "exclude": [
+    "shozo-fujii"
+  ]
 }
+```
 
-MCP and REST must use the same underlying domain services.
+MCP and REST must use the same underlying application services.
 
-Business logic should not be duplicated between the two interfaces.
+Business logic must not be duplicated between interfaces.
 
 ```mermaid
 flowchart LR
-    A[REST API] --> C[Application Services]
-    B[MCP] --> C
-    C --> D[Budukon Repository]
+    A[REST Adapter] --> C[Application Services]
+    B[MCP Adapter] --> C
+    C --> D[BU-DO-KON Core]
+    D --> E[Compiled Dataset]
 ```
 
-⸻
+MCP handlers should translate tool arguments into application requests and translate application responses back into MCP results.
 
-💾 Storage Strategy
+They should not independently implement catalogue rules.
+
+---
+
+## 💾 Storage Strategy
 
 The Git repository is the canonical source of truth.
 
@@ -525,168 +965,360 @@ This provides:
 * straightforward backups
 * reproducible builds
 
-A runtime service does not need to read individual source files for every request.
+The runtime service should normally consume the compiled dataset rather than individual source files.
 
-During the build process the canonical data may be compiled into:
+### Initial runtime strategy
 
-* aggregate JSON
-* SQLite
-* another optimised read representation
+The preferred initial runtime strategy is:
 
-For the expected size and read-heavy workload of BU-DO-KON, SQLite is a suitable runtime option if indexed querying becomes useful.
+```text
+Git
+ ↓
+Canonical JSON
+ ↓
+Validation
+ ↓
+Compiled JSON
+ ↓
+Runtime memory
+```
 
-PostgreSQL or another external database should only be introduced if runtime requirements justify the additional complexity.
+For the expected catalogue size, filtering a dataset held in memory is simpler and likely sufficient.
 
-⸻
+### SQLite
 
-✅ Validation
+SQLite may be introduced as a derived read model if indexed querying or richer relationships eventually justify it.
 
-All data changes should pass automated validation before being merged.
+For example:
+
+```text
+Canonical JSON
+      ↓
+Compiler
+      ├── budokon.json
+      └── budokon.sqlite
+```
+
+SQLite is not canonical and must always be reproducible from source data.
+
+### Cloudflare D1
+
+A Cloudflare deployment may eventually use D1 if relational querying becomes useful.
+
+D1 should remain a generated runtime representation and must not become the editorial authority.
+
+### PostgreSQL or external databases
+
+PostgreSQL or another operational database should only be introduced when requirements such as substantial runtime writes, complex concurrency, or significantly larger data volumes justify the additional operational complexity.
+
+---
+
+## ✅ Validation
+
+All canonical data changes must pass automated validation before being merged or released.
 
 Validation should include several layers.
 
-JSON validation
+### JSON validation
 
-Every file must contain valid JSON.
+Every source file must contain valid JSON.
 
-Schema validation
+### Schema validation
 
 Records must conform to their relevant JSON Schema.
 
 Examples:
 
+```text
 schema/judoka.schema.json
 schema/technique.schema.json
+schema/collection.schema.json
 schema/countries.schema.json
+```
 
-Referential validation
+Schemas should reject unknown properties.
+
+### Referential validation
 
 References between datasets must exist.
 
 For example:
 
-judoka.signatureMoveId
+```text
+judoka.signatureMoveIds[]
         ↓
 techniques.id
+```
+
+and:
+
+```text
+collection.members[]
+        ↓
+judoka.id
+```
 
 A judoka must not reference a technique that does not exist.
 
-Semantic validation
+A collection must not reference a judoka that does not exist.
+
+### Semantic validation
 
 Additional rules should verify domain consistency.
 
-Examples:
+Examples include:
 
-* IDs must be unique
+* UUIDs must be unique
 * slugs must be unique
-* stat values must remain within their defined range
-* rarity must use an allowed value
-* country codes must exist
+* aliases should not ambiguously collide where avoidable
+* technique IDs must be unique
+* country codes must use uppercase ISO-style alpha-2 values
+* country references must exist
 * weight classes must be valid for the specified gender
+* stat values must be integer values between 0 and 10
+* rarity must use an allowed value
+* `personType` must use an allowed value
 * referenced techniques must exist
+* required biographies must not contain placeholder content
+* canonical records must not contain game-state properties
+* timestamps must be valid RFC 3339 UTC instants
+* timestamps must not be in the future
 
-⸻
+A failed validation must prevent release.
 
-📦 Dataset Releases
+---
+
+## 🏗️ Deterministic Build
+
+The build process reads every canonical source record and produces deterministic runtime artefacts.
+
+Records should be sorted by immutable identity before output.
+
+The build should create:
+
+```text
+dist/judoka.json
+dist/techniques.json
+dist/collections.json
+dist/budokon.json
+dist/manifest.json
+```
+
+The manifest should contain information such as:
+
+```json
+{
+  "datasetVersion": "2026.08.1",
+  "serviceVersion": "1.0.0",
+  "sourceCommit": "abc123...",
+  "recordCounts": {
+    "judoka": 250,
+    "techniques": 68
+  },
+  "artifacts": {
+    "budokon.json": {
+      "sha256": "..."
+    }
+  }
+}
+```
+
+Builds should not contain a wall-clock build timestamp if doing so would make otherwise identical builds produce different artefacts.
+
+---
+
+## 📦 Dataset Releases
 
 BU-DO-KON distinguishes between service versions and dataset versions.
 
-Service version
+### Service version
 
-Describes behaviour of the API, MCP server, or application code.
+Describes behaviour of:
 
-Example:
-
-v1.4.0
-
-Dataset version
-
-Describes a particular release of the judoka catalogue.
+* domain logic
+* REST API
+* MCP server
+* deterministic drawing implementation
+* application code
 
 Example:
 
+```text
+1.4.0
+```
+
+### Dataset version
+
+Describes a particular release of the canonical catalogue.
+
+Example:
+
+```text
 2026.08.1
+```
+
+Dataset versions use calendar-oriented versioning and are independent of the service package version.
 
 API responses may expose both:
 
+```json
 {
-  "budukonVersion": "1.4.0",
+  "budokonVersion": "1.4.0",
   "datasetVersion": "2026.08.1"
 }
+```
 
-This allows games to pin or record the dataset used for a particular match, tournament, season, or save game.
+A dataset release should be associated with:
 
-Dataset releases should be associated with the corresponding Git commit.
+* a Git commit
+* a dataset release tag
+* deterministic compiled artefacts
+* checksums
 
-⸻
+Recommended dataset tags:
 
-🔄 Build and Release Flow
+```text
+dataset-v2026.08.1
+```
+
+This allows games to record the exact dataset used for a match, tournament, season, or save game.
+
+Games should normally persist the immutable judoka ID and dataset version rather than copying the entire judoka object into permanent game state.
+
+---
+
+## 🔄 Build and Release Flow
 
 ```mermaid
 flowchart LR
-    A[Edit Data] --> B[Pull Request]
+    A[Edit Canonical Data] --> B[Pull Request]
     B --> C[JSON Validation]
     C --> D[Schema Validation]
     D --> E[Referential Validation]
     E --> F[Semantic Validation]
     F --> G[Merge]
-    G --> H[Dataset Release]
-    H --> I[Generate Runtime Data]
-    I --> J[BU-DO-KON Service]
+    G --> H[Compile Dataset]
+    H --> I[Dataset Release]
+    I --> J[Deployment]
 ```
 
-A failed validation should prevent the dataset from being released.
+Deployment may target:
 
-⸻
+```text
+Cloudflare Worker
+Vercel
+Node.js
+Docker/container
+```
 
-🛡️ Design Principles
+The runtime hosting environment does not change the identity or meaning of a dataset release.
 
-BU-DO-KON follows these principles:
+---
 
-One shared judoka catalogue
+## 🧩 Core Application Services
 
-Games should not need to maintain duplicate judoka records.
+REST and MCP should depend on a small reusable set of application services.
 
-Git is the editorial authority
+Conceptually:
+
+```ts
+getJudoka(...)
+searchJudoka(...)
+drawJudoka(...)
+getTechnique(...)
+listCollections(...)
+getDatasetMetadata(...)
+```
+
+These services should contain the behaviour of BU-DO-KON.
+
+Adapters should contain only transport-specific behaviour.
+
+This architecture allows another consumer to use the core package directly if appropriate:
+
+```ts
+import { drawJudoka } from "@budokon/core";
+```
+
+without requiring an HTTP round trip.
+
+Remote games can continue using REST.
+
+AI applications can use MCP.
+
+All consumers receive equivalent catalogue semantics.
+
+---
+
+## 🛡️ Design Principles
+
+BU-DO-KON follows these principles.
+
+### One shared judoka catalogue
+
+Games should not maintain duplicate canonical judoka records.
+
+### Git is the editorial authority
 
 The repository remains the canonical representation of the dataset.
 
-Runtime storage is derived
+### Runtime storage is derived
 
-Databases and aggregate files are implementation details and can be rebuilt from the canonical repository.
+JSON aggregates, SQLite, D1, caches, and other runtime stores are implementation details and can be regenerated.
 
-Shared attributes belong in BU-DO-KON
+### The dataset is language-neutral
 
-Useful attributes such as ratings, rarity and signature techniques can be centrally curated and reused between games.
+Canonical JSON and JSON Schema do not depend on TypeScript or a specific runtime.
 
-Game state belongs in games
+### TypeScript powers the reference implementation
 
-Match progress, player ownership, scores, progression and other runtime state remain outside BU-DO-KON.
+TypeScript provides the core, API, MCP, validation, and build tooling while remaining portable across modern serverless environments.
 
-Editorial judgement is allowed
+### Shared attributes belong in BU-DO-KON
 
-BU-DO-KON is intended to be useful and enjoyable rather than attempting to become a complete historical judo database.
+Reusable ratings, rarity, biographies, signature techniques, aliases, collections, and other catalogue-level metadata may be centrally curated.
 
-Interfaces share business logic
+### Game state belongs in games
 
-REST and MCP expose the same underlying capabilities rather than implementing separate selection behaviour.
+Match results, ownership, progression, scores, achievements, card instances, and player-specific state remain outside BU-DO-KON.
 
-Releases are reproducible
+### Editorial judgement is allowed
 
-A dataset version and seed should be sufficient to reproduce deterministic selections.
+BU-DO-KON is intended to be useful and enjoyable rather than attempting to become a complete academic historical database.
 
-⸻
+### Interfaces share business logic
 
-🚀 Potential Future Capabilities
+REST, MCP, and direct package consumers use the same application services.
+
+### Infrastructure should remain simple
+
+Databases and additional infrastructure should only be introduced in response to demonstrated requirements.
+
+### Releases are reproducible
+
+A dataset release can be regenerated from its canonical source commit.
+
+### Draws are reproducible
+
+A dataset version, draw algorithm version, seed, filters, exclusions, and collection are sufficient to reproduce a deterministic selection.
+
+### Hosting must not affect semantics
+
+A draw performed on Cloudflare should produce the same result as the equivalent draw on Vercel, Node.js, or another compatible runtime.
+
+---
+
+## 🚀 Potential Future Capabilities
 
 Future development may include:
 
 * richer judoka search
-* multiple signature or notable techniques
+* multiple signature and notable techniques
 * historical and retired judoka
+* native-language names
 * Olympic and World Championship metadata
 * competition achievements
-* aliases and alternative name spellings
+* richer aliases and transliterations
 * image metadata
 * curated collections
 * eras or generations
@@ -694,16 +1326,25 @@ Future development may include:
 * weighted draw modes
 * tournament-specific pools
 * dataset snapshots
+* historical weight categories
+* full-text search
 * public API hosting
 * MCP integration
+* Cloudflare D1 derived indexes
+* generated SQLite distributions
 * automated dataset quality checks
+* published `@budokon/core` package
 
-These should be introduced without compromising BU-DO-KON’s role as a simple, reusable shared judoka catalogue.
+These should be introduced without compromising BU-DO-KON's role as a simple, reusable shared judo catalogue.
 
-⸻
+---
 
-🥋 Guiding Principle
+## 🥋 Guiding Principle
 
-BU-DO-KON maintains the shared representation of a judoka. Games decide what to do with them.
+**BU-DO-KON maintains the shared representation of a judoka. Games decide what to do with them.**
 
-The goal is to make adding a judoka once sufficient for that judoka to become available to every compatible game and application.
+Adding or updating a judoka once should make that judoka consistently available to every compatible BU-DO-KON game and application.
+
+The canonical catalogue is the product.
+
+REST, MCP, databases, serverless functions, and hosting providers are ways of accessing it.
