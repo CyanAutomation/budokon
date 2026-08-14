@@ -29,8 +29,11 @@ test('game-specific judoka values are preserved only in the JU-DO-KON import', a
   const files = (await readdir(directory)).filter((file) => file.endsWith('.json'));
   const records = await Promise.all(files.map(async (file) => JSON.parse(await readFile(new URL(file, directory)))));
   const gameImport = JSON.parse(await readFile(new URL('../migrations/ju-do-kon-judoka-import.json', import.meta.url)));
+  const canonicalOnlyRecord = { id: '00000000-0000-4000-8000-000000000000' };
 
-  for (const record of records) {
+  assert.equal(Object.hasOwn(gameImport, canonicalOnlyRecord.id), false);
+
+  for (const record of [...records, canonicalOnlyRecord]) {
     assert.deepEqual(
       ['cardCode', 'matchesWon', 'matchesLost', 'matchesDrawn'].filter((property) => Object.hasOwn(record, property)),
       [],
