@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const defaultRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const placeholder = /^(?:todo|tbd|unknown|n\/?a|none|more info to come)\b/i;
+const placeholder = /^(?:todo|tbd|unknown|n\/?a|none|more info to come)(?:\s|$)/i;
 const rfc3339 = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?Z$/;
 
 function fail(location, message) { throw new Error(`${location}: ${message}`); }
