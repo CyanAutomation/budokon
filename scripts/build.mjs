@@ -115,7 +115,7 @@ export function validateCountryReferences(judoka, countries) {
 export function expandJudokaCountries(judoka, countries) {
   return judoka.map((record) => ({
     ...record,
-    country: countries[record.countryCode].country,
+    country: countries[record.countryCode]?.country,
   }));
 }
 
