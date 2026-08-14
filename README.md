@@ -139,8 +139,12 @@ begin with common placeholder markers (`TODO`, `TBD`, `unknown`, `N/A`, `none`,
 or `more info to come`) are rejected case-insensitively. URLs must be absolute
 HTTPS URLs; stats are integer ratings from 0 through 10. Unknown properties are
 rejected so misspellings and application-specific fields cannot silently enter
-the editorial source. Hidden and fictional judoka remain valid when their
-records otherwise contain complete, intentional content.
+the editorial source. Fictional judoka may be retained when they represent an
+identifiable judo character and contain complete, intentional content. They
+have `personType: "fictional"` and must set `isHidden: true`; consumers should
+exclude hidden records unless explicitly requested. Unverifiable people and
+invented filler identities do not belong in the canonical catalogue. Real
+people use `personType: "real"` and have an independent visibility decision.
 
 The build reads every source record, validates judoka UUIDs, slugs, aliases,
 country references, and their uniqueness, sorts each aggregate by its stable `id`, and writes

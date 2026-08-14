@@ -1,7 +1,9 @@
 {
   "id": "e2c7f688-a995-4436-b56c-8e178b0b4bf9",
+  "slug": "joana-ramos",
   "firstname": "Joana",
   "surname": "Ramos",
+  "personType": "real",
   "countryCode": "PT",
   "weightClass": "-52",
   "category": "Judo",
@@ -13,11 +15,10 @@
     "newaza": 6
   },
   "signatureMoveId": "uchi-mata",
-  "lastUpdated": "2025-08-08T14:35:39.339Z",
+  "lastUpdated": "2026-08-14T00:00:00Z",
   "profileUrl": "https://en.wikipedia.org/wiki/Joana_Ramos",
-  "bio": "A competitive judoka represented in the curated BU-DO-KON catalogue.",
+  "bio": "Portuguese lightweight Joana Ramos competed internationally in the 52 kg division across three Olympic Games.",
   "gender": "female",
   "isHidden": false,
-  "rarity": "Common",
-  "slug": "joana-ramos"
+  "rarity": "Common"
 }

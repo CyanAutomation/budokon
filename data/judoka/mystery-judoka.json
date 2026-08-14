@@ -1,7 +1,9 @@
 {
   "id": "cd8dcb1d-0193-4dd1-a0b7-d4576602bc67",
+  "slug": "mystery-judoka",
   "firstname": "Mystery",
   "surname": "Judoka",
+  "personType": "fictional",
   "countryCode": "BT",
   "weightClass": "+100",
   "category": "Judo",
@@ -13,11 +15,10 @@
     "newaza": 0
   },
   "signatureMoveId": "ura-nage",
-  "lastUpdated": "2025-08-08T14:35:39.339Z",
+  "lastUpdated": "2026-08-14T00:00:00Z",
   "profileUrl": "https://en.wikipedia.org/wiki/Judo_Boy",
-  "bio": "After the death of his father, a young man seeks revenge for an unknown one-eyed man who killed his father, master of Kurenai style judo. He trains in the mountains of Bhutan, where he meets a mysterious judoka who teaches him the ways of judo.",
+  "bio": "An unnamed mentor from the fictional world of Judo Boy, this judoka teaches the protagonist while he trains in Bhutan.",
   "gender": "male",
   "isHidden": true,
-  "rarity": "Common",
-  "slug": "mystery-judoka"
+  "rarity": "Common"
 }
