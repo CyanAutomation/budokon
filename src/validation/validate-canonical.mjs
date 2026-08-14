@@ -40,7 +40,7 @@ export function validateSchema(value, schema, location = '$', rootSchema = schem
     if (schema.minItems !== undefined && value.length < schema.minItems) fail(location, `must have at least ${schema.minItems} items`);
     if (schema.maxItems !== undefined && value.length > schema.maxItems) fail(location, `must have at most ${schema.maxItems} items`);
     if (schema.uniqueItems && new Set(value.map(JSON.stringify)).size !== value.length) fail(location, 'must contain unique items');
-    value.forEach((item, index) => validateSchema(item, schema.items, `${location}[${index}]`, rootSchema));
+    if (schema.items) value.forEach((item, index) => validateSchema(item, schema.items, `${location}[${index}]`, rootSchema));
   } else if (value && typeof value === 'object') {
     for (const required of schema.required ?? []) if (!Object.hasOwn(value, required)) fail(location, `missing required property ${required}`);
     for (const [key, item] of Object.entries(value)) {
