@@ -3,14 +3,18 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const defaultRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const placeholder = /^(?:todo|tbd|unknown|n\/?a|none|more info to come)(?:\s|$)/i;
+const placeholder = /^(?:todo|tbd|unknown|n\/?a|none|more info to come)(?=$|[\s:_\p{P}\p{S}])/iu;
 const rfc3339 = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?Z$/;
 function isValidDateTime(value) {
   if (!rfc3339.test(value)) return false;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return false;
-  // Verify the parsed date matches the input (catches invalid dates like month 13)
-  return date.toISOString() === value || date.toISOString().replace(/\.\d{3}/, '') === value;
+  // Normalize the optional fraction before comparing so calendar overflow cannot
+  // be silently accepted while one- and two-digit fractions remain valid.
+  const normalized = value.includes('.')
+    ? value.replace(/\.(\d{1,3})Z$/, (_, fraction) => `.${fraction.padEnd(3, '0')}Z`)
+    : value.replace(/Z$/, '.000Z');
+  return date.toISOString() === normalized;
 }
 
 function fail(location, message) { throw new Error(`${location}: ${message}`); }
@@ -36,7 +40,7 @@ export function validateSchema(value, schema, location = '$', rootSchema = schem
     if (schema.minLength !== undefined && value.length < schema.minLength) fail(location, `must contain at least ${schema.minLength} characters`);
     if (schema.pattern && !new RegExp(schema.pattern, 'u').test(value)) fail(location, `must match ${schema.pattern}`);
     if (schema.format === 'uuid' && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)) fail(location, 'must be a UUID');
-    if (schema.format === 'date-time' && (!rfc3339.test(value) || Number.isNaN(Date.parse(value)))) fail(location, 'must be an RFC 3339 UTC timestamp');
+    if (schema.format === 'date-time' && !isValidDateTime(value)) fail(location, 'must be an RFC 3339 UTC timestamp');
     if (schema.format === 'uri') { try { new URL(value); } catch { fail(location, 'must be an absolute URI'); } }
   }
   if (typeof value === 'number') {
