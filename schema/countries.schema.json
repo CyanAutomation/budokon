@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://budokon.example/schema/countries.schema.json",
+  "title": "Supported countries",
+  "description": "The catalogue is the supported subset of ISO 3166-1 alpha-2 countries needed by BU-DO-KON, not the complete ISO set. It may include currently unreferenced entries. Inactive entries are retained for historical compatibility and display, but canonical judoka must reference an existing active entry.",
+  "type": "object",
+  "propertyNames": {
+    "pattern": "^[A-Z]{2}$"
+  },
+  "additionalProperties": {
+    "type": "object",
+    "description": "The embedded code must equal the object key; the build performs this cross-property validation.",
+    "required": ["country", "code", "lastUpdated", "active"],
+    "properties": {
+      "country": {
+        "type": "string",
+        "minLength": 1
+      },
+      "code": {
+        "type": "string",
+        "pattern": "^[A-Z]{2}$"
+      },
+      "lastUpdated": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "active": {
+        "type": "boolean"
+      }
+    },
+    "additionalProperties": false
+  }
+}

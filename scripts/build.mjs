@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const uuidPattern = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+export const countryCodePattern = /^[A-Z]{2}$/;
 
 async function readRecords(directory) {
   const sourceDirectory = path.join(root, directory);
@@ -69,6 +70,55 @@ function validateJudoka(records) {
   }
 }
 
+export function validateCountries(countries) {
+  if (countries === null || typeof countries !== 'object' || Array.isArray(countries)) {
+    throw new Error('Country catalogue must be an object keyed by ISO 3166-1 alpha-2 code');
+  }
+
+  for (const [key, country] of Object.entries(countries)) {
+    if (!countryCodePattern.test(key)) {
+      throw new Error(`Country key ${JSON.stringify(key)} is not an uppercase ISO 3166-1 alpha-2 code`);
+    }
+    if (country === null || typeof country !== 'object' || Array.isArray(country)) {
+      throw new Error(`Country ${key} must be an object`);
+    }
+    if (country.code !== key) {
+      throw new Error(`Country key ${key} does not match embedded code ${JSON.stringify(country.code)}`);
+    }
+    if (!countryCodePattern.test(country.code)) {
+      throw new Error(`Country ${key} has an invalid code: ${JSON.stringify(country.code)}`);
+    }
+    if (typeof country.country !== 'string' || country.country.length === 0) {
+      throw new Error(`Country ${key} must have a display name`);
+    }
+    if (typeof country.active !== 'boolean') {
+      throw new Error(`Country ${key} active must be a boolean`);
+    }
+  }
+}
+
+export function validateCountryReferences(judoka, countries) {
+  for (const record of judoka) {
+    if (!countryCodePattern.test(record.countryCode)) {
+      throw new Error(`Judoka ${record.slug} has an invalid country code: ${JSON.stringify(record.countryCode)}`);
+    }
+    const country = countries[record.countryCode];
+    if (!country) {
+      throw new Error(`Judoka ${record.slug} references unknown country ${JSON.stringify(record.countryCode)}`);
+    }
+    if (!country.active) {
+      throw new Error(`Judoka ${record.slug} references inactive country ${JSON.stringify(record.countryCode)}`);
+    }
+  }
+}
+
+export function expandJudokaCountries(judoka, countries) {
+  return judoka.map((record) => ({
+    ...record,
+    country: countries[record.countryCode]?.country,
+  }));
+}
+
 function validateTechniques(records) {
   const ids = new Set();
   const names = new Set();
@@ -114,10 +164,13 @@ const [judoka, techniques] = await Promise.all([
   readRecords('data/judoka'),
   readRecords('data/techniques'),
 ]);
+const countries = JSON.parse(await readFile(path.join(root, 'data/reference/countries.json'), 'utf8'));
+validateCountries(countries);
 validateJudoka(judoka);
+validateCountryReferences(judoka, countries);
 const techniqueIds = validateTechniques(techniques);
 validateTechniqueReferences(judoka, techniqueIds);
 await Promise.all([
-  emit(judoka, 'judoka.json'),
+  emit(expandJudokaCountries(judoka, countries), 'judoka.json'),
   emit(techniques, 'techniques.json'),
 ]);
