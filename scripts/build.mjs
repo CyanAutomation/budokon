@@ -44,6 +44,12 @@ export async function build() {
     }
   })();
   if (!/^[0-9a-f]{40}$/i.test(sourceGitCommit)) throw new Error('SOURCE_GIT_COMMIT must be a full Git commit hash');
+  if (!dataset?.datasetVersion) {
+    throw new Error('Invalid dataset: missing datasetVersion');
+  }
+  if (!service?.version) {
+    throw new Error('Invalid package.json: missing version');
+  }
   const manifest = {
     datasetVersion: dataset.datasetVersion,
     serviceVersion: service.version,
