@@ -1,7 +1,7 @@
 {
   "datasetVersion": "2026.08.1",
   "serviceVersion": "0.1.0",
-  "sourceGitCommit": "e8fa3f71f3a72f4e292af0ca17b37ec0044f1c3c",
+  "sourceGitCommit": "cbaf860dfda46d2493e7ed21f0ba8aacdbacac67",
   "recordCounts": {
     "judoka": 7,
     "techniques": 100,
