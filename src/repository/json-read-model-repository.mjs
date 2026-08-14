@@ -13,8 +13,18 @@ export class JsonReadModelRepository extends ReadModelRepository {
       throw new Error(`Failed to load read model: ${error.message}`, { cause: error });
     }
   }
-  get datasetVersion() { return this.release.datasetVersion; }
-  get serviceVersion() { return this.release.serviceVersion; }
+  get datasetVersion() { 
+    if (!this.release?.datasetVersion) {
+      throw new Error('Invalid manifest: missing datasetVersion');
+    }
+    return this.release.datasetVersion; 
+  }
+  get serviceVersion() { 
+    if (!this.release?.serviceVersion) {
+      throw new Error('Invalid manifest: missing serviceVersion');
+    }
+    return this.release.serviceVersion; 
+  }
   listJudoka() { return this.model.judoka.slice(); }
   getJudoka(key) { return this.model.judoka.find(j => j.id === key || j.slug === key || j.aliases?.includes(key)); }
   listTechniques() { return this.model.techniques.slice(); }
