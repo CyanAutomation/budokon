@@ -15,7 +15,6 @@ export class JsonReadModelRepository extends ReadModelRepository {
       throw new Error(`Failed to load read model: ${error.message}`, { cause: error });
     }
   }
-  }
   get datasetVersion() { return this._datasetVersion; }
   listJudoka() { return this.model.judoka.slice(); }
   getJudoka(key) { return this.model.judoka.find(j => j.id === key || j.slug === key || j.aliases?.includes(key)); }
