@@ -1,7 +1,9 @@
 {
   "id": "57a86958-73c3-4dd3-b8b8-f0bbaab58b67",
+  "slug": "shozo-fujii",
   "firstname": "Shōzō",
   "surname": "Fujii",
+  "personType": "real",
   "countryCode": "JP",
   "weightClass": "-81",
   "category": "Judo",
@@ -13,11 +15,10 @@
     "newaza": 8
   },
   "signatureMoveId": "seoi-nage",
-  "lastUpdated": "2025-08-08T14:35:39.339Z",
+  "lastUpdated": "2026-08-14T00:00:00Z",
   "profileUrl": "https://en.wikipedia.org/wiki/Sh%C5%8Dz%C5%8D_Fujii",
-  "bio": "A competitive judoka represented in the curated BU-DO-KON catalogue.",
+  "bio": "Japanese judoka Shōzō Fujii won four consecutive world titles during the 1970s in the divisions now represented by 81 kg.",
   "gender": "male",
   "isHidden": false,
-  "rarity": "Epic",
-  "slug": "shozo-fujii"
+  "rarity": "Epic"
 }
