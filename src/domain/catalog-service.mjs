@@ -12,7 +12,7 @@ export function normalizeFilters(filters = {}) {
 
 export class CatalogService {
   constructor(repository) { this.repository = repository; }
-  version() { return { datasetVersion: this.repository.datasetVersion }; }
+  version() { return { datasetVersion: this.repository.datasetVersion, serviceVersion: this.repository.serviceVersion }; }
   listJudoka(options = {}) {
     const filters = normalizeFilters(options.filters);
     const exclusions = new Set((options.exclude ?? []).map(String));

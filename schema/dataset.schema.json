@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://budokon.example/schema/dataset.schema.json",
+  "title": "BU-DO-KON dataset manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["datasetVersion"],
+  "properties": {
+    "datasetVersion": {
+      "type": "string",
+      "pattern": "^[0-9]{4}\\.(?:0[1-9]|1[0-2])\\.[1-9][0-9]*$"
+    }
+  }
+}
