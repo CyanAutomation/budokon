@@ -1,7 +1,12 @@
 {
   "id": "c7218eca-bebe-4508-932c-b9ef4813865b",
-  "firstname": "Askley",
+  "slug": "ashley-mckenzie",
+  "aliases": [
+    "askley-mckenzie"
+  ],
+  "firstname": "Ashley",
   "surname": "McKenzie",
+  "personType": "real",
   "countryCode": "JM",
   "weightClass": "-60",
   "category": "Judo",
@@ -13,11 +18,10 @@
     "newaza": 8
   },
   "signatureMoveId": "seoi-nage",
-  "lastUpdated": "2025-08-08T14:35:39.339Z",
+  "lastUpdated": "2026-08-14T00:00:00Z",
   "profileUrl": "https://en.wikipedia.org/wiki/Ashley_McKenzie",
-  "bio": "A competitive judoka represented in the curated BU-DO-KON catalogue.",
+  "bio": "Ashley McKenzie is a British-born lightweight who has represented both Great Britain and Jamaica in international judo.",
   "gender": "male",
   "isHidden": false,
-  "rarity": "Common",
-  "slug": "askley-mckenzie"
+  "rarity": "Common"
 }

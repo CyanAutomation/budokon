@@ -31,18 +31,30 @@ test('all canonical files pass schema and semantic validation', async () => {
   assert.ok(result.judoka.length > 0); assert.ok(result.techniques.length > 0);
 });
 
+test('filenames match canonical slugs', async () => {
+  const root = await sandbox();
+  await change(path.join(root, 'data/judoka/ashley-mckenzie.json'), (record) => { record.slug = 'different-slug'; });
+  await assert.rejects(validateCanonical(root), /filename must match canonical slug/);
+});
+
+test('fictional judoka are hidden by default', async () => {
+  const root = await sandbox();
+  await change(path.join(root, 'data/judoka/mystery-judoka.json'), (record) => { record.isHidden = false; });
+  await assert.rejects(validateCanonical(root), /fictional judoka must be hidden/);
+});
+
 for (const fixture of cases) test(`rejects ${fixture.name}`, async () => {
   const root = await sandbox();
   const judokaDir = path.join(root, 'data/judoka');
   const techniqueDir = path.join(root, 'data/techniques');
-  const firstJudoka = path.join(judokaDir, 'askley-mckenzie.json');
+  const firstJudoka = path.join(judokaDir, 'ashley-mckenzie.json');
   if (fixture.kind === 'judoka') await change(firstJudoka, (record) => { record[fixture.field] = fixture.value; });
-  if (fixture.kind === 'alias') await change(firstJudoka, (record) => { record.aliases = ['ilia-sulamanidize']; });
+  if (fixture.kind === 'alias') await change(firstJudoka, (record) => { record.aliases = ['ilia-sulamanidze']; });
   if (fixture.kind === 'judoka-copy') {
     const original = JSON.parse(await readFile(firstJudoka));
-    const other = JSON.parse(await readFile(path.join(judokaDir, 'ilia-sulamanidize.json')));
+    const other = JSON.parse(await readFile(path.join(judokaDir, 'ilia-sulamanidze.json')));
     other[fixture.field] = original[fixture.field];
-    await writeFile(path.join(judokaDir, 'ilia-sulamanidize.json'), JSON.stringify(other));
+    await writeFile(path.join(judokaDir, 'ilia-sulamanidze.json'), JSON.stringify(other));
   }
   if (fixture.kind === 'technique-copy') {
     const original = JSON.parse(await readFile(path.join(techniqueDir, 'ashi-garami.json')));
@@ -59,7 +71,7 @@ test('schemas reject stat bounds, malformed timestamps, and extra properties', a
     [(record) => { record.unexpected = true; }, 'additional property'],
   ]) {
     const root = await sandbox();
-    await change(path.join(root, 'data/judoka/askley-mckenzie.json'), mutate);
+    await change(path.join(root, 'data/judoka/ashley-mckenzie.json'), mutate);
     await assert.rejects(validateCanonical(root), new RegExp(message));
   }
 });
@@ -67,19 +79,19 @@ test('schemas reject stat bounds, malformed timestamps, and extra properties', a
 test('date-time validation accepts supported fractions and rejects calendar overflow', async () => {
   for (const timestamp of ['2025-02-28T12:34:56Z', '2025-02-28T12:34:56.1Z', '2025-02-28T12:34:56.12Z', '2025-02-28T12:34:56.123Z']) {
     const root = await sandbox();
-    await change(path.join(root, 'data/judoka/askley-mckenzie.json'), (record) => { record.lastUpdated = timestamp; });
+    await change(path.join(root, 'data/judoka/ashley-mckenzie.json'), (record) => { record.lastUpdated = timestamp; });
     await validateCanonical(root);
   }
 
   for (const timestamp of ['2025-02-29T12:34:56Z', '2025-13-01T12:34:56Z', '2025-01-01T24:00:00Z']) {
     const root = await sandbox();
-    await change(path.join(root, 'data/judoka/askley-mckenzie.json'), (record) => { record.lastUpdated = timestamp; });
+    await change(path.join(root, 'data/judoka/ashley-mckenzie.json'), (record) => { record.lastUpdated = timestamp; });
     await assert.rejects(validateCanonical(root), /RFC 3339/);
   }
 });
 
 test('rejects future timestamps', async () => {
   const root = await sandbox();
-  await change(path.join(root, 'data/judoka/askley-mckenzie.json'), (record) => { record.lastUpdated = '2999-01-01T00:00:00Z'; });
+  await change(path.join(root, 'data/judoka/ashley-mckenzie.json'), (record) => { record.lastUpdated = '2999-01-01T00:00:00Z'; });
   await assert.rejects(validateCanonical(root), /must not be in the future/);
 });
