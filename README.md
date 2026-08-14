@@ -126,8 +126,8 @@ After changing source data, rebuild the runtime aggregates with:
 npm run build
 ```
 
-The build reads every source record, validates judoka UUIDs, slugs, aliases, and
-their uniqueness, sorts each aggregate by its stable `id`, and writes
+The build reads every source record, validates judoka UUIDs, slugs, aliases,
+country references, and their uniqueness, sorts each aggregate by its stable `id`, and writes
 deterministic `dist/judoka.json` and `dist/techniques.json` artifacts. The
 one-time `migrations/judoka-legacy-id-map.json` file maps IDs from the legacy
 aggregate to immutable UUIDs. `migrations/technique-legacy-id-map.json` likewise
@@ -253,7 +253,15 @@ Country names and other descriptive information are maintained separately in the
 
 This prevents duplicate country names from becoming independent sources of truth.
 
-The BU-DO-KON API may expand the country automatically when returning a judoka.
+The catalogue is the subset of ISO 3166-1 alpha-2 countries supported by
+BU-DO-KON; it is not required to contain the complete ISO set and may contain
+countries not currently referenced by a judoka. Keys and embedded `code` values
+must be identical uppercase alpha-2 codes.
+
+Inactive entries may be retained for historical compatibility and display, but
+canonical judoka must reference a country that exists and is active. Generated
+judoka views resolve `country` display names from this catalogue, so canonical
+judoka records must not duplicate the `country` property.
 
 ⸻
 
