@@ -5,7 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { validateCanonical } from '../src/validation/validate-canonical.mjs';
 
-const repository = path.resolve(import.meta.dirname, '..');
+const repository = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const cases = JSON.parse(await readFile(new URL('./fixtures/semantic-cases.json', import.meta.url)));
 async function sandbox() {
   const root = await mkdtemp(path.join(os.tmpdir(), 'budokon-validation-'));
