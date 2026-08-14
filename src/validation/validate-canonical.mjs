@@ -12,6 +12,7 @@ function equal(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
 /** Validate the JSON Schema keywords used by the canonical schemas. */
 export function validateSchema(value, schema, location = '$', rootSchema = schema) {
   if (schema.$ref) {
+    if (!schema.$ref.startsWith('#/')) throw new Error(`${location}: unsupported $ref format ${schema.$ref}`);
     const target = schema.$ref.slice(2).split('/').reduce((node, key) => node[key], rootSchema);
     return validateSchema(value, target, location, rootSchema);
   }
