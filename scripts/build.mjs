@@ -36,8 +36,13 @@ export async function build() {
     'techniques.json': `${JSON.stringify(techniques.sort(stable), null, 2)}\n`,
   };
   await Promise.all(Object.entries(artifacts).map(([name, content]) => writeFile(path.join(root, 'dist', name), content)));
-  const sourceGitCommit = process.env.SOURCE_GIT_COMMIT
-    ?? execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
+  const sourceGitCommit = process.env.SOURCE_GIT_COMMIT ?? (() => {
+    try {
+      return execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
+    } catch (error) {
+      throw new Error('SOURCE_GIT_COMMIT must be set when Git is unavailable', { cause: error });
+    }
+  })();
   if (!/^[0-9a-f]{40}$/i.test(sourceGitCommit)) throw new Error('SOURCE_GIT_COMMIT must be a full Git commit hash');
   const manifest = {
     datasetVersion: dataset.datasetVersion,
