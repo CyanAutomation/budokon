@@ -5,6 +5,13 @@ import { fileURLToPath } from 'node:url';
 const defaultRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const placeholder = /^(?:todo|tbd|unknown|n\/?a|none|more info to come)(?:\s|$)/i;
 const rfc3339 = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?Z$/;
+function isValidDateTime(value) {
+  if (!rfc3339.test(value)) return false;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+  // Verify the parsed date matches the input (catches invalid dates like month 13)
+  return date.toISOString() === value || date.toISOString().replace(/\.\d{3}/, '') === value;
+}
 
 function fail(location, message) { throw new Error(`${location}: ${message}`); }
 function equal(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
