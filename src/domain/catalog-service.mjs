@@ -18,7 +18,7 @@ export class CatalogService {
     const exclusions = new Set((options.exclude ?? []).map(String));
     const includeHidden = options.includeHidden === true && options.authorizedInternal === true;
     return this.repository.listJudoka().filter(j => includeHidden || j.isHidden !== true).filter(j =>
-      Object.entries(filters).every(([field, values]) => values.includes(String(j[field])))
+      Object.entries(filters).every(([field, values]) => j[field] != null && values.includes(String(j[field])))
     ).filter(j => !exclusions.has(j.id) && !exclusions.has(j.slug));
   }
   getJudoka(id, options = {}) {
