@@ -1,0 +1,15 @@
+{
+  "datasetVersion": "2026.08.1",
+  "serviceVersion": "0.1.0",
+  "sourceGitCommit": "e8fa3f71f3a72f4e292af0ca17b37ec0044f1c3c",
+  "recordCounts": {
+    "judoka": 7,
+    "techniques": 100,
+    "countries": 19,
+    "weightCategories": 14
+  },
+  "checksums": {
+    "judoka.json": "sha256:adfc344500abf6825244b5bee1832f1002cc1ccd3bc7e99915a64df531b09c26",
+    "techniques.json": "sha256:aa61c47a94f6c4a7d3b8974f1ba5df7508ff982f80a4a8a2f9a23b7d99af6c55"
+  }
+}
