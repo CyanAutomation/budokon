@@ -1,6 +1,6 @@
 {
   "id": "c7218eca-bebe-4508-932c-b9ef4813865b",
-  "firstname": "Askley",
+  "firstname": "Ashley",
   "surname": "McKenzie",
   "countryCode": "JM",
   "weightClass": "-60",
@@ -13,11 +13,15 @@
     "newaza": 8
   },
   "signatureMoveId": "seoi-nage",
-  "lastUpdated": "2025-08-08T14:35:39.339Z",
+  "lastUpdated": "2026-08-14T00:00:00Z",
   "profileUrl": "https://en.wikipedia.org/wiki/Ashley_McKenzie",
-  "bio": "A competitive judoka represented in the curated BU-DO-KON catalogue.",
+  "bio": "British-Jamaican Olympian Ashley McKenzie competed internationally in the extra-lightweight division and represented Jamaica at the 2024 Olympic Games.",
   "gender": "male",
   "isHidden": false,
   "rarity": "Common",
-  "slug": "askley-mckenzie"
+  "slug": "ashley-mckenzie",
+  "aliases": [
+    "askley-mckenzie"
+  ],
+  "personType": "real"
 }

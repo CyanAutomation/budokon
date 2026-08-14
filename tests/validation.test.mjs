@@ -3,6 +3,7 @@ import { cp, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 import { validateCanonical } from '../src/validation/validate-canonical.mjs';
 
 const repository = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -25,14 +26,14 @@ for (const fixture of cases) test(`rejects ${fixture.name}`, async () => {
   const root = await sandbox();
   const judokaDir = path.join(root, 'data/judoka');
   const techniqueDir = path.join(root, 'data/techniques');
-  const firstJudoka = path.join(judokaDir, 'askley-mckenzie.json');
+  const firstJudoka = path.join(judokaDir, 'ashley-mckenzie.json');
   if (fixture.kind === 'judoka') await change(firstJudoka, (record) => { record[fixture.field] = fixture.value; });
   if (fixture.kind === 'alias') await change(firstJudoka, (record) => { record.aliases = ['ilia-sulamanidize']; });
   if (fixture.kind === 'judoka-copy') {
     const original = JSON.parse(await readFile(firstJudoka));
-    const other = JSON.parse(await readFile(path.join(judokaDir, 'ilia-sulamanidize.json')));
+    const other = JSON.parse(await readFile(path.join(judokaDir, 'ilia-sulamanidze.json')));
     other[fixture.field] = original[fixture.field];
-    await writeFile(path.join(judokaDir, 'ilia-sulamanidize.json'), JSON.stringify(other));
+    await writeFile(path.join(judokaDir, 'ilia-sulamanidze.json'), JSON.stringify(other));
   }
   if (fixture.kind === 'technique-copy') {
     const original = JSON.parse(await readFile(path.join(techniqueDir, 'ashi-garami.json')));
@@ -49,13 +50,28 @@ test('schemas reject stat bounds, malformed timestamps, and extra properties', a
     [(record) => { record.unexpected = true; }, 'additional property'],
   ]) {
     const root = await sandbox();
-    await change(path.join(root, 'data/judoka/askley-mckenzie.json'), mutate);
+    await change(path.join(root, 'data/judoka/ashley-mckenzie.json'), mutate);
     await assert.rejects(validateCanonical(root), new RegExp(message));
   }
 });
 
 test('rejects future timestamps', async () => {
   const root = await sandbox();
-  await change(path.join(root, 'data/judoka/askley-mckenzie.json'), (record) => { record.lastUpdated = '2999-01-01T00:00:00Z'; });
+  await change(path.join(root, 'data/judoka/ashley-mckenzie.json'), (record) => { record.lastUpdated = '2999-01-01T00:00:00Z'; });
   await assert.rejects(validateCanonical(root), /must not be in the future/);
+});
+
+test('allows null uncurated editorial fields', async () => {
+  const root = await sandbox();
+  await change(path.join(root, 'data/judoka/ashley-mckenzie.json'), (record) => {
+    record.bio = null;
+    record.profileUrl = null;
+  });
+  await validateCanonical(root);
+});
+
+test('requires fictional judoka to remain hidden', async () => {
+  const root = await sandbox();
+  await change(path.join(root, 'data/judoka/tatsuuma-ushiyama.json'), (record) => { record.isHidden = false; });
+  await assert.rejects(validateCanonical(root), /fictional and must be hidden/);
 });

@@ -14,19 +14,20 @@
       "newaza": 8
     },
     "signatureMoveId": "o-soto-gari",
-    "lastUpdated": "2025-08-08T14:35:39.339Z",
+    "lastUpdated": "2026-08-14T00:00:00Z",
     "profileUrl": "https://en.wikipedia.org/wiki/Nina_Cutro-Kelly",
-    "bio": "A competitive judoka represented in the curated BU-DO-KON catalogue.",
+    "bio": "American heavyweight Nina Cutro-Kelly represented the United States internationally, including at the World Judo Championships.",
     "gender": "female",
     "isHidden": false,
     "rarity": "Common",
     "slug": "nina-cutro-kelly",
+    "personType": "real",
     "country": "United States"
   },
   {
     "id": "38690882-06a3-4d98-9b06-2789da1015db",
     "firstname": "Ilia",
-    "surname": "Sulamanidize",
+    "surname": "Sulamanidze",
     "countryCode": "GE",
     "weightClass": "-100",
     "category": "Judo",
@@ -38,13 +39,17 @@
       "newaza": 7
     },
     "signatureMoveId": "uchi-mata",
-    "lastUpdated": "2025-08-08T14:35:39.339Z",
+    "lastUpdated": "2026-08-14T00:00:00Z",
     "profileUrl": "https://en.wikipedia.org/wiki/Ilia_Sulamanidze",
-    "bio": "A competitive judoka represented in the curated BU-DO-KON catalogue.",
+    "bio": "Georgian half-heavyweight Ilia Sulamanidze won Olympic silver at Paris 2024 and has medalled at the World Judo Championships.",
     "gender": "male",
     "isHidden": false,
     "rarity": "Common",
-    "slug": "ilia-sulamanidize",
+    "slug": "ilia-sulamanidze",
+    "aliases": [
+      "ilia-sulamanidize"
+    ],
+    "personType": "real",
     "country": "Georgia"
   },
   {
@@ -62,13 +67,14 @@
       "newaza": 8
     },
     "signatureMoveId": "seoi-nage",
-    "lastUpdated": "2025-08-08T14:35:39.339Z",
+    "lastUpdated": "2026-08-14T00:00:00Z",
     "profileUrl": "https://en.wikipedia.org/wiki/Sh%C5%8Dz%C5%8D_Fujii",
-    "bio": "A competitive judoka represented in the curated BU-DO-KON catalogue.",
+    "bio": "Japanese judoka Shōzō Fujii won four consecutive world titles from 1971 through 1979 across the middleweight divisions.",
     "gender": "male",
     "isHidden": false,
     "rarity": "Epic",
     "slug": "shozo-fujii",
+    "personType": "real",
     "country": "Japan"
   },
   {
@@ -86,18 +92,19 @@
       "newaza": 9
     },
     "signatureMoveId": "ura-nage",
-    "lastUpdated": "2025-08-08T14:35:39.339Z",
+    "lastUpdated": "2026-08-14T00:00:00Z",
     "profileUrl": "https://goldenkamuy.fandom.com/wiki/Tatsuuma_Ushiyama",
-    "bio": "Tatsuuma Ushiyama (牛山 辰馬, Ushiyama Tatsuuma), also known as Ushiyama the Undefeated (不敗の牛山, Fuhai no Ushiyama), is one of the Abashiri Convicts. He is a master judoka and one of the strongest and most dangerous fighters in Hokkaido.",
+    "bio": "Tatsuuma Ushiyama, called Ushiyama the Undefeated, is a fictional master judoka and escaped convict in the Golden Kamuy series.",
     "gender": "male",
     "isHidden": true,
     "rarity": "Legendary",
     "slug": "tatsuuma-ushiyama",
+    "personType": "fictional",
     "country": "Vanuatu"
   },
   {
     "id": "c7218eca-bebe-4508-932c-b9ef4813865b",
-    "firstname": "Askley",
+    "firstname": "Ashley",
     "surname": "McKenzie",
     "countryCode": "JM",
     "weightClass": "-60",
@@ -110,20 +117,24 @@
       "newaza": 8
     },
     "signatureMoveId": "seoi-nage",
-    "lastUpdated": "2025-08-08T14:35:39.339Z",
+    "lastUpdated": "2026-08-14T00:00:00Z",
     "profileUrl": "https://en.wikipedia.org/wiki/Ashley_McKenzie",
-    "bio": "A competitive judoka represented in the curated BU-DO-KON catalogue.",
+    "bio": "British-Jamaican Olympian Ashley McKenzie competed internationally in the extra-lightweight division and represented Jamaica at the 2024 Olympic Games.",
     "gender": "male",
     "isHidden": false,
     "rarity": "Common",
-    "slug": "askley-mckenzie",
+    "slug": "ashley-mckenzie",
+    "aliases": [
+      "askley-mckenzie"
+    ],
+    "personType": "real",
     "country": "Jamaica"
   },
   {
     "id": "cd8dcb1d-0193-4dd1-a0b7-d4576602bc67",
     "firstname": "Mystery",
     "surname": "Judoka",
-    "countryCode": "BT",
+    "countryCode": "JP",
     "weightClass": "+100",
     "category": "Judo",
     "stats": {
@@ -134,14 +145,15 @@
       "newaza": 0
     },
     "signatureMoveId": "ura-nage",
-    "lastUpdated": "2025-08-08T14:35:39.339Z",
+    "lastUpdated": "2026-08-14T00:00:00Z",
     "profileUrl": "https://en.wikipedia.org/wiki/Judo_Boy",
-    "bio": "After the death of his father, a young man seeks revenge for an unknown one-eyed man who killed his father, master of Kurenai style judo. He trains in the mountains of Bhutan, where he meets a mysterious judoka who teaches him the ways of judo.",
+    "bio": "An unidentified legacy character inspired by the martial-arts adventure Judo Boy; retained only for compatibility with existing consumers.",
     "gender": "male",
     "isHidden": true,
     "rarity": "Common",
     "slug": "mystery-judoka",
-    "country": "Bhutan"
+    "personType": "fictional",
+    "country": "Japan"
   },
   {
     "id": "e2c7f688-a995-4436-b56c-8e178b0b4bf9",
@@ -158,13 +170,14 @@
       "newaza": 6
     },
     "signatureMoveId": "uchi-mata",
-    "lastUpdated": "2025-08-08T14:35:39.339Z",
+    "lastUpdated": "2026-08-14T00:00:00Z",
     "profileUrl": "https://en.wikipedia.org/wiki/Joana_Ramos",
-    "bio": "A competitive judoka represented in the curated BU-DO-KON catalogue.",
+    "bio": "Portuguese lightweight Joana Ramos represented Portugal at three Olympic Games and earned medals on the international judo circuit.",
     "gender": "female",
     "isHidden": false,
     "rarity": "Common",
     "slug": "joana-ramos",
+    "personType": "real",
     "country": "Portugal"
   },
   {
@@ -182,13 +195,14 @@
       "newaza": 6
     },
     "signatureMoveId": "uchi-mata",
-    "lastUpdated": "2025-08-08T14:35:39.339Z",
-    "profileUrl": "https://en.wikipedia.org/wiki/Leilani_Akiyama",
-    "bio": "A competitive judoka represented in the curated BU-DO-KON catalogue.",
+    "lastUpdated": "2026-08-14T00:00:00Z",
+    "profileUrl": null,
+    "bio": null,
     "gender": "female",
-    "isHidden": false,
+    "isHidden": true,
     "rarity": "Common",
     "slug": "leilani-akiyama",
+    "personType": "fictional",
     "country": "United States"
   }
 ]
