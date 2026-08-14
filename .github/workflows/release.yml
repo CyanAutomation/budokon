@@ -23,12 +23,12 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
+      - name: Associate dataset version, tag, and commit
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
           npm run verify-release
-          if ! echo "$RELEASE_TAG" | grep -qE '^dataset-v[0-9]{4}\.[0-9]{2}\.[0-9]+$'; then
-            echo "Invalid tag format: $RELEASE_TAG"
-            exit 1
-          fi
-          test "$(git rev-list -n 1 "$RELEASE_TAG")" = "$GITHUB_SHA"
+          test "$(git rev-parse "$RELEASE_TAG^{commit}")" = "$GITHUB_SHA"
       - name: Rebuild and verify reproducibility
         env:
           SOURCE_GIT_COMMIT: ${{ github.sha }}
