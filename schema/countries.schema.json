@@ -14,7 +14,8 @@
     "properties": {
       "country": {
         "type": "string",
-        "minLength": 1
+        "minLength": 1,
+        "pattern": "\\S"
       },
       "code": {
         "type": "string",

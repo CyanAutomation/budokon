@@ -1,0 +1,18 @@
+name: Validate canonical data
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --cache .npm
+      - run: npm test
+      - run: npm run validate
+      - name: Verify deterministic generated artifacts
+        run: npm run build && git diff --exit-code -- dist/

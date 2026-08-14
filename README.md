@@ -126,6 +126,22 @@ After changing source data, rebuild the runtime aggregates with:
 npm run build
 ```
 
+Run `npm run validate` before building. The validator parses every canonical
+JSON source and applies the four schemas before checking cross-record identity,
+references, gender-specific weight classes, and timestamps. Timestamps must be
+valid RFC 3339 UTC instants and must not be in the future.
+
+### Canonical content policy
+
+Canonical records must be publishable content, not scaffolding. Required text
+must be non-empty (biographies have a 20-character minimum), and values that
+begin with common placeholder markers (`TODO`, `TBD`, `unknown`, `N/A`, `none`,
+or `more info to come`) are rejected case-insensitively. URLs must be absolute
+HTTPS URLs; stats are integer ratings from 0 through 10. Unknown properties are
+rejected so misspellings and application-specific fields cannot silently enter
+the editorial source. Hidden and fictional judoka remain valid when their
+records otherwise contain complete, intentional content.
+
 The build reads every source record, validates judoka UUIDs, slugs, aliases,
 country references, and their uniqueness, sorts each aggregate by its stable `id`, and writes
 deterministic `dist/judoka.json` and `dist/techniques.json` artifacts. The

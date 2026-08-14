@@ -1,85 +1,40 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://budokon.example/schema/judoka.schema.json",
-  "title": "Judoka",
+  "title": "Canonical judoka",
   "type": "object",
-  "required": [
-    "id",
-    "slug",
-    "countryCode"
-  ],
+  "required": ["id", "slug", "firstname", "surname", "countryCode", "weightClass", "category", "stats", "signatureMoveId", "lastUpdated", "profileUrl", "bio", "gender", "isHidden", "rarity"],
   "properties": {
-    "id": {
-      "type": "string",
-      "format": "uuid",
-      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
-    },
-    "slug": {
-      "$ref": "#/$defs/slug"
-    },
-    "firstname": {
-      "type": "string"
-    },
-    "surname": {
-      "type": "string"
-    },
-    "countryCode": {
-      "type": "string",
-      "pattern": "^[A-Z]{2}$"
-    },
-    "weightClass": {
-      "type": "string"
-    },
-    "category": {
-      "type": "string"
-    },
+    "id": { "type": "string", "format": "uuid" },
+    "slug": { "$ref": "#/$defs/slug" },
+    "firstname": { "$ref": "#/$defs/text" },
+    "surname": { "$ref": "#/$defs/text" },
+    "countryCode": { "type": "string", "pattern": "^[A-Z]{2}$" },
+    "weightClass": { "type": "string", "pattern": "^[+-][0-9]{2,3}$" },
+    "category": { "const": "Judo" },
     "stats": {
       "type": "object",
+      "required": ["power", "speed", "technique", "kumikata", "newaza"],
       "properties": {
-        "power": { "type": "number" },
-        "speed": { "type": "number" },
-        "technique": { "type": "number" },
-        "kumikata": { "type": "number" },
-        "newaza": { "type": "number" }
+        "power": { "$ref": "#/$defs/stat" }, "speed": { "$ref": "#/$defs/stat" },
+        "technique": { "$ref": "#/$defs/stat" }, "kumikata": { "$ref": "#/$defs/stat" },
+        "newaza": { "$ref": "#/$defs/stat" }
       },
       "additionalProperties": false
     },
-    "aliases": {
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/slug"
-      },
-      "uniqueItems": true
-    },
-    "signatureMoveId": {
-      "$ref": "#/$defs/slug"
-    },
-    "lastUpdated": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "profileUrl": {
-      "type": "string",
-      "format": "uri"
-    },
-    "bio": {
-      "type": "string"
-    },
-    "gender": {
-      "type": "string"
-    },
-    "isHidden": {
-      "type": "boolean"
-    },
-    "rarity": {
-      "type": "string"
-    }
+    "aliases": { "type": "array", "items": { "$ref": "#/$defs/slug" }, "uniqueItems": true },
+    "signatureMoveId": { "$ref": "#/$defs/slug" },
+    "lastUpdated": { "type": "string", "format": "date-time" },
+    "profileUrl": { "type": "string", "format": "uri", "pattern": "^https://" },
+    "bio": { "type": "string", "minLength": 20 },
+    "gender": { "enum": ["male", "female"] },
+    "isHidden": { "type": "boolean" },
+    "rarity": { "enum": ["Common", "Rare", "Epic", "Legendary"] }
   },
   "additionalProperties": false,
   "$defs": {
-    "slug": {
-      "type": "string",
-      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
-    }
+    "slug": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "text": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "stat": { "type": "integer", "minimum": 0, "maximum": 10 }
   }
 }
