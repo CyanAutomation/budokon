@@ -2,7 +2,7 @@
   "id": "cd8dcb1d-0193-4dd1-a0b7-d4576602bc67",
   "firstname": "Mystery",
   "surname": "Judoka",
-  "countryCode": "BT",
+  "countryCode": "JP",
   "weightClass": "+100",
   "category": "Judo",
   "stats": {
@@ -13,11 +13,12 @@
     "newaza": 0
   },
   "signatureMoveId": "ura-nage",
-  "lastUpdated": "2025-08-08T14:35:39.339Z",
+  "lastUpdated": "2026-08-14T00:00:00Z",
   "profileUrl": "https://en.wikipedia.org/wiki/Judo_Boy",
-  "bio": "After the death of his father, a young man seeks revenge for an unknown one-eyed man who killed his father, master of Kurenai style judo. He trains in the mountains of Bhutan, where he meets a mysterious judoka who teaches him the ways of judo.",
+  "bio": "An unidentified legacy character inspired by the martial-arts adventure Judo Boy; retained only for compatibility with existing consumers.",
   "gender": "male",
   "isHidden": true,
   "rarity": "Common",
-  "slug": "mystery-judoka"
+  "slug": "mystery-judoka",
+  "personType": "fictional"
 }

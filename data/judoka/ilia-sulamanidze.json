@@ -1,7 +1,7 @@
 {
   "id": "38690882-06a3-4d98-9b06-2789da1015db",
   "firstname": "Ilia",
-  "surname": "Sulamanidize",
+  "surname": "Sulamanidze",
   "countryCode": "GE",
   "weightClass": "-100",
   "category": "Judo",
@@ -13,11 +13,15 @@
     "newaza": 7
   },
   "signatureMoveId": "uchi-mata",
-  "lastUpdated": "2025-08-08T14:35:39.339Z",
+  "lastUpdated": "2026-08-14T00:00:00Z",
   "profileUrl": "https://en.wikipedia.org/wiki/Ilia_Sulamanidze",
-  "bio": "A competitive judoka represented in the curated BU-DO-KON catalogue.",
+  "bio": "Georgian half-heavyweight Ilia Sulamanidze won Olympic silver at Paris 2024 and has medalled at the World Judo Championships.",
   "gender": "male",
   "isHidden": false,
   "rarity": "Common",
-  "slug": "ilia-sulamanidize"
+  "slug": "ilia-sulamanidze",
+  "aliases": [
+    "ilia-sulamanidize"
+  ],
+  "personType": "real"
 }

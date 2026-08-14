@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const defaultRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const placeholder = /^(?:todo|tbd|unknown|n\/?a|none|more info to come)(?:\s|$)/i;
+const placeholder = /^(?:todo|tbd|unknown|n\/?a|none|more info to come)(?:[\s:;,.!…]|$)/i;
 const rfc3339 = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?Z$/;
 function isValidDateTime(value) {
   if (!rfc3339.test(value)) return false;
@@ -31,7 +31,7 @@ export function validateSchema(value, schema, location = '$', rootSchema = schem
   if (schema.const !== undefined && !equal(value, schema.const)) fail(location, `must equal ${JSON.stringify(schema.const)}`);
   if (schema.enum && !schema.enum.some((item) => equal(item, value))) fail(location, `must be one of ${schema.enum.join(', ')}`);
   const actual = Array.isArray(value) ? 'array' : value === null ? 'null' : Number.isInteger(value) ? 'integer' : typeof value;
-  if (schema.type && actual !== schema.type && !(schema.type === 'number' && typeof value === 'number')) fail(location, `must be ${schema.type}`);
+  if (schema.type && !(Array.isArray(schema.type) ? schema.type.includes(actual) : actual === schema.type || (schema.type === 'number' && typeof value === 'number'))) fail(location, `must be ${Array.isArray(schema.type) ? schema.type.join(' or ') : schema.type}`);
   if (typeof value === 'string') {
     if (schema.minLength !== undefined && value.length < schema.minLength) fail(location, `must contain at least ${schema.minLength} characters`);
     if (schema.pattern && !new RegExp(schema.pattern, 'u').test(value)) fail(location, `must match ${schema.pattern}`);
@@ -106,6 +106,7 @@ export async function validateCanonical(root = defaultRoot) {
     if (!countries[record.countryCode]?.active) throw new Error(`${record.slug} references unknown or inactive country ${record.countryCode}`);
     if (!techniqueIds.has(record.signatureMoveId)) throw new Error(`${record.slug} references unknown technique ${record.signatureMoveId}`);
     if (!weightMap.get(record.gender)?.has(record.weightClass)) throw new Error(`${record.slug} has invalid ${record.gender} weight class ${record.weightClass}`);
+    if (record.personType === 'fictional' && !record.isHidden) throw new Error(`${record.slug} is fictional and must be hidden`);
     if (Date.parse(record.lastUpdated) > Date.now()) throw new Error(`${record.slug} lastUpdated must not be in the future`);
     for (const [field, value] of Object.entries(record)) if (typeof value === 'string' && placeholder.test(value.trim())) throw new Error(`${record.slug}.${field} contains placeholder content`);
   }

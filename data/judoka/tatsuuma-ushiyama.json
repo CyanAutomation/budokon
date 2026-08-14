@@ -13,11 +13,12 @@
     "newaza": 9
   },
   "signatureMoveId": "ura-nage",
-  "lastUpdated": "2025-08-08T14:35:39.339Z",
+  "lastUpdated": "2026-08-14T00:00:00Z",
   "profileUrl": "https://goldenkamuy.fandom.com/wiki/Tatsuuma_Ushiyama",
-  "bio": "Tatsuuma Ushiyama (牛山 辰馬, Ushiyama Tatsuuma), also known as Ushiyama the Undefeated (不敗の牛山, Fuhai no Ushiyama), is one of the Abashiri Convicts. He is a master judoka and one of the strongest and most dangerous fighters in Hokkaido.",
+  "bio": "Tatsuuma Ushiyama, called Ushiyama the Undefeated, is a fictional master judoka and escaped convict in the Golden Kamuy series.",
   "gender": "male",
   "isHidden": true,
   "rarity": "Legendary",
-  "slug": "tatsuuma-ushiyama"
+  "slug": "tatsuuma-ushiyama",
+  "personType": "fictional"
 }

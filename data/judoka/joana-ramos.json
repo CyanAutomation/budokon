@@ -13,11 +13,12 @@
     "newaza": 6
   },
   "signatureMoveId": "uchi-mata",
-  "lastUpdated": "2025-08-08T14:35:39.339Z",
+  "lastUpdated": "2026-08-14T00:00:00Z",
   "profileUrl": "https://en.wikipedia.org/wiki/Joana_Ramos",
-  "bio": "A competitive judoka represented in the curated BU-DO-KON catalogue.",
+  "bio": "Portuguese lightweight Joana Ramos represented Portugal at three Olympic Games and earned medals on the international judo circuit.",
   "gender": "female",
   "isHidden": false,
   "rarity": "Common",
-  "slug": "joana-ramos"
+  "slug": "joana-ramos",
+  "personType": "real"
 }

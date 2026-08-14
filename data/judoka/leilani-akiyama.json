@@ -13,11 +13,12 @@
     "newaza": 6
   },
   "signatureMoveId": "uchi-mata",
-  "lastUpdated": "2025-08-08T14:35:39.339Z",
-  "profileUrl": "https://en.wikipedia.org/wiki/Leilani_Akiyama",
-  "bio": "A competitive judoka represented in the curated BU-DO-KON catalogue.",
+  "lastUpdated": "2026-08-14T00:00:00Z",
+  "profileUrl": null,
+  "bio": null,
   "gender": "female",
-  "isHidden": false,
+  "isHidden": true,
   "rarity": "Common",
-  "slug": "leilani-akiyama"
+  "slug": "leilani-akiyama",
+  "personType": "fictional"
 }

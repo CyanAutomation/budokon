@@ -13,11 +13,12 @@
     "newaza": 8
   },
   "signatureMoveId": "o-soto-gari",
-  "lastUpdated": "2025-08-08T14:35:39.339Z",
+  "lastUpdated": "2026-08-14T00:00:00Z",
   "profileUrl": "https://en.wikipedia.org/wiki/Nina_Cutro-Kelly",
-  "bio": "A competitive judoka represented in the curated BU-DO-KON catalogue.",
+  "bio": "American heavyweight Nina Cutro-Kelly represented the United States internationally, including at the World Judo Championships.",
   "gender": "female",
   "isHidden": false,
   "rarity": "Common",
-  "slug": "nina-cutro-kelly"
+  "slug": "nina-cutro-kelly",
+  "personType": "real"
 }
