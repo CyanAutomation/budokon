@@ -149,6 +149,10 @@ people use `personType: "real"` and have an independent visibility decision.
 The build reads every source record, validates judoka UUIDs, slugs, aliases,
 country references, and their uniqueness, sorts each aggregate by its stable `id`, and writes
 deterministic `dist/judoka.json` and `dist/techniques.json` artifacts. The
+canonical `data/dataset.json` calendar version is independent of the service
+package version. Each build also writes `dist/manifest.json` with both versions,
+the source commit, record counts, and SHA-256 artifact checksums. Builds contain
+no wall-clock timestamp; release tags use `dataset-v<datasetVersion>`.
 one-time `migrations/judoka-legacy-id-map.json` file maps IDs from the legacy
 aggregate to immutable UUIDs. `migrations/technique-legacy-id-map.json` likewise
 maps legacy numeric technique IDs to stable slugs. Both files must be retained

@@ -84,17 +84,19 @@ function unique(items, field, label) {
 /** Parse and validate all four canonical datasets, including cross-record rules. */
 export async function validateCanonical(root = defaultRoot) {
   const schemaDir = path.join(root, 'schema');
-  const [judokaSchema, techniqueSchema, countriesSchema, weightsSchema] = await Promise.all(
-    ['judoka', 'technique', 'countries', 'weight-categories'].map((name) => parse(path.join(schemaDir, `${name}.schema.json`))),
+  const [judokaSchema, techniqueSchema, countriesSchema, weightsSchema, datasetSchema] = await Promise.all(
+    ['judoka', 'technique', 'countries', 'weight-categories', 'dataset'].map((name) => parse(path.join(schemaDir, `${name}.schema.json`))),
   );
-  const [judokaFiles, techniqueFiles, countries, weights] = await Promise.all([
+  const [judokaFiles, techniqueFiles, countries, weights, dataset] = await Promise.all([
     records(path.join(root, 'data/judoka')), records(path.join(root, 'data/techniques')),
     parse(path.join(root, 'data/reference/countries.json')), parse(path.join(root, 'data/reference/weight-categories.json')),
+    parse(path.join(root, 'data/dataset.json')),
   ]);
   for (const file of judokaFiles) validateSchema(file.value, judokaSchema, `data/judoka/${file.name}`);
   for (const file of techniqueFiles) validateSchema(file.value, techniqueSchema, `data/techniques/${file.name}`);
   validateSchema(countries, countriesSchema, 'data/reference/countries.json');
   validateSchema(weights, weightsSchema, 'data/reference/weight-categories.json');
+  validateSchema(dataset, datasetSchema, 'data/dataset.json');
   const judoka = judokaFiles.map(({ value }) => value), techniques = techniqueFiles.map(({ value }) => value);
   unique(judoka, 'id', 'judoka UUID'); unique(judoka, 'handles', 'judoka slug or alias'); unique(techniques, 'id', 'technique ID');
   for (const file of judokaFiles) if (path.parse(file.name).name !== file.value.slug) {
@@ -118,7 +120,7 @@ export async function validateCanonical(root = defaultRoot) {
     for (const [field, value] of Object.entries(record)) if (typeof value === 'string' && placeholder.test(value.trim())) throw new Error(`${record.slug}.${field} contains placeholder content`);
   }
   for (const record of techniques) if (placeholder.test(record.description.trim())) throw new Error(`${record.id}.description contains placeholder content`);
-  return { judoka, techniques, countries, weights };
+  return { judoka, techniques, countries, weights, dataset };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
