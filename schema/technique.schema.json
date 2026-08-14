@@ -1,20 +1,15 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://budokon.example/schema/technique.schema.json",
-  "title": "Judo technique",
-  "type": "object",
-  "required": ["id", "name", "japanese", "style", "category", "subCategory", "description"],
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://budokon.example/schema/technique.schema.json",
+  "title": "Canonical judo technique", "type": "object",
+  "required": ["id", "name", "japanese", "style", "category", "subCategory", "description", "link"],
   "properties": {
-    "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
-    "name": { "type": "string", "minLength": 1 },
-    "japanese": { "type": "string", "minLength": 1 },
-    "style": { "const": "Judo" },
+    "id": { "$ref": "#/$defs/slug" }, "name": { "$ref": "#/$defs/text" },
+    "japanese": { "$ref": "#/$defs/text" }, "style": { "const": "Judo" },
     "category": { "enum": ["Nage-waza", "Katame-waza"] },
-    "subCategory": {
-      "enum": ["Te-waza", "Koshi-waza", "Ashi-waza", "Ma-sutemi-waza", "Yoko-sutemi-waza", "Osaekomi-waza", "Shime-waza", "Kansetsu-waza"]
-    },
-    "description": { "type": "string", "minLength": 1 },
-    "link": { "type": "string", "format": "uri" }
+    "subCategory": { "enum": ["Te-waza", "Koshi-waza", "Ashi-waza", "Ma-sutemi-waza", "Yoko-sutemi-waza", "Osaekomi-waza", "Shime-waza", "Kansetsu-waza"] },
+    "description": { "type": "string", "minLength": 3, "pattern": "\\S" },
+    "link": { "type": "string", "format": "uri", "pattern": "^https://" }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$defs": { "slug": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "text": { "type": "string", "minLength": 1, "pattern": "\\S" } }
 }

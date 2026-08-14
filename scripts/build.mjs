@@ -1,176 +1,37 @@
-import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { validateCanonical } from '../src/validation/validate-canonical.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-export const uuidPattern = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+export const uuidPattern = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/;
 export const countryCodePattern = /^[A-Z]{2}$/;
 
-async function readRecords(directory) {
-  const sourceDirectory = path.join(root, directory);
-  const files = (await readdir(sourceDirectory))
-    .filter((file) => file.endsWith('.json'))
-    .sort();
-
-  return Promise.all(files.map(async (file) => {
-    const sourcePath = path.join(sourceDirectory, file);
-    const contents = await readFile(sourcePath, 'utf8');
-    try {
-      const record = JSON.parse(contents);
-      if (directory === 'data/techniques' && file !== `${record.id}.json`) {
-        throw new Error(`Technique filename ${file} does not match id ${JSON.stringify(record.id)}`);
-      }
-      return record;
-    } catch (error) {
-      const reason = error instanceof Error ? error.message : String(error);
-      throw new Error(`Failed to parse JSON in ${path.relative(root, sourcePath)}: ${reason}`);
-    }
-  }));
-}
-
-function compareStableIds(left, right) {
-  if (typeof left.id === 'number' && typeof right.id === 'number') {
-    return left.id - right.id;
-  }
-  return String(left.id).localeCompare(String(right.id), 'en');
-}
-
-function validateJudoka(records) {
-  const ids = new Map();
-  const handles = new Map();
-
-  for (const record of records) {
-    const label = record.slug ?? record.id ?? '<unknown>';
-    if (typeof record.id !== 'string' || !uuidPattern.test(record.id)) {
-      throw new Error(`Judoka ${label} has an invalid UUID id: ${JSON.stringify(record.id)}`);
-    }
-    if (ids.has(record.id)) {
-      throw new Error(`Duplicate judoka id ${record.id} used by ${ids.get(record.id)} and ${label}`);
-    }
-    ids.set(record.id, label);
-
-    if (typeof record.slug !== 'string' || !slugPattern.test(record.slug)) {
-      throw new Error(`Judoka ${label} has an invalid slug: ${JSON.stringify(record.slug)}`);
-    }
-    const aliases = record.aliases ?? [];
-    if (!Array.isArray(aliases)) {
-      throw new Error(`Judoka ${label} aliases must be an array`);
-    }
-
-    for (const handle of [record.slug, ...aliases]) {
-      if (typeof handle !== 'string' || !slugPattern.test(handle)) {
-        throw new Error(`Judoka ${label} has an invalid alias: ${JSON.stringify(handle)}`);
-      }
-      if (handles.has(handle)) {
-        throw new Error(`Judoka handle ${handle} collides between ${handles.get(handle)} and ${label}`);
-      }
-      handles.set(handle, label);
-    }
-  }
-}
-
 export function validateCountries(countries) {
-  if (countries === null || typeof countries !== 'object' || Array.isArray(countries)) {
-    throw new Error('Country catalogue must be an object keyed by ISO 3166-1 alpha-2 code');
-  }
-
   for (const [key, country] of Object.entries(countries)) {
-    if (!countryCodePattern.test(key)) {
-      throw new Error(`Country key ${JSON.stringify(key)} is not an uppercase ISO 3166-1 alpha-2 code`);
-    }
-    if (country === null || typeof country !== 'object' || Array.isArray(country)) {
-      throw new Error(`Country ${key} must be an object`);
-    }
-    if (country.code !== key) {
-      throw new Error(`Country key ${key} does not match embedded code ${JSON.stringify(country.code)}`);
-    }
-    if (!countryCodePattern.test(country.code)) {
-      throw new Error(`Country ${key} has an invalid code: ${JSON.stringify(country.code)}`);
-    }
-    if (typeof country.country !== 'string' || country.country.length === 0) {
-      throw new Error(`Country ${key} must have a display name`);
-    }
-    if (typeof country.active !== 'boolean') {
-      throw new Error(`Country ${key} active must be a boolean`);
-    }
+    if (!countryCodePattern.test(key)) throw new Error(`Country key ${key} is invalid`);
+    if (country.code !== key) throw new Error(`Country key ${key} does not match embedded code ${JSON.stringify(country.code)}`);
   }
 }
-
 export function validateCountryReferences(judoka, countries) {
   for (const record of judoka) {
-    if (!countryCodePattern.test(record.countryCode)) {
-      throw new Error(`Judoka ${record.slug} has an invalid country code: ${JSON.stringify(record.countryCode)}`);
-    }
-    const country = countries[record.countryCode];
-    if (!country) {
-      throw new Error(`Judoka ${record.slug} references unknown country ${JSON.stringify(record.countryCode)}`);
-    }
-    if (!country.active) {
-      throw new Error(`Judoka ${record.slug} references inactive country ${JSON.stringify(record.countryCode)}`);
-    }
+    if (!countries[record.countryCode]) throw new Error(`Judoka ${record.slug} references unknown country ${JSON.stringify(record.countryCode)}`);
+    if (!countries[record.countryCode].active) throw new Error(`Judoka ${record.slug} references inactive country ${JSON.stringify(record.countryCode)}`);
   }
 }
+export function validateTechniqueReferences(judoka, ids) {
+  for (const record of judoka) if (record.signatureMoveId && !ids.has(record.signatureMoveId)) throw new Error(`Judoka ${record.slug} references unknown technique ${JSON.stringify(record.signatureMoveId)}`);
+}
+export const expandJudokaCountries = (judoka, countries) => judoka.map((record) => ({ ...record, country: countries[record.countryCode]?.country }));
 
-export function expandJudokaCountries(judoka, countries) {
-  return judoka.map((record) => ({
-    ...record,
-    country: countries[record.countryCode]?.country,
-  }));
+export async function build() {
+  const { judoka, techniques, countries } = await validateCanonical(root);
+  const stable = (a, b) => String(a.id).localeCompare(String(b.id), 'en');
+  await mkdir(path.join(root, 'dist'), { recursive: true });
+  await Promise.all([
+    writeFile(path.join(root, 'dist/judoka.json'), `${JSON.stringify(expandJudokaCountries(judoka, countries).sort(stable), null, 2)}\n`),
+    writeFile(path.join(root, 'dist/techniques.json'), `${JSON.stringify(techniques.sort(stable), null, 2)}\n`),
+  ]);
 }
 
-function validateTechniques(records) {
-  const ids = new Set();
-  const names = new Set();
-  const japaneseNames = new Set();
-  const classifications = {
-    'Nage-waza': new Set(['Te-waza', 'Koshi-waza', 'Ashi-waza', 'Ma-sutemi-waza', 'Yoko-sutemi-waza']),
-    'Katame-waza': new Set(['Osaekomi-waza', 'Shime-waza', 'Kansetsu-waza']),
-  };
-
-  for (const record of records) {
-    if (typeof record.id !== 'string' || !slugPattern.test(record.id)) {
-      throw new Error(`Technique has an invalid slug id: ${JSON.stringify(record.id)}`);
-    }
-    if (ids.has(record.id)) throw new Error(`Duplicate technique id: ${record.id}`);
-    if (names.has(record.name)) throw new Error(`Duplicate technique name: ${record.name}`);
-    if (japaneseNames.has(record.japanese)) throw new Error(`Duplicate Japanese technique name: ${record.japanese}`);
-    if (!classifications[record.category]?.has(record.subCategory)) {
-      throw new Error(`Technique ${record.id} has invalid classification ${record.category}/${record.subCategory}`);
-    }
-    ids.add(record.id);
-    names.add(record.name);
-    japaneseNames.add(record.japanese);
-  }
-
-  return ids;
-}
-
-export function validateTechniqueReferences(judoka, techniqueIds) {
-  for (const record of judoka) {
-    if (Object.hasOwn(record, 'signatureMoveId') && !techniqueIds.has(record.signatureMoveId)) {
-      throw new Error(`Judoka ${record.slug} references unknown technique ${JSON.stringify(record.signatureMoveId)}`);
-    }
-  }
-}
-
-async function emit(records, outputFile) {
-  records.sort(compareStableIds);
-  await writeFile(path.join(root, 'dist', outputFile), `${JSON.stringify(records, null, 2)}\n`);
-}
-
-await mkdir(path.join(root, 'dist'), { recursive: true });
-const [judoka, techniques] = await Promise.all([
-  readRecords('data/judoka'),
-  readRecords('data/techniques'),
-]);
-const countries = JSON.parse(await readFile(path.join(root, 'data/reference/countries.json'), 'utf8'));
-validateCountries(countries);
-validateJudoka(judoka);
-validateCountryReferences(judoka, countries);
-const techniqueIds = validateTechniques(techniques);
-validateTechniqueReferences(judoka, techniqueIds);
-await Promise.all([
-  emit(expandJudokaCountries(judoka, countries), 'judoka.json'),
-  emit(techniques, 'techniques.json'),
-]);
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) await build();
