@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readdir, readFile } from 'node:fs/promises';
 import test from 'node:test';
+import { createHash } from 'node:crypto';
 
 import {
   expandJudokaCountries,
@@ -9,6 +10,7 @@ import {
   validateCountryReferences,
   validateTechniqueReferences,
 } from './build.mjs';
+import { build } from './build.mjs';
 
 const uppercaseUuid = '84D3B821-0CA8-42DE-B42C-2EB8D42C9C3B';
 
@@ -113,4 +115,19 @@ test('generated judoka views resolve country display names from the catalogue', 
 
   assert.deepEqual(expanded, [{ slug: 'shozo-fujii', countryCode: 'JP', country: 'Japan' }]);
   assert.equal(Object.hasOwn(records[0], 'country'), false);
+});
+
+test('build emits a versioned manifest with counts and artifact checksums', async () => {
+  await build();
+  const dataset = JSON.parse(await readFile(new URL('../data/dataset.json', import.meta.url)));
+  const manifest = JSON.parse(await readFile(new URL('../dist/manifest.json', import.meta.url)));
+  assert.equal(manifest.datasetVersion, dataset.datasetVersion);
+  assert.match(manifest.serviceVersion, /^\d+\.\d+\.\d+$/);
+  assert.match(manifest.sourceGitCommit, /^[0-9a-f]{40}$/);
+  assert.ok(manifest.recordCounts.judoka > 0);
+  for (const name of ['judoka.json', 'techniques.json']) {
+    const content = await readFile(new URL(`../dist/${name}`, import.meta.url));
+    assert.equal(manifest.checksums[name], `sha256:${createHash('sha256').update(content).digest('hex')}`);
+  }
+  assert.equal(Object.keys(manifest).some(key => /time|date/i.test(key)), false);
 });

@@ -55,3 +55,10 @@ test("REST and MCP seeded selections are byte-for-byte equivalent", () => {
   const mcpBytes = JSON.stringify(mcp.draw_judoka({ ...input, filters: { countryCode: ["GE", "JP"], gender: "male" } }));
   assert.equal(apiBytes, mcpBytes);
 });
+test("version, draw, and MCP results expose the canonical dataset version", () => {
+  assert.equal(rest.version().body.datasetVersion, "2026.08.1");
+  assert.equal(rest.draw({ body: { seed: "version-test" } }).body.datasetVersion, "2026.08.1");
+  assert.equal(mcp.search_judoka().datasetVersion, "2026.08.1");
+  assert.equal(mcp.get_judoka({ id: "shozo-fujii" }).datasetVersion, "2026.08.1");
+  assert.equal(mcp.version().datasetVersion, "2026.08.1");
+});
