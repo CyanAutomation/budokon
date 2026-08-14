@@ -29,7 +29,9 @@ export const expandJudokaCountries = (judoka, countries) => judoka.map((record) 
 export async function build() {
   const { judoka, techniques, countries, weights, dataset } = await validateCanonical(root);
   const service = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
-  const stable = (a, b) => String(a.id).localeCompare(String(b.id), 'en');
+  // Compare Unicode code units directly so output does not depend on the host's
+  // ICU version or locale configuration.
+  const stable = (a, b) => String(a.id) < String(b.id) ? -1 : String(a.id) > String(b.id) ? 1 : 0;
   await mkdir(path.join(root, 'dist'), { recursive: true });
   const artifacts = {
     'judoka.json': `${JSON.stringify(expandJudokaCountries(judoka, countries).sort(stable), null, 2)}\n`,
