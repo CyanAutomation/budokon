@@ -21,7 +21,6 @@ export class JsonReadModelRepository extends ReadModelRepository {
     if (typeof model.datasetVersion !== "string" || model.datasetVersion.trim() === "" || !Array.isArray(model.judoka) || !Array.isArray(model.techniques) || !Array.isArray(model.collections) || !model.countries || !Array.isArray(model.weightCategories)) {
       throw new TypeError("invalid compiled dataset");
     }
-    }
     this.model = { ...model, judoka: [...model.judoka].sort(byId), techniques: [...model.techniques].sort(byId) };
   }
   get datasetVersion() { return this.model.datasetVersion; }
