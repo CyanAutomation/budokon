@@ -907,6 +907,24 @@ GET /v1/judoka?personType=real
 
 Filters may be combined where appropriate.
 
+### Judoka text search
+
+`GET /v1/judoka?q=shozo` and the MCP `search_judoka` tool (with a `query`
+string) use the same catalogue `searchJudoka` operation. Search covers the
+canonical slug, first name, surname, the `first name + surname` display name,
+and every alias. Structured filters, `exclude`, visibility authorization, and
+an optional `collection` are applied to the same result set. With no `q` /
+`query` value, both transports retain the existing list and filter semantics.
+
+Search normalization is deterministic: Unicode text is decomposed with
+JavaScript `String.prototype.normalize("NFD")`, combining marks are removed,
+case is folded with `toLowerCase()`, each run of non-letter/non-number
+characters becomes one space, and surrounding/repeated whitespace is removed.
+A normalized query matches when it is a substring of any normalized searchable
+field. Results are not relevance-ranked; all matches are ordered by ascending
+immutable UUID using direct Unicode code-unit comparison. Thus ties and output
+order do not depend on locale or host ICU collation.
+
 API responses should expose enough version information to identify the dataset and service behaviour involved.
 
 ---
