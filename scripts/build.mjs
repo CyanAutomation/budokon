@@ -1,5 +1,4 @@
 import { createHash } from 'node:crypto';
-import { execFileSync } from 'node:child_process';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -26,26 +25,18 @@ export function validateTechniqueReferences(judoka, ids) {
 }
 export const expandJudokaCountries = (judoka, countries) => judoka.map((record) => ({ ...record, country: countries[record.countryCode]?.country }));
 
-export async function build() {
-  const { judoka, techniques, countries, weights, dataset } = await validateCanonical(root);
-  const service = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
+export async function compileArtifacts(sourceGitCommit, sourceRoot = root) {
+  if (!sourceGitCommit) throw new Error('SOURCE_GIT_COMMIT is required; generated artifacts must identify an explicit source commit');
+  if (!/^[0-9a-f]{40}$/i.test(sourceGitCommit)) throw new Error('SOURCE_GIT_COMMIT must be a full Git commit hash');
+  const { judoka, techniques, countries, weights, dataset } = await validateCanonical(sourceRoot);
+  const service = JSON.parse(await readFile(path.join(sourceRoot, 'package.json'), 'utf8'));
   // Compare Unicode code units directly so output does not depend on the host's
   // ICU version or locale configuration.
   const stable = (a, b) => String(a.id) < String(b.id) ? -1 : String(a.id) > String(b.id) ? 1 : 0;
-  await mkdir(path.join(root, 'dist'), { recursive: true });
   const artifacts = {
     'judoka.json': `${JSON.stringify(expandJudokaCountries(judoka, countries).sort(stable), null, 2)}\n`,
     'techniques.json': `${JSON.stringify(techniques.sort(stable), null, 2)}\n`,
   };
-  await Promise.all(Object.entries(artifacts).map(([name, content]) => writeFile(path.join(root, 'dist', name), content)));
-  const sourceGitCommit = process.env.SOURCE_GIT_COMMIT ?? (() => {
-    try {
-      return execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
-    } catch (error) {
-      throw new Error('SOURCE_GIT_COMMIT must be set when Git is unavailable', { cause: error });
-    }
-  })();
-  if (!/^[0-9a-f]{40}$/i.test(sourceGitCommit)) throw new Error('SOURCE_GIT_COMMIT must be a full Git commit hash');
   if (!dataset?.datasetVersion) {
     throw new Error('Invalid dataset: missing datasetVersion');
   }
@@ -64,7 +55,14 @@ export async function build() {
     },
     checksums: Object.fromEntries(Object.entries(artifacts).map(([name, content]) => [name, `sha256:${createHash('sha256').update(content).digest('hex')}`])),
   };
-  await writeFile(path.join(root, 'dist/manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+  artifacts['manifest.json'] = `${JSON.stringify(manifest, null, 2)}\n`;
+  return artifacts;
+}
+
+export async function build() {
+  const artifacts = await compileArtifacts(process.env.SOURCE_GIT_COMMIT);
+  await mkdir(path.join(root, 'dist'), { recursive: true });
+  await Promise.all(Object.entries(artifacts).map(([name, content]) => writeFile(path.join(root, 'dist', name), content)));
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) await build();
