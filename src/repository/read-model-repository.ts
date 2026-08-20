@@ -6,7 +6,8 @@ export abstract class ReadModelRepository {
   abstract get serviceVersion(): string;
   abstract listJudoka(): Judoka[];
   abstract getJudoka(id: string | undefined): Judoka | undefined;
-  getCollection(_id: string): Collection | undefined { return undefined; }
+  listCollections(): Collection[] { return []; }
+  getCollection(_id: string | undefined): Collection | undefined { return undefined; }
   abstract listTechniques(): Technique[];
   abstract getTechnique(id: string | undefined): Technique | undefined;
   abstract listCountries(): Record<string, Country>;

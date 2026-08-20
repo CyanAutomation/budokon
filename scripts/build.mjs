@@ -38,7 +38,7 @@ const sortWeights = (weights) => weights.map((group) => ({
 export async function compileArtifacts(sourceGitCommit, sourceRoot = root) {
   if (!sourceGitCommit) throw new Error('SOURCE_GIT_COMMIT is required; generated artifacts must identify an explicit source commit');
   if (!/^[0-9a-f]{40}$/i.test(sourceGitCommit)) throw new Error('SOURCE_GIT_COMMIT must be a full Git commit hash');
-  const { judoka, techniques, countries, weights, dataset } = await validateCanonical(sourceRoot);
+  const { judoka, techniques, collections, countries, weights, dataset } = await validateCanonical(sourceRoot);
   const service = JSON.parse(await readFile(path.join(sourceRoot, 'package.json'), 'utf8'));
   if (typeof dataset?.datasetVersion !== 'string' || dataset.datasetVersion.trim() === '') {
     throw new Error('Invalid dataset: missing datasetVersion');
@@ -50,7 +50,7 @@ export async function compileArtifacts(sourceGitCommit, sourceRoot = root) {
     datasetVersion: dataset.datasetVersion,
     judoka: expandJudokaCountries(judoka, countries).sort(byId),
     techniques: [...techniques].sort(byId),
-    collections: [],
+    collections: [...collections].sort(byId),
     countries: sortCountries(countries),
     weightCategories: sortWeights(weights),
   };
