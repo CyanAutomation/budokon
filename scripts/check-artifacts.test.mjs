@@ -48,6 +48,15 @@ test('artifact check rejects an absent artifact', async (t) => {
   await assert.rejects(verifyArtifactConsistency({ artifactDirectory, expectedArtifacts, sourceGitCommit: commit }), /Missing dist artifacts: judoka.json/);
 });
 
+test('artifact check clearly reports an absent manifest', async (t) => {
+  const expectedArtifacts = artifacts();
+  const artifactDirectory = await fixture(t, { 'judoka.json': expectedArtifacts['judoka.json'] });
+  await assert.rejects(
+    verifyArtifactConsistency({ artifactDirectory, expectedArtifacts, sourceGitCommit: commit }),
+    /dist\/manifest\.json is missing/,
+  );
+});
+
 test('artifact check rejects an unlisted extra artifact', async (t) => {
   const expectedArtifacts = artifacts();
   const artifactDirectory = await fixture(t, { ...expectedArtifacts, 'extra.json': '{}\n' });

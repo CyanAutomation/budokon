@@ -14,6 +14,9 @@ export async function verifyArtifactConsistency({ artifactDirectory, expectedArt
   const expectedNames = Object.keys(expectedArtifacts).sort();
   const actualNames = (await readdir(artifactDirectory, { withFileTypes: true }))
     .filter((entry) => entry.isFile()).map((entry) => entry.name).sort();
+  if (!actualNames.includes('manifest.json')) {
+    throw new Error('dist/manifest.json is missing');
+  }
   const absent = expectedNames.filter((name) => !actualNames.includes(name));
   const extra = actualNames.filter((name) => !expectedNames.includes(name));
   if (absent.length) throw new Error(`Missing dist artifacts: ${absent.join(', ')}`);
@@ -22,10 +25,7 @@ export async function verifyArtifactConsistency({ artifactDirectory, expectedArt
   const actual = Object.fromEntries(await Promise.all(actualNames.map(async (name) =>
     [name, await readFile(path.join(artifactDirectory, name))])));
   let manifest;
-try {
-    if (!actual['manifest.json']) {
-      throw new Error('dist/manifest.json is missing');
-    }
+  try {
     manifest = JSON.parse(actual['manifest.json']);
   } catch (error) {
     throw new Error('dist/manifest.json is not valid JSON', { cause: error });
