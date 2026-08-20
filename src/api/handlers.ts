@@ -11,6 +11,7 @@ export function createRestHandlers({ catalog, draw }: { catalog: CatalogService;
     listJudoka: ({ query = {}, authorizedInternal = false }: ApiRequest = {}) => ok(catalog.searchJudoka({ query: String(query?.q ?? ""), filters: queryFilters(query) as never, exclude: query?.exclude === undefined ? [] : Array.isArray(query.exclude) ? query.exclude.map(String) : [String(query.exclude)], collection: query?.collection === undefined ? undefined : String(query.collection), includeHidden: query?.includeHidden === true, authorizedInternal })),
     getJudoka: ({ params = {}, query = {}, authorizedInternal = false }: ApiRequest = {}) => { const value = catalog.getJudoka(params?.id, { includeHidden: query?.includeHidden === true, authorizedInternal }); return value ? ok(value) : missing(); },
     listTechniques: () => ok(catalog.listTechniques()), getTechnique: ({ params = {} }: ApiRequest = {}) => { const value = catalog.getTechnique(params?.id); return value ? ok(value) : missing(); },
+    listCollections: () => ok(catalog.listCollections()), getCollection: ({ params = {} }: ApiRequest = {}) => { const value = catalog.getCollection(params?.id); return value ? ok(value) : missing(); },
     listCountries: () => ok(catalog.listCountries()), listWeightCategories: () => ok(catalog.listWeightCategories()),
     draw: ({ body = {}, authorizedInternal = false }: ApiRequest = {}) => ok(draw.draw(body, { authorizedInternal })), version: () => ok(catalog.version())
   };

@@ -103,3 +103,24 @@ test("REST and MCP searches conform and an absent query retains list behavior", 
   assert.deepEqual(rest.listJudoka().body, catalog.listJudoka());
   assert.deepEqual(mcp.search_judoka().judoka, catalog.listJudoka());
 });
+
+test("collections support repository, catalog, REST, and MCP lookup", () => {
+  const collections = catalog.listCollections();
+  assert.ok(collections.length > 0);
+  assert.deepEqual(repository.getCollection(collections[0].id), collections[0]);
+  assert.deepEqual(rest.listCollections().body, collections);
+  assert.deepEqual(rest.getCollection({ params: { id: collections[0].id } }).body, collections[0]);
+  assert.equal(rest.getCollection({ params: { id: "missing" } }).status, 404);
+  assert.deepEqual(mcp.list_collections().collections, collections);
+  assert.deepEqual(mcp.get_collection({ id: collections[0].id }).collection, collections[0]);
+});
+
+test("collection draws constrain membership, preserve hidden visibility, and are deterministic", () => {
+  const collection = catalog.getCollection("japanese-judoka");
+  const visible = draw.draw({ collection: collection.id, count: 1, seed: "collection-round" });
+  assert.ok(collection.members.includes(visible.judoka[0].id));
+  assert.equal(visible.judoka[0].isHidden, false);
+  assert.deepEqual(draw.draw({ collection: collection.id, count: 1, seed: "collection-round" }), visible);
+  assert.equal(draw.draw({ collection: collection.id, count: 2, seed: "internal", includeHidden: true }, { authorizedInternal: true }).poolSize, 2);
+  assert.throws(() => draw.draw({ collection: collection.id, count: 2 }), /exceeds eligible pool/);
+});
