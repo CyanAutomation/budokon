@@ -42,6 +42,14 @@ test("repository accepts serialized compiled data without a loader", () => {
   const copy = new JsonReadModelRepository(JSON.stringify(compiledModel));
   assert.equal(copy.datasetVersion, repository.datasetVersion);
 });
+test("repository reports malformed serialized data with parse context", () => {
+  assert.throws(
+    () => new JsonReadModelRepository('{"judoka":'),
+    error => error instanceof TypeError
+      && error.message.startsWith("Failed to parse JSON:")
+      && error.message.length > "Failed to parse JSON:".length
+  );
+});
 test("REST and MCP seeded selections are byte-for-byte equivalent", () => {
   const input = { count: 1, filters: { gender: ["male"], countryCode: ["JP", "GE"] }, exclude: ["ilia-sulamanidze"], seed: "match-472-round-3" };
   const apiBytes = JSON.stringify(rest.draw({ body: input }).body);
