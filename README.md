@@ -258,6 +258,14 @@ The validator parses every canonical source file and applies schema, referential
 
 The compiler then creates deterministic runtime aggregates.
 
+The canonical output order is part of the file format: aggregate keys appear as
+`datasetVersion`, `judoka`, `techniques`, `collections`, `countries`, then
+`weightCategories`; judoka, techniques, and collections are ordered by `id`;
+country object keys are ordered by country code; weight-category groups are
+ordered by `gender`, and their categories by `weight`. All comparisons use raw
+Unicode code-unit order and never locale-sensitive collation. Manifest record
+count and checksum keys follow that same documented artifact order.
+
 `SOURCE_GIT_COMMIT` is mandatory: it is the full commit whose canonical data the
 generated files represent. Builds never infer this value from the working tree.
 Use `SOURCE_GIT_COMMIT=<release-commit> npm run check-artifacts` to verify tracked
