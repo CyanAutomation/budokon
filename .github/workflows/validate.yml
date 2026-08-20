@@ -14,10 +14,5 @@ jobs:
       - run: npm ci --cache .npm
       - run: npm test
       - run: npm run validate
-      - name: Verify deterministic generated artifacts
-        run: |
-          npm run build
-          find dist -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/first-build.sha256
-          npm run build
-          find dist -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/second-build.sha256
-          diff -u /tmp/first-build.sha256 /tmp/second-build.sha256
+      - name: Compile expected output and verify tracked artifacts
+        run: SOURCE_GIT_COMMIT=$(node -p "require('./dist/manifest.json').sourceGitCommit") npm run check-artifacts
