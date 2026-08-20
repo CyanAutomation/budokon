@@ -56,6 +56,13 @@ export async function compileArtifacts(sourceGitCommit, sourceRoot = root) {
     checksums: Object.fromEntries(Object.entries(artifacts).map(([name, content]) => [name, `sha256:${createHash('sha256').update(content).digest('hex')}`])),
   };
   artifacts['manifest.json'] = `${JSON.stringify(manifest, null, 2)}\n`;
+  artifacts['budokon.json'] = `${JSON.stringify({
+    judoka: JSON.parse(artifacts['judoka.json']),
+    techniques: JSON.parse(artifacts['techniques.json']),
+    countries,
+    weightCategories: weights,
+    manifest,
+  }, null, 2)}\n`;
   return artifacts;
 }
 
