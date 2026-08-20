@@ -1,15 +1,13 @@
 import assert from "node:assert/strict";
-import { mkdtemp, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import test from "node:test";
-import { CatalogService } from "../src/domain/catalog-service.mjs";
-import { DrawService } from "../src/draw/draw-service.mjs";
-import { JsonReadModelRepository } from "../src/repository/json-read-model-repository.mjs";
-import { createRestHandlers } from "../src/api/handlers.mjs";
-import { createMcpTools } from "../src/mcp/tools.mjs";
+import { CatalogService } from "../build/runtime/domain/catalog-service.js";
+import { DrawService } from "../build/runtime/draw/draw-service.js";
+import { JsonReadModelRepository } from "../build/runtime/repository/json-read-model-repository.js";
+import { createRestHandlers } from "../build/runtime/api/handlers.js";
+import { createMcpTools } from "../build/runtime/mcp/tools.js";
+import compiledModel from "./fixtures/compiled-model.mjs";
 
-const repository = await JsonReadModelRepository.load();
+const repository = new JsonReadModelRepository(compiledModel);
 const catalog = new CatalogService(repository); const draw = new DrawService(catalog);
 const rest = createRestHandlers({ catalog, draw }); const mcp = createMcpTools({ catalog, draw });
 
@@ -40,14 +38,9 @@ test("REST lookup handlers return not found when params are omitted or null", ()
   assert.equal(rest.getTechnique().status, 404);
   assert.equal(rest.getTechnique({ params: null }).status, 404);
 });
-test("repository load errors include actionable context and preserve their cause", async () => {
-  const directory = await mkdtemp(join(tmpdir(), "budokon-read-model-"));
-  const invalidJson = join(directory, "invalid.json");
-  await writeFile(invalidJson, "not JSON");
-  await assert.rejects(
-    JsonReadModelRepository.load({ judokaUrl: invalidJson }),
-    error => error.message.startsWith("Failed to load read model:") && error.cause instanceof Error
-  );
+test("repository accepts serialized compiled data without a loader", () => {
+  const copy = new JsonReadModelRepository(JSON.stringify(compiledModel));
+  assert.equal(copy.datasetVersion, repository.datasetVersion);
 });
 test("REST and MCP seeded selections are byte-for-byte equivalent", () => {
   const input = { count: 1, filters: { gender: ["male"], countryCode: ["JP", "GE"] }, exclude: ["ilia-sulamanidze"], seed: "match-472-round-3" };

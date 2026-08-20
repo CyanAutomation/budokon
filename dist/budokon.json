@@ -1,0 +1,1388 @@
+{
+  "judoka": [
+    {
+      "id": "1d200634-eb36-4f5e-b5c0-28734b96ac62",
+      "slug": "nina-cutro-kelly",
+      "firstname": "Nina",
+      "surname": "Cutro-Kelly",
+      "personType": "real",
+      "countryCode": "US",
+      "weightClass": "+78",
+      "category": "Judo",
+      "stats": {
+        "power": 9,
+        "speed": 6,
+        "technique": 7,
+        "kumikata": 7,
+        "newaza": 8
+      },
+      "signatureMoveId": "o-soto-gari",
+      "lastUpdated": "2026-08-14T00:00:00Z",
+      "profileUrl": "https://en.wikipedia.org/wiki/Nina_Cutro-Kelly",
+      "bio": "Nina Cutro-Kelly represented the United States in the women’s heavyweight division at the Tokyo 2020 Olympic Games.",
+      "gender": "female",
+      "isHidden": false,
+      "rarity": "Common",
+      "country": "United States"
+    },
+    {
+      "id": "38690882-06a3-4d98-9b06-2789da1015db",
+      "slug": "ilia-sulamanidze",
+      "aliases": [
+        "ilia-sulamanidize"
+      ],
+      "firstname": "Ilia",
+      "surname": "Sulamanidze",
+      "personType": "real",
+      "countryCode": "GE",
+      "weightClass": "-100",
+      "category": "Judo",
+      "stats": {
+        "power": 9,
+        "speed": 8,
+        "technique": 8,
+        "kumikata": 9,
+        "newaza": 7
+      },
+      "signatureMoveId": "uchi-mata",
+      "lastUpdated": "2026-08-14T00:00:00Z",
+      "profileUrl": "https://en.wikipedia.org/wiki/Ilia_Sulamanidze",
+      "bio": "Georgian half-heavyweight Ilia Sulamanidze won Olympic silver at Paris 2024 in the men’s 100 kg division.",
+      "gender": "male",
+      "isHidden": false,
+      "rarity": "Common",
+      "country": "Georgia"
+    },
+    {
+      "id": "57a86958-73c3-4dd3-b8b8-f0bbaab58b67",
+      "slug": "shozo-fujii",
+      "firstname": "Shōzō",
+      "surname": "Fujii",
+      "personType": "real",
+      "countryCode": "JP",
+      "weightClass": "-81",
+      "category": "Judo",
+      "stats": {
+        "power": 8,
+        "speed": 8,
+        "technique": 8,
+        "kumikata": 7,
+        "newaza": 8
+      },
+      "signatureMoveId": "seoi-nage",
+      "lastUpdated": "2026-08-14T00:00:00Z",
+      "profileUrl": "https://en.wikipedia.org/wiki/Sh%C5%8Dz%C5%8D_Fujii",
+      "bio": "Japanese judoka Shōzō Fujii won four consecutive world titles during the 1970s in the divisions now represented by 81 kg.",
+      "gender": "male",
+      "isHidden": false,
+      "rarity": "Epic",
+      "country": "Japan"
+    },
+    {
+      "id": "84d3b821-0ca8-42de-b42c-2eb8d42c9c3b",
+      "slug": "tatsuuma-ushiyama",
+      "firstname": "Tatsuuma",
+      "surname": "Ushiyama",
+      "personType": "fictional",
+      "countryCode": "JP",
+      "weightClass": "+100",
+      "category": "Judo",
+      "stats": {
+        "power": 9,
+        "speed": 9,
+        "technique": 9,
+        "kumikata": 9,
+        "newaza": 9
+      },
+      "signatureMoveId": "ura-nage",
+      "lastUpdated": "2026-08-14T00:00:00Z",
+      "profileUrl": "https://goldenkamuy.fandom.com/wiki/Tatsuuma_Ushiyama",
+      "bio": "Tatsuuma Ushiyama is a fictional Golden Kamuy character: an escaped convict and formidable judo master known as “Ushiyama the Undefeated.”",
+      "gender": "male",
+      "isHidden": true,
+      "rarity": "Legendary",
+      "country": "Japan"
+    },
+    {
+      "id": "c7218eca-bebe-4508-932c-b9ef4813865b",
+      "slug": "ashley-mckenzie",
+      "aliases": [
+        "askley-mckenzie"
+      ],
+      "firstname": "Ashley",
+      "surname": "McKenzie",
+      "personType": "real",
+      "countryCode": "JM",
+      "weightClass": "-60",
+      "category": "Judo",
+      "stats": {
+        "power": 7,
+        "speed": 8,
+        "technique": 6,
+        "kumikata": 7,
+        "newaza": 8
+      },
+      "signatureMoveId": "seoi-nage",
+      "lastUpdated": "2026-08-14T00:00:00Z",
+      "profileUrl": "https://en.wikipedia.org/wiki/Ashley_McKenzie",
+      "bio": "Ashley McKenzie is a British-born lightweight who has represented both Great Britain and Jamaica in international judo.",
+      "gender": "male",
+      "isHidden": false,
+      "rarity": "Common",
+      "country": "Jamaica"
+    },
+    {
+      "id": "cd8dcb1d-0193-4dd1-a0b7-d4576602bc67",
+      "slug": "mystery-judoka",
+      "firstname": "Mystery",
+      "surname": "Judoka",
+      "personType": "fictional",
+      "countryCode": "BT",
+      "weightClass": "+100",
+      "category": "Judo",
+      "stats": {
+        "power": 0,
+        "speed": 0,
+        "technique": 0,
+        "kumikata": 0,
+        "newaza": 0
+      },
+      "signatureMoveId": "ura-nage",
+      "lastUpdated": "2026-08-14T00:00:00Z",
+      "profileUrl": "https://en.wikipedia.org/wiki/Judo_Boy",
+      "bio": "An unnamed mentor from the fictional world of Judo Boy, this judoka teaches the protagonist while he trains in Bhutan.",
+      "gender": "male",
+      "isHidden": true,
+      "rarity": "Common",
+      "country": "Bhutan"
+    },
+    {
+      "id": "e2c7f688-a995-4436-b56c-8e178b0b4bf9",
+      "slug": "joana-ramos",
+      "firstname": "Joana",
+      "surname": "Ramos",
+      "personType": "real",
+      "countryCode": "PT",
+      "weightClass": "-52",
+      "category": "Judo",
+      "stats": {
+        "power": 6,
+        "speed": 7,
+        "technique": 8,
+        "kumikata": 7,
+        "newaza": 6
+      },
+      "signatureMoveId": "uchi-mata",
+      "lastUpdated": "2026-08-14T00:00:00Z",
+      "profileUrl": "https://en.wikipedia.org/wiki/Joana_Ramos",
+      "bio": "Portuguese lightweight Joana Ramos competed internationally in the 52 kg division across three Olympic Games.",
+      "gender": "female",
+      "isHidden": false,
+      "rarity": "Common",
+      "country": "Portugal"
+    }
+  ],
+  "techniques": [
+    {
+      "id": "ashi-garami",
+      "name": "Ashi-garami",
+      "japanese": "足緘",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Kansetsu-waza",
+      "description": "Leg entanglement (forbidden)",
+      "link": "https://en.wikipedia.org/wiki/Ashi_garami"
+    },
+    {
+      "id": "ashi-guruma",
+      "name": "Ashi-guruma",
+      "japanese": "足車",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Ashi-waza",
+      "description": "Leg wheel",
+      "link": "https://en.wikipedia.org/wiki/Ashi_guruma"
+    },
+    {
+      "id": "daki-wakare",
+      "name": "Daki-wakare",
+      "japanese": "抱分",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Yoko-sutemi-waza",
+      "description": "High lift and separate",
+      "link": "https://en.wikipedia.org/wiki/Daki_wakare"
+    },
+    {
+      "id": "de-ashi-harai",
+      "name": "De-ashi-harai",
+      "japanese": "出足払",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Ashi-waza",
+      "description": "Advancing foot sweep",
+      "link": "https://en.wikipedia.org/wiki/De_ashi_harai"
+    },
+    {
+      "id": "do-jime",
+      "name": "Do-jime",
+      "japanese": "胴絞",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Shime-waza",
+      "description": "Trunk strangle (forbidden)",
+      "link": "https://en.wikipedia.org/wiki/Do_jime"
+    },
+    {
+      "id": "gyaku-juji-jime",
+      "name": "Gyaku-juji-jime",
+      "japanese": "逆十字絞",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Shime-waza",
+      "description": "Reverse cross choke",
+      "link": "https://en.wikipedia.org/wiki/Gyaku_juji_jime"
+    },
+    {
+      "id": "hadaka-jime",
+      "name": "Hadaka-jime",
+      "japanese": "裸絞",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Shime-waza",
+      "description": "Rear naked choke",
+      "link": "https://en.wikipedia.org/wiki/Hadaka_jime"
+    },
+    {
+      "id": "hane-goshi",
+      "name": "Hane-goshi",
+      "japanese": "跳腰",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Koshi-waza",
+      "description": "Spring hip throw",
+      "link": "https://en.wikipedia.org/wiki/Hane_goshi"
+    },
+    {
+      "id": "hane-goshi-gaeshi",
+      "name": "Hane-goshi-gaeshi",
+      "japanese": "跳腰返",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Ashi-waza",
+      "description": "Hane-goshi counter",
+      "link": "https://en.wikipedia.org/wiki/Hane_goshi_gaeshi"
+    },
+    {
+      "id": "hane-makikomi",
+      "name": "Hane-makikomi",
+      "japanese": "跳巻込",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Yoko-sutemi-waza",
+      "description": "Spring wraparound",
+      "link": "https://en.wikipedia.org/wiki/Hane_makikomi"
+    },
+    {
+      "id": "harai-goshi",
+      "name": "Harai-goshi",
+      "japanese": "払腰",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Koshi-waza",
+      "description": "Sweeping hip throw",
+      "link": "https://en.wikipedia.org/wiki/Harai_goshi"
+    },
+    {
+      "id": "harai-goshi-gaeshi",
+      "name": "Harai-goshi-gaeshi",
+      "japanese": "払腰返",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Ashi-waza",
+      "description": "Harai-goshi counter",
+      "link": "https://en.wikipedia.org/wiki/Harai_goshi#Counters"
+    },
+    {
+      "id": "harai-makikomi",
+      "name": "Harai-makikomi",
+      "japanese": "払巻込",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Yoko-sutemi-waza",
+      "description": "Sweeping wraparound",
+      "link": "https://en.wikipedia.org/wiki/Harai_makikomi"
+    },
+    {
+      "id": "harai-tsurikomi-ashi",
+      "name": "Harai-tsurikomi-ashi",
+      "japanese": "払釣込足",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Ashi-waza",
+      "description": "Lifting pulling foot sweep",
+      "link": "https://en.wikipedia.org/wiki/Harai_tsurikomi_ashi"
+    },
+    {
+      "id": "hikikomi-gaeshi",
+      "name": "Hikikomi-gaeshi",
+      "japanese": "引込返",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Ma-sutemi-waza",
+      "description": "Pull-in reversal",
+      "link": "https://en.wikipedia.org/wiki/Hikikomi_gaeshi"
+    },
+    {
+      "id": "hiza-guruma",
+      "name": "Hiza-guruma",
+      "japanese": "膝車",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Ashi-waza",
+      "description": "Knee wheel",
+      "link": "https://en.wikipedia.org/wiki/Hiza_guruma"
+    },
+    {
+      "id": "ippon-seoi-nage",
+      "name": "Ippon-seoi-nage",
+      "japanese": "一本背負投",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Te-waza",
+      "description": "One-arm shoulder throw",
+      "link": "https://en.wikipedia.org/wiki/Ippon_seoi_nage"
+    },
+    {
+      "id": "kami-shiho-gatame",
+      "name": "Kami-shiho-gatame",
+      "japanese": "上四方固",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Osaekomi-waza",
+      "description": "Upper four-quarter hold",
+      "link": "https://en.wikipedia.org/wiki/Kami_shiho_gatame"
+    },
+    {
+      "id": "kani-basami",
+      "name": "Kani-basami",
+      "japanese": "蟹挟",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Yoko-sutemi-waza",
+      "description": "Scissors throw, performed by scissoring the opponent's body with the legs (prohibited in competition).",
+      "link": "https://en.wikipedia.org/wiki/Kani_basami"
+    },
+    {
+      "id": "kata-gatame",
+      "name": "Kata-gatame",
+      "japanese": "肩固",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Osaekomi-waza",
+      "description": "Shoulder hold",
+      "link": "https://en.wikipedia.org/wiki/Kata_gatame"
+    },
+    {
+      "id": "kata-guruma",
+      "name": "Kata-guruma",
+      "japanese": "肩車",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Te-waza",
+      "description": "Shoulder wheel",
+      "link": "https://en.wikipedia.org/wiki/Kata_guruma"
+    },
+    {
+      "id": "kata-juji-jime",
+      "name": "Kata-juji-jime",
+      "japanese": "片十字絞",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Shime-waza",
+      "description": "Half cross choke",
+      "link": "https://en.wikipedia.org/wiki/Kata_juji_jime"
+    },
+    {
+      "id": "kataha-jime",
+      "name": "Kataha-jime",
+      "japanese": "片羽絞",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Shime-waza",
+      "description": "Single wing choke",
+      "link": "https://en.wikipedia.org/wiki/Kata_ha_jime"
+    },
+    {
+      "id": "katate-jime",
+      "name": "Katate-jime",
+      "japanese": "片手絞",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Shime-waza",
+      "description": "One-hand choke",
+      "link": "https://en.wikipedia.org/wiki/Katate_jime"
+    },
+    {
+      "id": "kawazu-gake",
+      "name": "Kawazu-gake",
+      "japanese": "河津掛",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Yoko-sutemi-waza",
+      "description": "One-leg entanglement",
+      "link": "https://en.wikipedia.org/wiki/Kawazu_gake"
+    },
+    {
+      "id": "kesa-gatame",
+      "name": "Kesa-gatame",
+      "japanese": "袈裟固",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Osaekomi-waza",
+      "description": "Scarf hold",
+      "link": "https://en.wikipedia.org/wiki/Kesa_gatame"
+    },
+    {
+      "id": "kibisu-gaeshi",
+      "name": "Kibisu-gaeshi",
+      "japanese": "踵返",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Te-waza",
+      "description": "Heel trip",
+      "link": "https://en.wikipedia.org/wiki/Kibisu_gaeshi"
+    },
+    {
+      "id": "ko-soto-gake",
+      "name": "Ko-soto-gake",
+      "japanese": "小外掛",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Ashi-waza",
+      "description": "Small outer hook",
+      "link": "https://en.wikipedia.org/wiki/Ko_soto_gake"
+    },
+    {
+      "id": "ko-soto-gari",
+      "name": "Ko-soto-gari",
+      "japanese": "小外刈",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Ashi-waza",
+      "description": "Small outer reap",
+      "link": "https://en.wikipedia.org/wiki/Ko_soto_gari"
+    },
+    {
+      "id": "ko-uchi-gaeshi",
+      "name": "Ko-uchi-gaeshi",
+      "japanese": "小内返",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Te-waza",
+      "description": "Small inner reap counter",
+      "link": "https://en.wikipedia.org/wiki/Ko_uchi_gaeshi"
+    },
+    {
+      "id": "ko-uchi-gari",
+      "name": "Ko-uchi-gari",
+      "japanese": "小内刈",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Ashi-waza",
+      "description": "Small inner reap",
+      "link": "https://en.wikipedia.org/wiki/Ko_uchi_gari"
+    },
+    {
+      "id": "ko-uchi-makikomi",
+      "name": "Ko-uchi-makikomi",
+      "japanese": "小内巻込",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Yoko-sutemi-waza",
+      "description": "Small inner wraparound",
+      "link": "https://en.wikipedia.org/wiki/Ko_uchi_makikomi"
+    },
+    {
+      "id": "koshi-guruma",
+      "name": "Koshi-guruma",
+      "japanese": "腰車",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Koshi-waza",
+      "description": "Hip wheel",
+      "link": "https://en.wikipedia.org/wiki/Koshi_guruma"
+    },
+    {
+      "id": "kuchiki-taoshi",
+      "name": "Kuchiki-taoshi",
+      "japanese": "朽木倒",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Te-waza",
+      "description": "Single-leg takedown",
+      "link": "https://en.wikipedia.org/wiki/Kuchiki_taoshi"
+    },
+    {
+      "id": "kuzure-kami-shiho-gatame",
+      "name": "Kuzure-kami-shiho-gatame",
+      "japanese": "崩上四方固",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Osaekomi-waza",
+      "description": "Modified upper four-quarter hold",
+      "link": "https://en.wikipedia.org/wiki/Kuzure_kami_shiho_gatame"
+    },
+    {
+      "id": "kuzure-kesa-gatame",
+      "name": "Kuzure-kesa-gatame",
+      "japanese": "崩袈裟固",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Osaekomi-waza",
+      "description": "Modified scarf hold",
+      "link": "https://en.wikipedia.org/wiki/Kuzure_kesa_gatame"
+    },
+    {
+      "id": "morote-gari",
+      "name": "Morote-gari",
+      "japanese": "双手刈",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Te-waza",
+      "description": "Two-hand reap",
+      "link": "https://en.wikipedia.org/wiki/Morote_gari"
+    },
+    {
+      "id": "nami-juji-jime",
+      "name": "Nami-juji-jime",
+      "japanese": "並十字絞",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Shime-waza",
+      "description": "Normal cross choke",
+      "link": "https://en.wikipedia.org/wiki/Nami_juji_jime"
+    },
+    {
+      "id": "o-goshi",
+      "name": "O-goshi",
+      "japanese": "大腰",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Koshi-waza",
+      "description": "Major hip throw",
+      "link": "https://en.wikipedia.org/wiki/O_goshi"
+    },
+    {
+      "id": "o-guruma",
+      "name": "O-guruma",
+      "japanese": "大車",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Ashi-waza",
+      "description": "Large wheel",
+      "link": "https://en.wikipedia.org/wiki/O_guruma"
+    },
+    {
+      "id": "o-soto-gaeshi",
+      "name": "O-soto-gaeshi",
+      "japanese": "大外返",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Ashi-waza",
+      "description": "O-soto counter",
+      "link": "https://en.wikipedia.org/wiki/O_soto_gaeshi"
+    },
+    {
+      "id": "o-soto-gari",
+      "name": "O-soto-gari",
+      "japanese": "大外刈",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Ashi-waza",
+      "description": "A major outer reap throw.",
+      "link": "https://en.wikipedia.org/wiki/O_soto_gari"
+    },
+    {
+      "id": "o-soto-guruma",
+      "name": "O-soto-guruma",
+      "japanese": "大外車",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Ashi-waza",
+      "description": "Major outer wheel",
+      "link": "https://en.wikipedia.org/wiki/O_soto_guruma"
+    },
+    {
+      "id": "o-soto-makikomi",
+      "name": "O-soto-makikomi",
+      "japanese": "大外巻込",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Yoko-sutemi-waza",
+      "description": "Major outer wraparound",
+      "link": "https://en.wikipedia.org/wiki/O_soto_makikomi"
+    },
+    {
+      "id": "o-soto-otoshi",
+      "name": "O-soto-otoshi",
+      "japanese": "大外落",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Ashi-waza",
+      "description": "Major outer drop",
+      "link": "https://en.wikipedia.org/wiki/O_soto_otoshi"
+    },
+    {
+      "id": "o-uchi-gaeshi",
+      "name": "O-uchi-gaeshi",
+      "japanese": "大内返",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Ashi-waza",
+      "description": "O-uchi counter",
+      "link": "https://en.wikipedia.org/wiki/O_uchi_gaeshi"
+    },
+    {
+      "id": "o-uchi-gari",
+      "name": "O-uchi-gari",
+      "japanese": "大内刈",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Ashi-waza",
+      "description": "Major inner reap",
+      "link": "https://en.wikipedia.org/wiki/O_uchi_gari"
+    },
+    {
+      "id": "obi-otoshi",
+      "name": "Obi-otoshi",
+      "japanese": "帯落",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Te-waza",
+      "description": "Belt drop",
+      "link": "https://en.wikipedia.org/wiki/Obi_otoshi"
+    },
+    {
+      "id": "obi-tori-gaeshi",
+      "name": "Obi-tori-gaeshi",
+      "japanese": "帯取返",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Te-waza",
+      "description": "Belt-grab reversal",
+      "link": "https://en.wikipedia.org/wiki/Obi_tori_gaeshi"
+    },
+    {
+      "id": "okuri-ashi-harai",
+      "name": "Okuri-ashi-harai",
+      "japanese": "送足払",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Ashi-waza",
+      "description": "Sliding foot sweep",
+      "link": "https://en.wikipedia.org/wiki/Okuri_ashi_harai"
+    },
+    {
+      "id": "okuri-eri-jime",
+      "name": "Okuri-eri-jime",
+      "japanese": "送襟絞",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Shime-waza",
+      "description": "Sliding lapel choke",
+      "link": "https://en.wikipedia.org/wiki/Okuri_eri_jime"
+    },
+    {
+      "id": "ryote-jime",
+      "name": "Ryote-jime",
+      "japanese": "両手絞",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Shime-waza",
+      "description": "Two-hand choke",
+      "link": "https://en.wikipedia.org/wiki/Ryote_jime"
+    },
+    {
+      "id": "sankaku-jime",
+      "name": "Sankaku-jime",
+      "japanese": "三角絞",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Shime-waza",
+      "description": "Triangle choke",
+      "link": "https://en.wikipedia.org/wiki/Sankaku_jime"
+    },
+    {
+      "id": "sasae-tsurikomi-ashi",
+      "name": "Sasae-tsurikomi-ashi",
+      "japanese": "支釣込足",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Ashi-waza",
+      "description": "Propping draw ankle throw",
+      "link": "https://en.wikipedia.org/wiki/Sasae_tsurikomi_ashi"
+    },
+    {
+      "id": "seoi-nage",
+      "name": "Seoi-nage",
+      "japanese": "背負投",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Te-waza",
+      "description": "A shoulder throw where the opponent is lifted and thrown over the shoulder.",
+      "link": "https://en.wikipedia.org/wiki/Seoi_nage"
+    },
+    {
+      "id": "seoi-otoshi",
+      "name": "Seoi-otoshi",
+      "japanese": "背負落",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Te-waza",
+      "description": "Shoulder drop",
+      "link": "https://en.wikipedia.org/wiki/Seoi_otoshi"
+    },
+    {
+      "id": "sode-guruma-jime",
+      "name": "Sode-guruma-jime",
+      "japanese": "袖車絞",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Shime-waza",
+      "description": "Sleeve wheel choke (Ezekiel)",
+      "link": "https://en.wikipedia.org/wiki/Sode_guruma_jime"
+    },
+    {
+      "id": "sode-tsurikomi-goshi",
+      "name": "Sode-tsurikomi-goshi",
+      "japanese": "袖釣込腰",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Koshi-waza",
+      "description": "Sleeve lifting pulling hip throw",
+      "link": "https://en.wikipedia.org/wiki/Sode_tsurikomi_goshi"
+    },
+    {
+      "id": "soto-makikomi",
+      "name": "Soto-makikomi",
+      "japanese": "外巻込",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Yoko-sutemi-waza",
+      "description": "Outer wraparound",
+      "link": "https://en.wikipedia.org/wiki/Soto_makikomi"
+    },
+    {
+      "id": "sukui-nage",
+      "name": "Sukui-nage",
+      "japanese": "掬投",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Te-waza",
+      "description": "Scoop throw",
+      "link": "https://en.wikipedia.org/wiki/Sukui_nage"
+    },
+    {
+      "id": "sumi-gaeshi",
+      "name": "Sumi-gaeshi",
+      "japanese": "隅返",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Ma-sutemi-waza",
+      "description": "Corner reversal",
+      "link": "https://en.wikipedia.org/wiki/Sumi_gaeshi"
+    },
+    {
+      "id": "sumi-otoshi",
+      "name": "Sumi-otoshi",
+      "japanese": "隅落",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Te-waza",
+      "description": "Corner drop",
+      "link": "https://en.wikipedia.org/wiki/Sumi_otoshi"
+    },
+    {
+      "id": "tai-otoshi",
+      "name": "Tai-otoshi",
+      "japanese": "体落",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Te-waza",
+      "description": "Body drop",
+      "link": "https://en.wikipedia.org/wiki/Tai_otoshi"
+    },
+    {
+      "id": "tani-otoshi",
+      "name": "Tani-otoshi",
+      "japanese": "谷落",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Yoko-sutemi-waza",
+      "description": "Valley drop",
+      "link": "https://en.wikipedia.org/wiki/Tani_otoshi"
+    },
+    {
+      "id": "tate-shiho-gatame",
+      "name": "Tate-shiho-gatame",
+      "japanese": "縦四方固",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Osaekomi-waza",
+      "description": "Vertical four-quarter hold",
+      "link": "https://en.wikipedia.org/wiki/Tate_shiho_gatame"
+    },
+    {
+      "id": "tawara-gaeshi",
+      "name": "Tawara-gaeshi",
+      "japanese": "俵返",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Ma-sutemi-waza",
+      "description": "Rice-bale reversal",
+      "link": "https://en.wikipedia.org/wiki/Tawara_gaeshi"
+    },
+    {
+      "id": "tomoe-nage",
+      "name": "Tomoe-nage",
+      "japanese": "巴投",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Ma-sutemi-waza",
+      "description": "Circle throw",
+      "link": "https://en.wikipedia.org/wiki/Tomoe_nage"
+    },
+    {
+      "id": "tsubame-gaeshi",
+      "name": "Tsubame-gaeshi",
+      "japanese": "燕返",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Ashi-waza",
+      "description": "Swallow counter",
+      "link": "https://en.wikipedia.org/wiki/Tsubame_gaeshi"
+    },
+    {
+      "id": "tsukkomi-jime",
+      "name": "Tsukkomi-jime",
+      "japanese": "突込絞",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Shime-waza",
+      "description": "Thrust choke",
+      "link": "https://en.wikipedia.org/wiki/Tsukkomi_jime"
+    },
+    {
+      "id": "tsuri-goshi",
+      "name": "Tsuri-goshi",
+      "japanese": "釣腰",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Koshi-waza",
+      "description": "Lifting hip throw",
+      "link": "https://en.wikipedia.org/wiki/Tsuri_goshi"
+    },
+    {
+      "id": "tsurikomi-goshi",
+      "name": "Tsurikomi-goshi",
+      "japanese": "釣込腰",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Koshi-waza",
+      "description": "Lifting pulling hip throw",
+      "link": "https://en.wikipedia.org/wiki/Tsurikomi_goshi"
+    },
+    {
+      "id": "uchi-makikomi",
+      "name": "Uchi-makikomi",
+      "japanese": "内巻込",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Yoko-sutemi-waza",
+      "description": "Inner wraparound",
+      "link": "https://en.wikipedia.org/wiki/Uchi_makikomi"
+    },
+    {
+      "id": "uchi-mata",
+      "name": "Uchi-mata",
+      "japanese": "内股",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Ashi-waza",
+      "description": "A powerful inner thigh throw.",
+      "link": "https://en.wikipedia.org/wiki/Uchi_mata"
+    },
+    {
+      "id": "uchi-mata-gaeshi",
+      "name": "Uchi-mata-gaeshi",
+      "japanese": "内股返",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Ashi-waza",
+      "description": "Uchi-mata counter",
+      "link": "https://en.wikipedia.org/wiki/Uchi_mata#Counter_techniques"
+    },
+    {
+      "id": "uchi-mata-makikomi",
+      "name": "Uchi-mata-makikomi",
+      "japanese": "内股巻込",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Yoko-sutemi-waza",
+      "description": "Uchi-mata wraparound",
+      "link": "https://en.wikipedia.org/wiki/Uchi_mata_makikomi"
+    },
+    {
+      "id": "uchi-mata-sukashi",
+      "name": "Uchi-mata-sukashi",
+      "japanese": "内股透",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Te-waza",
+      "description": "Uchi-mata slip",
+      "link": "https://en.wikipedia.org/wiki/Uchi_mata#Counter_techniques"
+    },
+    {
+      "id": "ude-garami",
+      "name": "Ude-garami",
+      "japanese": "腕緘",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Kansetsu-waza",
+      "description": "Figure-four armlock",
+      "link": "https://en.wikipedia.org/wiki/Ude_garami"
+    },
+    {
+      "id": "ude-hishigi-ashi-gatame",
+      "name": "Ude-hishigi-ashi-gatame",
+      "japanese": "腕挫脚固",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Kansetsu-waza",
+      "description": "Armbar with legs",
+      "link": "https://en.wikipedia.org/wiki/Ude_hishigi_ashi_gatame"
+    },
+    {
+      "id": "ude-hishigi-hara-gatame",
+      "name": "Ude-hishigi-hara-gatame",
+      "japanese": "腕挫腹固",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Kansetsu-waza",
+      "description": "Stomach armlock",
+      "link": "https://en.wikipedia.org/wiki/Ude_hishigi_hara_gatame"
+    },
+    {
+      "id": "ude-hishigi-hiza-gatame",
+      "name": "Ude-hishigi-hiza-gatame",
+      "japanese": "腕挫膝固",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Kansetsu-waza",
+      "description": "Knee armlock",
+      "link": "https://en.wikipedia.org/wiki/Ude_hishigi_hiza_gatame"
+    },
+    {
+      "id": "ude-hishigi-juji-gatame",
+      "name": "Ude-hishigi-juji-gatame",
+      "japanese": "腕挫十字固",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Kansetsu-waza",
+      "description": "Cross armbar",
+      "link": "https://en.wikipedia.org/wiki/Ude_hishigi_juji_gatame"
+    },
+    {
+      "id": "ude-hishigi-sankaku-gatame",
+      "name": "Ude-hishigi-sankaku-gatame",
+      "japanese": "腕挫三角固",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Kansetsu-waza",
+      "description": "Triangle armlock",
+      "link": "https://en.wikipedia.org/wiki/Ude_hishigi_sankaku_gatame"
+    },
+    {
+      "id": "ude-hishigi-te-gatame",
+      "name": "Ude-hishigi-te-gatame",
+      "japanese": "腕挫手固",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Kansetsu-waza",
+      "description": "Hand armlock",
+      "link": "https://en.wikipedia.org/wiki/Ude_hishigi_te_gatame"
+    },
+    {
+      "id": "ude-hishigi-ude-gatame",
+      "name": "Ude-hishigi-ude-gatame",
+      "japanese": "腕挫腕固",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Kansetsu-waza",
+      "description": "Straight armlock",
+      "link": "https://en.wikipedia.org/wiki/Ude_hishigi_ude_gatame"
+    },
+    {
+      "id": "ude-hishigi-waki-gatame",
+      "name": "Ude-hishigi-waki-gatame",
+      "japanese": "腕挫腋固",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Kansetsu-waza",
+      "description": "Armpit armlock",
+      "link": "https://en.wikipedia.org/wiki/Ude_hishigi_waki_gatame"
+    },
+    {
+      "id": "uki-gatame",
+      "name": "Uki-gatame",
+      "japanese": "浮固",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Osaekomi-waza",
+      "description": "Floating hold",
+      "link": "https://en.wikipedia.org/wiki/Uki_gatame"
+    },
+    {
+      "id": "uki-goshi",
+      "name": "Uki-goshi",
+      "japanese": "浮腰",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Koshi-waza",
+      "description": "Floating hip throw",
+      "link": "https://en.wikipedia.org/wiki/Uki_goshi"
+    },
+    {
+      "id": "uki-otoshi",
+      "name": "Uki-otoshi",
+      "japanese": "浮落",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Te-waza",
+      "description": "Floating drop",
+      "link": "https://en.wikipedia.org/wiki/Uki_otoshi"
+    },
+    {
+      "id": "uki-waza",
+      "name": "Uki-waza",
+      "japanese": "浮技",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Yoko-sutemi-waza",
+      "description": "Floating technique",
+      "link": "https://en.wikipedia.org/wiki/Uki_waza"
+    },
+    {
+      "id": "ura-gatame",
+      "name": "Ura-gatame",
+      "japanese": "裏固",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Osaekomi-waza",
+      "description": "Back hold",
+      "link": "https://en.wikipedia.org/wiki/Ura_gatame"
+    },
+    {
+      "id": "ura-nage",
+      "name": "Ura-nage",
+      "japanese": "裏投",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Ma-sutemi-waza",
+      "description": "Rear throw",
+      "link": "https://en.wikipedia.org/wiki/Ura_nage"
+    },
+    {
+      "id": "ushiro-goshi",
+      "name": "Ushiro-goshi",
+      "japanese": "後腰",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Koshi-waza",
+      "description": "Rear hip throw",
+      "link": "https://en.wikipedia.org/wiki/Ushiro_goshi"
+    },
+    {
+      "id": "ushiro-kesa-gatame",
+      "name": "Ushiro-kesa-gatame",
+      "japanese": "後袈裟固",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Osaekomi-waza",
+      "description": "Reverse scarf hold",
+      "link": "https://en.wikipedia.org/wiki/Ushiro_kesa_gatame"
+    },
+    {
+      "id": "utsuri-goshi",
+      "name": "Utsuri-goshi",
+      "japanese": "移腰",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Koshi-waza",
+      "description": "Hip shift throw",
+      "link": "https://en.wikipedia.org/wiki/Utsuri_goshi"
+    },
+    {
+      "id": "yama-arashi",
+      "name": "Yama-arashi",
+      "japanese": "山嵐",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Te-waza",
+      "description": "Mountain storm",
+      "link": "https://en.wikipedia.org/wiki/Yama_arashi_(judo)"
+    },
+    {
+      "id": "yoko-gake",
+      "name": "Yoko-gake",
+      "japanese": "横掛",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Yoko-sutemi-waza",
+      "description": "Side hook",
+      "link": "https://en.wikipedia.org/wiki/Yoko_gake"
+    },
+    {
+      "id": "yoko-guruma",
+      "name": "Yoko-guruma",
+      "japanese": "横車",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Yoko-sutemi-waza",
+      "description": "Side wheel",
+      "link": "https://en.wikipedia.org/wiki/Yoko_guruma"
+    },
+    {
+      "id": "yoko-otoshi",
+      "name": "Yoko-otoshi",
+      "japanese": "横落",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Yoko-sutemi-waza",
+      "description": "Side drop",
+      "link": "https://en.wikipedia.org/wiki/Yoko_otoshi"
+    },
+    {
+      "id": "yoko-shiho-gatame",
+      "name": "Yoko-shiho-gatame",
+      "japanese": "横四方固",
+      "style": "Judo",
+      "category": "Katame-waza",
+      "subCategory": "Osaekomi-waza",
+      "description": "Side four-quarter hold",
+      "link": "https://en.wikipedia.org/wiki/Yoko_shiho_gatame"
+    },
+    {
+      "id": "yoko-wakare",
+      "name": "Yoko-wakare",
+      "japanese": "横分",
+      "style": "Judo",
+      "category": "Nage-waza",
+      "subCategory": "Yoko-sutemi-waza",
+      "description": "Side separation",
+      "link": "https://en.wikipedia.org/wiki/Yoko_wakare"
+    }
+  ],
+  "countries": {
+    "VU": {
+      "country": "Vanuatu",
+      "code": "VU",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "PT": {
+      "country": "Portugal",
+      "code": "PT",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "FR": {
+      "country": "France",
+      "code": "FR",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "JP": {
+      "country": "Japan",
+      "code": "JP",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "BR": {
+      "country": "Brazil",
+      "code": "BR",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "US": {
+      "country": "United States",
+      "code": "US",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "DE": {
+      "country": "Germany",
+      "code": "DE",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "RU": {
+      "country": "Russia",
+      "code": "RU",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "KR": {
+      "country": "South Korea",
+      "code": "KR",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "GB": {
+      "country": "United Kingdom",
+      "code": "GB",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "CA": {
+      "country": "Canada",
+      "code": "CA",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "IT": {
+      "country": "Italy",
+      "code": "IT",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "ES": {
+      "country": "Spain",
+      "code": "ES",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "NL": {
+      "country": "Netherlands",
+      "code": "NL",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "CN": {
+      "country": "China",
+      "code": "CN",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "MN": {
+      "country": "Mongolia",
+      "code": "MN",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "GE": {
+      "country": "Georgia",
+      "code": "GE",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "BT": {
+      "country": "Bhutan",
+      "code": "BT",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "JM": {
+      "country": "Jamaica",
+      "code": "JM",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    }
+  },
+  "weightCategories": [
+    {
+      "gender": "male",
+      "description": "Men’s weight categories",
+      "categories": [
+        {
+          "weight": "-60",
+          "descriptor": "Extra Lightweight"
+        },
+        {
+          "weight": "-66",
+          "descriptor": "Half Lightweight"
+        },
+        {
+          "weight": "-73",
+          "descriptor": "Lightweight"
+        },
+        {
+          "weight": "-81",
+          "descriptor": "Half Middleweight"
+        },
+        {
+          "weight": "-90",
+          "descriptor": "Middleweight"
+        },
+        {
+          "weight": "-100",
+          "descriptor": "Half Heavyweight"
+        },
+        {
+          "weight": "+100",
+          "descriptor": "Heavyweight"
+        }
+      ]
+    },
+    {
+      "gender": "female",
+      "description": "Women’s weight categories",
+      "categories": [
+        {
+          "weight": "-48",
+          "descriptor": "Extra Lightweight"
+        },
+        {
+          "weight": "-52",
+          "descriptor": "Half Lightweight"
+        },
+        {
+          "weight": "-57",
+          "descriptor": "Lightweight"
+        },
+        {
+          "weight": "-63",
+          "descriptor": "Half Middleweight"
+        },
+        {
+          "weight": "-70",
+          "descriptor": "Middleweight"
+        },
+        {
+          "weight": "-78",
+          "descriptor": "Half Heavyweight"
+        },
+        {
+          "weight": "+78",
+          "descriptor": "Heavyweight"
+        }
+      ]
+    }
+  ],
+  "manifest": {
+    "datasetVersion": "2026.08.1",
+    "serviceVersion": "0.1.0",
+    "sourceGitCommit": "967055b82220ca75902f78b173fa4347963376c8",
+    "recordCounts": {
+      "judoka": 7,
+      "techniques": 100,
+      "countries": 19,
+      "weightCategories": 14
+    },
+    "checksums": {
+      "judoka.json": "sha256:adfc344500abf6825244b5bee1832f1002cc1ccd3bc7e99915a64df531b09c26",
+      "techniques.json": "sha256:aa61c47a94f6c4a7d3b8974f1ba5df7508ff982f80a4a8a2f9a23b7d99af6c55"
+    }
+  }
+}

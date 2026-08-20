@@ -199,6 +199,23 @@ dist/
 
 Generated files are runtime artefacts rather than primary editorial sources.
 
+### Reusing the runtime core
+
+The portable services are exported from `budokon-data/core`. They accept the
+compiled aggregate as an imported JSON value and never access the filesystem:
+
+```ts
+import dataset from "budokon-data/data" with { type: "json" };
+import { CatalogService, JsonReadModelRepository } from "budokon-data/core";
+
+const catalog = new CatalogService(new JsonReadModelRepository(dataset));
+```
+
+Node deployments that need runtime filesystem loading can instead import the
+optional `loadJsonReadModel` adapter from `budokon-data/node`. Build the reusable
+TypeScript modules with `npm run build`, check them with `npm run typecheck`, and
+regenerate the compiled dataset with `npm run build:data`.
+
 ---
 
 ## 🛠️ Implementation Language
