@@ -3,11 +3,20 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": { "types": "./build/runtime/index.d.ts", "import": "./build/runtime/index.js" },
+    "./core": { "types": "./build/runtime/index.d.ts", "import": "./build/runtime/index.js" },
+    "./node": { "types": "./build/runtime/node/load-json-read-model.d.ts", "import": "./build/runtime/node/load-json-read-model.js" },
+    "./data": "./dist/budokon.json"
+  },
   "scripts": {
-    "build": "node scripts/build.mjs",
+    "build": "tsc -p tsconfig.json",
+    "build:data": "node scripts/build.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "check-artifacts": "node scripts/check-artifacts.mjs",
     "verify-release": "node scripts/verify-release.mjs",
     "validate": "node src/validation/validate-canonical.mjs",
-    "test": "node --test scripts/*.test.mjs tests/*.test.mjs"
-  }
+    "test": "npm run build && node --test scripts/*.test.mjs tests/*.test.mjs"
+  },
+  "devDependencies": { "typescript": "^5.7.2" }
 }
