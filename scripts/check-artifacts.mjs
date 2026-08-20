@@ -22,7 +22,12 @@ export async function verifyArtifactConsistency({ artifactDirectory, expectedArt
   const actual = Object.fromEntries(await Promise.all(actualNames.map(async (name) =>
     [name, await readFile(path.join(artifactDirectory, name))])));
   let manifest;
-  try { manifest = JSON.parse(actual['manifest.json']); } catch (error) {
+try {
+    if (!actual['manifest.json']) {
+      throw new Error('dist/manifest.json is missing');
+    }
+    manifest = JSON.parse(actual['manifest.json']);
+  } catch (error) {
     throw new Error('dist/manifest.json is not valid JSON', { cause: error });
   }
   if (manifest.sourceGitCommit !== sourceGitCommit) {
