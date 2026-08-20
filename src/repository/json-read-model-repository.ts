@@ -9,7 +9,13 @@ export class JsonReadModelRepository extends ReadModelRepository {
 
   constructor(value: CompiledDataset | JsonValue | string) {
     super();
-    const parsed: unknown = typeof value === "string" ? JSON.parse(value) : value;
+    const parsed: unknown = typeof value === "string" ? (() => {
+      try {
+        return JSON.parse(value);
+      } catch (error) {
+        throw new TypeError(`Failed to parse JSON: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    })() : value;
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new TypeError("compiled dataset must be an object");
     const model = parsed as CompiledDataset;
     if (!Array.isArray(model.judoka) || !Array.isArray(model.techniques) || !model.countries || !Array.isArray(model.weightCategories) || !model.manifest) {
