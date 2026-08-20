@@ -134,13 +134,13 @@ test('compiler produces a versioned manifest with counts and artifact checksums'
   assert.deepEqual(aggregate.collections, JSON.parse(artifacts['collections.json']));
   assert.deepEqual(aggregate.countries, JSON.parse(artifacts['countries.json']));
   assert.deepEqual(aggregate.weightCategories, JSON.parse(artifacts['weight-categories.json']));
-  assert.deepEqual(Object.keys(aggregate.countries), Object.keys(aggregate.countries).toSorted());
-  assert.deepEqual(aggregate.judoka.map(({ id }) => id), aggregate.judoka.map(({ id }) => id).toSorted());
-  assert.deepEqual(aggregate.techniques.map(({ id }) => id), aggregate.techniques.map(({ id }) => id).toSorted());
-  assert.deepEqual(aggregate.collections.map(({ id }) => id), aggregate.collections.map(({ id }) => id).toSorted());
-  assert.deepEqual(aggregate.weightCategories.map(({ gender }) => gender), aggregate.weightCategories.map(({ gender }) => gender).toSorted());
+  assert.deepEqual(Object.keys(aggregate.countries), [...Object.keys(aggregate.countries)].sort());
+  assert.deepEqual(aggregate.judoka.map(({ id }) => id), aggregate.judoka.map(({ id }) => id).sort());
+  assert.deepEqual(aggregate.techniques.map(({ id }) => id), aggregate.techniques.map(({ id }) => id).sort());
+  assert.deepEqual(aggregate.collections.map(({ id }) => id), aggregate.collections.map(({ id }) => id).sort());
+  assert.deepEqual(aggregate.weightCategories.map(({ gender }) => gender), aggregate.weightCategories.map(({ gender }) => gender).sort());
   for (const group of aggregate.weightCategories) {
-    assert.deepEqual(group.categories.map(({ weight }) => weight), group.categories.map(({ weight }) => weight).toSorted());
+    assert.deepEqual(group.categories.map(({ weight }) => weight), group.categories.map(({ weight }) => weight).sort());
   }
   assert.deepEqual(manifest.recordCounts, {
     judoka: aggregate.judoka.length,

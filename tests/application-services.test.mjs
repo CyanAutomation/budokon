@@ -50,6 +50,12 @@ test("repository reports malformed serialized data with parse context", () => {
       && error.message.length > "Failed to parse JSON:".length
   );
 });
+test("repository rejects an empty dataset version", () => {
+  assert.throws(
+    () => new JsonReadModelRepository({ ...compiledModel, datasetVersion: "   " }),
+    /invalid compiled dataset/,
+  );
+});
 test("REST and MCP seeded selections are byte-for-byte equivalent", () => {
   const input = { count: 1, filters: { gender: ["male"], countryCode: ["JP", "GE"] }, exclude: ["ilia-sulamanidze"], seed: "match-472-round-3" };
   const apiBytes = JSON.stringify(rest.draw({ body: input }).body);
