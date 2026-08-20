@@ -21,14 +21,14 @@ export class JsonReadModelRepository extends ReadModelRepository {
     if (typeof model.datasetVersion !== "string" || model.datasetVersion.trim() === "" || !Array.isArray(model.judoka) || !Array.isArray(model.techniques) || !Array.isArray(model.collections) || !model.countries || !Array.isArray(model.weightCategories)) {
       throw new TypeError("invalid compiled dataset");
     }
-    }
-    this.model = { ...model, judoka: [...model.judoka].sort(byId), techniques: [...model.techniques].sort(byId) };
+    this.model = { ...model, judoka: [...model.judoka].sort(byId), techniques: [...model.techniques].sort(byId), collections: [...model.collections].sort(byId) };
   }
   get datasetVersion() { return this.model.datasetVersion; }
   get serviceVersion() { if (!this.model.manifest?.serviceVersion) throw new Error("Invalid manifest: missing serviceVersion"); return this.model.manifest.serviceVersion; }
   listJudoka() { return this.model.judoka.slice(); }
   getJudoka(key: string | undefined) { return key === undefined ? undefined : this.model.judoka.find(j => j.id === key || j.slug === key || j.aliases?.includes(key)); }
-  getCollection(key: string) { return this.model.collections?.find(collection => collection.id === key); }
+  listCollections() { return this.model.collections.slice(); }
+  getCollection(key: string | undefined) { return key === undefined ? undefined : this.model.collections.find(collection => collection.id === key); }
   listTechniques() { return this.model.techniques.slice(); }
   getTechnique(id: string | undefined) { return id === undefined ? undefined : this.model.techniques.find(t => t.id === id); }
   listCountries() { return structuredClone(this.model.countries); }

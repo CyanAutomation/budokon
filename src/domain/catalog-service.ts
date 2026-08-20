@@ -37,5 +37,6 @@ export class CatalogService {
   searchJudoka(options: SearchJudokaOptions = {}) { const query = normalizeSearchText(options.query ?? options.q); return (query ? this.listJudoka(options).filter(j => searchableValues(j).some(value => value.includes(query))) : this.listJudoka(options)).sort(query ? byImmutableId : () => 0); }
   getJudoka(id: string | undefined, options: Pick<ListJudokaOptions, "includeHidden" | "authorizedInternal"> = {}) { const match = this.repository.getJudoka(id); return match && (match.isHidden !== true || (options.includeHidden === true && options.authorizedInternal === true)) ? match : undefined; }
   listTechniques() { return this.repository.listTechniques(); } getTechnique(id: string | undefined) { return this.repository.getTechnique(id); }
+  listCollections() { return this.repository.listCollections(); } getCollection(id: string | undefined) { return this.repository.getCollection(id); }
   listCountries() { return this.repository.listCountries(); } listWeightCategories() { return this.repository.listWeightCategories(); }
 }

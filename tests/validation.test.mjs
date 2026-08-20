@@ -37,6 +37,21 @@ test('filenames match canonical slugs', async () => {
   await assert.rejects(validateCanonical(root), /filename must match canonical slug/);
 });
 
+test('collections reject invalid references, duplicate IDs and duplicate members', async () => {
+  const invalid = await sandbox();
+  await change(path.join(invalid, 'data/collections/featured-judoka.json'), record => { record.members[0] = '00000000-0000-4000-8000-000000000000'; });
+  await assert.rejects(validateCanonical(invalid), /references unknown judoka UUID/);
+
+  const duplicateId = await sandbox();
+  const featured = JSON.parse(await readFile(path.join(duplicateId, 'data/collections/featured-judoka.json')));
+  await writeFile(path.join(duplicateId, 'data/collections/japanese-judoka.json'), `${JSON.stringify({ ...featured }, null, 2)}\n`);
+  await assert.rejects(validateCanonical(duplicateId), /duplicate collection ID/);
+
+  const duplicateMember = await sandbox();
+  await change(path.join(duplicateMember, 'data/collections/featured-judoka.json'), record => { record.members.push(record.members[0]); });
+  await assert.rejects(validateCanonical(duplicateMember), /must contain unique items/);
+});
+
 test('fictional judoka are hidden by default', async () => {
   const root = await sandbox();
   await change(path.join(root, 'data/judoka/mystery-judoka.json'), (record) => { record.isHidden = false; });

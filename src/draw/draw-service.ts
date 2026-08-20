@@ -6,9 +6,10 @@ export class DrawService {
   draw(input: DrawRequest = {}, context: RequestContext = {}): DrawResponse {
     const count = input.count ?? 1; if (!Number.isSafeInteger(count) || count < 1) throw new RangeError("count must be a positive integer");
     const filters = normalizeFilters(input.filters); const exclude = [...new Set((input.exclude ?? []).map(String))].sort();
-    const pool = this.catalog.listJudoka({ filters, exclude, includeHidden: input.includeHidden, authorizedInternal: context.authorizedInternal }).sort((a, b) => a.id.localeCompare(b.id));
+    const collection = input.collection === undefined ? undefined : String(input.collection);
+    const pool = this.catalog.listJudoka({ collection, filters, exclude, includeHidden: input.includeHidden, authorizedInternal: context.authorizedInternal }).sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
     if (count > pool.length) throw new RangeError(`count ${count} exceeds eligible pool size ${pool.length}`);
-    const seed = input.seed === undefined ? undefined : String(input.seed); const random = seed === undefined ? this.random : seededRandom(JSON.stringify({ version: this.catalog.repository.datasetVersion, filters, exclude, count, seed }));
+    const seed = input.seed === undefined ? undefined : String(input.seed); const random = seed === undefined ? this.random : seededRandom(JSON.stringify({ version: this.catalog.repository.datasetVersion, collection, filters, exclude, count, seed }));
     const remaining = pool.slice(); const judoka = []; while (judoka.length < count) judoka.push(remaining.splice(Math.floor(random() * remaining.length), 1)[0]!);
     return { datasetVersion: this.catalog.repository.datasetVersion, ...(seed === undefined ? {} : { seed }), poolSize: pool.length, judoka };
   }
