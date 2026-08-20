@@ -1,4 +1,5 @@
 {
+  "datasetVersion": "2026.08.1",
   "judoka": [
     {
       "id": "1d200634-eb36-4f5e-b5c0-28734b96ac62",
@@ -1184,106 +1185,11 @@
       "link": "https://en.wikipedia.org/wiki/Yoko_wakare"
     }
   ],
+  "collections": [],
   "countries": {
-    "VU": {
-      "country": "Vanuatu",
-      "code": "VU",
-      "lastUpdated": "2025-04-23T10:00:00Z",
-      "active": true
-    },
-    "PT": {
-      "country": "Portugal",
-      "code": "PT",
-      "lastUpdated": "2025-04-23T10:00:00Z",
-      "active": true
-    },
-    "FR": {
-      "country": "France",
-      "code": "FR",
-      "lastUpdated": "2025-04-23T10:00:00Z",
-      "active": true
-    },
-    "JP": {
-      "country": "Japan",
-      "code": "JP",
-      "lastUpdated": "2025-04-23T10:00:00Z",
-      "active": true
-    },
     "BR": {
       "country": "Brazil",
       "code": "BR",
-      "lastUpdated": "2025-04-23T10:00:00Z",
-      "active": true
-    },
-    "US": {
-      "country": "United States",
-      "code": "US",
-      "lastUpdated": "2025-04-23T10:00:00Z",
-      "active": true
-    },
-    "DE": {
-      "country": "Germany",
-      "code": "DE",
-      "lastUpdated": "2025-04-23T10:00:00Z",
-      "active": true
-    },
-    "RU": {
-      "country": "Russia",
-      "code": "RU",
-      "lastUpdated": "2025-04-23T10:00:00Z",
-      "active": true
-    },
-    "KR": {
-      "country": "South Korea",
-      "code": "KR",
-      "lastUpdated": "2025-04-23T10:00:00Z",
-      "active": true
-    },
-    "GB": {
-      "country": "United Kingdom",
-      "code": "GB",
-      "lastUpdated": "2025-04-23T10:00:00Z",
-      "active": true
-    },
-    "CA": {
-      "country": "Canada",
-      "code": "CA",
-      "lastUpdated": "2025-04-23T10:00:00Z",
-      "active": true
-    },
-    "IT": {
-      "country": "Italy",
-      "code": "IT",
-      "lastUpdated": "2025-04-23T10:00:00Z",
-      "active": true
-    },
-    "ES": {
-      "country": "Spain",
-      "code": "ES",
-      "lastUpdated": "2025-04-23T10:00:00Z",
-      "active": true
-    },
-    "NL": {
-      "country": "Netherlands",
-      "code": "NL",
-      "lastUpdated": "2025-04-23T10:00:00Z",
-      "active": true
-    },
-    "CN": {
-      "country": "China",
-      "code": "CN",
-      "lastUpdated": "2025-04-23T10:00:00Z",
-      "active": true
-    },
-    "MN": {
-      "country": "Mongolia",
-      "code": "MN",
-      "lastUpdated": "2025-04-23T10:00:00Z",
-      "active": true
-    },
-    "GE": {
-      "country": "Georgia",
-      "code": "GE",
       "lastUpdated": "2025-04-23T10:00:00Z",
       "active": true
     },
@@ -1293,52 +1199,118 @@
       "lastUpdated": "2025-04-23T10:00:00Z",
       "active": true
     },
+    "CA": {
+      "country": "Canada",
+      "code": "CA",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "CN": {
+      "country": "China",
+      "code": "CN",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "DE": {
+      "country": "Germany",
+      "code": "DE",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "ES": {
+      "country": "Spain",
+      "code": "ES",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "FR": {
+      "country": "France",
+      "code": "FR",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "GB": {
+      "country": "United Kingdom",
+      "code": "GB",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "GE": {
+      "country": "Georgia",
+      "code": "GE",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "IT": {
+      "country": "Italy",
+      "code": "IT",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
     "JM": {
       "country": "Jamaica",
       "code": "JM",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "JP": {
+      "country": "Japan",
+      "code": "JP",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "KR": {
+      "country": "South Korea",
+      "code": "KR",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "MN": {
+      "country": "Mongolia",
+      "code": "MN",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "NL": {
+      "country": "Netherlands",
+      "code": "NL",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "PT": {
+      "country": "Portugal",
+      "code": "PT",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "RU": {
+      "country": "Russia",
+      "code": "RU",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "US": {
+      "country": "United States",
+      "code": "US",
+      "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "VU": {
+      "country": "Vanuatu",
+      "code": "VU",
       "lastUpdated": "2025-04-23T10:00:00Z",
       "active": true
     }
   },
   "weightCategories": [
     {
-      "gender": "male",
-      "description": "Men’s weight categories",
-      "categories": [
-        {
-          "weight": "-60",
-          "descriptor": "Extra Lightweight"
-        },
-        {
-          "weight": "-66",
-          "descriptor": "Half Lightweight"
-        },
-        {
-          "weight": "-73",
-          "descriptor": "Lightweight"
-        },
-        {
-          "weight": "-81",
-          "descriptor": "Half Middleweight"
-        },
-        {
-          "weight": "-90",
-          "descriptor": "Middleweight"
-        },
-        {
-          "weight": "-100",
-          "descriptor": "Half Heavyweight"
-        },
-        {
-          "weight": "+100",
-          "descriptor": "Heavyweight"
-        }
-      ]
-    },
-    {
       "gender": "female",
       "description": "Women’s weight categories",
       "categories": [
+        {
+          "weight": "+78",
+          "descriptor": "Heavyweight"
+        },
         {
           "weight": "-48",
           "descriptor": "Extra Lightweight"
@@ -1362,27 +1334,42 @@
         {
           "weight": "-78",
           "descriptor": "Half Heavyweight"
+        }
+      ]
+    },
+    {
+      "gender": "male",
+      "description": "Men’s weight categories",
+      "categories": [
+        {
+          "weight": "+100",
+          "descriptor": "Heavyweight"
         },
         {
-          "weight": "+78",
-          "descriptor": "Heavyweight"
+          "weight": "-100",
+          "descriptor": "Half Heavyweight"
+        },
+        {
+          "weight": "-60",
+          "descriptor": "Extra Lightweight"
+        },
+        {
+          "weight": "-66",
+          "descriptor": "Half Lightweight"
+        },
+        {
+          "weight": "-73",
+          "descriptor": "Lightweight"
+        },
+        {
+          "weight": "-81",
+          "descriptor": "Half Middleweight"
+        },
+        {
+          "weight": "-90",
+          "descriptor": "Middleweight"
         }
       ]
     }
-  ],
-  "manifest": {
-    "datasetVersion": "2026.08.1",
-    "serviceVersion": "0.1.0",
-    "sourceGitCommit": "967055b82220ca75902f78b173fa4347963376c8",
-    "recordCounts": {
-      "judoka": 7,
-      "techniques": 100,
-      "countries": 19,
-      "weightCategories": 14
-    },
-    "checksums": {
-      "judoka.json": "sha256:adfc344500abf6825244b5bee1832f1002cc1ccd3bc7e99915a64df531b09c26",
-      "techniques.json": "sha256:aa61c47a94f6c4a7d3b8974f1ba5df7508ff982f80a4a8a2f9a23b7d99af6c55"
-    }
-  }
+  ]
 }

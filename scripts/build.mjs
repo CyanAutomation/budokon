@@ -25,17 +25,36 @@ export function validateTechniqueReferences(judoka, ids) {
 }
 export const expandJudokaCountries = (judoka, countries) => judoka.map((record) => ({ ...record, country: countries[record.countryCode]?.country }));
 
+// These comparisons deliberately use Unicode code units, rather than localeCompare,
+// so the ordering contract is identical on every host.
+const compareKey = (left, right) => String(left) < String(right) ? -1 : String(left) > String(right) ? 1 : 0;
+const byId = (left, right) => compareKey(left.id, right.id);
+const sortCountries = (countries) => Object.fromEntries(Object.entries(countries).sort(([left], [right]) => compareKey(left, right)));
+const sortWeights = (weights) => weights.map((group) => ({
+  ...group,
+  categories: [...group.categories].sort((left, right) => compareKey(left.weight, right.weight)),
+})).sort((left, right) => compareKey(left.gender, right.gender));
+
 export async function compileArtifacts(sourceGitCommit, sourceRoot = root) {
   if (!sourceGitCommit) throw new Error('SOURCE_GIT_COMMIT is required; generated artifacts must identify an explicit source commit');
   if (!/^[0-9a-f]{40}$/i.test(sourceGitCommit)) throw new Error('SOURCE_GIT_COMMIT must be a full Git commit hash');
   const { judoka, techniques, countries, weights, dataset } = await validateCanonical(sourceRoot);
   const service = JSON.parse(await readFile(path.join(sourceRoot, 'package.json'), 'utf8'));
-  // Compare Unicode code units directly so output does not depend on the host's
-  // ICU version or locale configuration.
-  const stable = (a, b) => String(a.id) < String(b.id) ? -1 : String(a.id) > String(b.id) ? 1 : 0;
+  const compiled = {
+    datasetVersion: dataset.datasetVersion,
+    judoka: expandJudokaCountries(judoka, countries).sort(byId),
+    techniques: [...techniques].sort(byId),
+    collections: [],
+    countries: sortCountries(countries),
+    weightCategories: sortWeights(weights),
+  };
   const artifacts = {
-    'judoka.json': `${JSON.stringify(expandJudokaCountries(judoka, countries).sort(stable), null, 2)}\n`,
-    'techniques.json': `${JSON.stringify(techniques.sort(stable), null, 2)}\n`,
+    'judoka.json': `${JSON.stringify(compiled.judoka, null, 2)}\n`,
+    'techniques.json': `${JSON.stringify(compiled.techniques, null, 2)}\n`,
+    'collections.json': `${JSON.stringify(compiled.collections, null, 2)}\n`,
+    'countries.json': `${JSON.stringify(compiled.countries, null, 2)}\n`,
+    'weight-categories.json': `${JSON.stringify(compiled.weightCategories, null, 2)}\n`,
+    'budokon.json': `${JSON.stringify(compiled, null, 2)}\n`,
   };
   if (!dataset?.datasetVersion) {
     throw new Error('Invalid dataset: missing datasetVersion');
@@ -50,19 +69,13 @@ export async function compileArtifacts(sourceGitCommit, sourceRoot = root) {
     recordCounts: {
       judoka: judoka.length,
       techniques: techniques.length,
+      collections: compiled.collections.length,
       countries: Object.keys(countries).length,
       weightCategories: weights.reduce((total, group) => total + group.categories.length, 0),
     },
     checksums: Object.fromEntries(Object.entries(artifacts).map(([name, content]) => [name, `sha256:${createHash('sha256').update(content).digest('hex')}`])),
   };
   artifacts['manifest.json'] = `${JSON.stringify(manifest, null, 2)}\n`;
-  artifacts['budokon.json'] = `${JSON.stringify({
-    judoka: JSON.parse(artifacts['judoka.json']),
-    techniques: JSON.parse(artifacts['techniques.json']),
-    countries,
-    weightCategories: weights,
-    manifest,
-  }, null, 2)}\n`;
   return artifacts;
 }
 
