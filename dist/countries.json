@@ -1,0 +1,116 @@
+{
+  "BR": {
+    "country": "Brazil",
+    "code": "BR",
+    "lastUpdated": "2025-04-23T10:00:00Z",
+    "active": true
+  },
+  "BT": {
+    "country": "Bhutan",
+    "code": "BT",
+    "lastUpdated": "2025-04-23T10:00:00Z",
+    "active": true
+  },
+  "CA": {
+    "country": "Canada",
+    "code": "CA",
+    "lastUpdated": "2025-04-23T10:00:00Z",
+    "active": true
+  },
+  "CN": {
+    "country": "China",
+    "code": "CN",
+    "lastUpdated": "2025-04-23T10:00:00Z",
+    "active": true
+  },
+  "DE": {
+    "country": "Germany",
+    "code": "DE",
+    "lastUpdated": "2025-04-23T10:00:00Z",
+    "active": true
+  },
+  "ES": {
+    "country": "Spain",
+    "code": "ES",
+    "lastUpdated": "2025-04-23T10:00:00Z",
+    "active": true
+  },
+  "FR": {
+    "country": "France",
+    "code": "FR",
+    "lastUpdated": "2025-04-23T10:00:00Z",
+    "active": true
+  },
+  "GB": {
+    "country": "United Kingdom",
+    "code": "GB",
+    "lastUpdated": "2025-04-23T10:00:00Z",
+    "active": true
+  },
+  "GE": {
+    "country": "Georgia",
+    "code": "GE",
+    "lastUpdated": "2025-04-23T10:00:00Z",
+    "active": true
+  },
+  "IT": {
+    "country": "Italy",
+    "code": "IT",
+    "lastUpdated": "2025-04-23T10:00:00Z",
+    "active": true
+  },
+  "JM": {
+    "country": "Jamaica",
+    "code": "JM",
+    "lastUpdated": "2025-04-23T10:00:00Z",
+    "active": true
+  },
+  "JP": {
+    "country": "Japan",
+    "code": "JP",
+    "lastUpdated": "2025-04-23T10:00:00Z",
+    "active": true
+  },
+  "KR": {
+    "country": "South Korea",
+    "code": "KR",
+    "lastUpdated": "2025-04-23T10:00:00Z",
+    "active": true
+  },
+  "MN": {
+    "country": "Mongolia",
+    "code": "MN",
+    "lastUpdated": "2025-04-23T10:00:00Z",
+    "active": true
+  },
+  "NL": {
+    "country": "Netherlands",
+    "code": "NL",
+    "lastUpdated": "2025-04-23T10:00:00Z",
+    "active": true
+  },
+  "PT": {
+    "country": "Portugal",
+    "code": "PT",
+    "lastUpdated": "2025-04-23T10:00:00Z",
+    "active": true
+  },
+  "RU": {
+    "country": "Russia",
+    "code": "RU",
+    "lastUpdated": "2025-04-23T10:00:00Z",
+    "active": true
+  },
+  "US": {
+    "country": "United States",
+    "code": "US",
+    "lastUpdated": "2025-04-23T10:00:00Z",
+    "active": true
+  },
+  "VU": {
+    "country": "Vanuatu",
+    "code": "VU",
+    "lastUpdated": "2025-04-23T10:00:00Z",
+    "active": true
+  }
+}
