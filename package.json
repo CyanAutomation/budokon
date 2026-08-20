@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
+    "check-artifacts": "node scripts/check-artifacts.mjs",
     "verify-release": "node scripts/verify-release.mjs",
     "validate": "node src/validation/validate-canonical.mjs",
     "test": "node --test scripts/*.test.mjs tests/*.test.mjs"

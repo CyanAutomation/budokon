@@ -25,15 +25,14 @@ jobs:
         run: |
           npm run verify-release
           test "$(git rev-parse --verify "$RELEASE_TAG^{commit}")" = "$GITHUB_SHA"
-      - name: Rebuild and verify reproducibility
+      - name: Compile release artifacts
         env:
           SOURCE_GIT_COMMIT: ${{ github.sha }}
-        run: |
-          npm run build
-          find dist -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > /tmp/first-build.sha256
-          npm run build
-          find dist -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > /tmp/second-build.sha256
-          diff -u /tmp/first-build.sha256 /tmp/second-build.sha256
+        run: npm run build
+      - name: Verify release artifact consistency
+        env:
+          SOURCE_GIT_COMMIT: ${{ github.sha }}
+        run: npm run check-artifacts
       - uses: softprops/action-gh-release@v2
         with:
           files: |

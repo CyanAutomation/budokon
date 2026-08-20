@@ -234,12 +234,18 @@ After changing source data:
 
 ```sh
 npm run validate
-npm run build
+SOURCE_GIT_COMMIT=$(git rev-parse HEAD) npm run build
 ```
 
 The validator parses every canonical source file and applies schema, referential, and semantic validation.
 
 The compiler then creates deterministic runtime aggregates.
+
+`SOURCE_GIT_COMMIT` is mandatory: it is the full commit whose canonical data the
+generated files represent. Builds never infer this value from the working tree.
+Use `SOURCE_GIT_COMMIT=<release-commit> npm run check-artifacts` to verify tracked
+artifacts without rewriting them; the check compiles expected bytes in memory and
+compares the complete `dist/` file set, manifest metadata, counts, and checksums.
 
 Build output must depend only on:
 
