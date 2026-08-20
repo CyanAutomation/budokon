@@ -19,7 +19,7 @@ export interface Judoka {
 }
 
 export interface Technique { id: string; [key: string]: JsonValue; }
-export interface Collection { id: string; members?: string[]; [key: string]: JsonValue | undefined; }
+export interface Collection { id: string; name: string; members: string[]; [key: string]: JsonValue | undefined; }
 export interface Country { code: string; country: string; active: boolean; [key: string]: JsonValue; }
 export interface WeightCategoryGroup { gender: string; categories: JsonValue[]; [key: string]: JsonValue; }
 
