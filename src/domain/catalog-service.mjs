@@ -1,4 +1,17 @@
 const FILTER_FIELDS = new Set(["countryCode", "gender", "weightClass", "rarity", "personType", "signatureMoveId"]);
+const byImmutableId = (a, b) => String(a.id) < String(b.id) ? -1 : String(a.id) > String(b.id) ? 1 : 0;
+
+/** Normalize search text without locale- or ICU-dependent collation. */
+export function normalizeSearchText(value) {
+  return String(value ?? "").normalize("NFD").replace(/\p{Mark}+/gu, "").toLowerCase()
+    .replace(/[^\p{Letter}\p{Number}]+/gu, " ").trim().replace(/\s+/gu, " ");
+}
+
+function searchableValues(judoka) {
+  return [judoka.slug, judoka.firstname, judoka.surname,
+    `${judoka.firstname ?? ""} ${judoka.surname ?? ""}`.trim(), ...(judoka.aliases ?? [])]
+    .map(normalizeSearchText).filter(Boolean);
+}
 
 export function normalizeFilters(filters = {}) {
   if (filters === null || typeof filters !== "object" || Array.isArray(filters)) throw new TypeError("filters must be an object");
@@ -17,9 +30,18 @@ export class CatalogService {
     const filters = normalizeFilters(options.filters);
     const exclusions = new Set((options.exclude ?? []).map(String));
     const includeHidden = options.includeHidden === true && options.authorizedInternal === true;
+    const collection = options.collection === undefined ? undefined : String(options.collection);
+    const collectionRecord = collection === undefined ? undefined : this.repository.getCollection?.(collection);
+    const members = collectionRecord ? new Set((collectionRecord.members ?? []).map(String)) : undefined;
     return this.repository.listJudoka().filter(j => includeHidden || j.isHidden !== true).filter(j =>
       Object.entries(filters).every(([field, values]) => j[field] != null && values.includes(String(j[field])))
-    ).filter(j => !exclusions.has(j.id) && !exclusions.has(j.slug));
+    ).filter(j => !exclusions.has(j.id) && !exclusions.has(j.slug))
+      .filter(j => collection === undefined || (members ? members.has(String(j.id)) || members.has(String(j.slug)) : j.collections?.includes(collection)));
+  }
+  searchJudoka(options = {}) {
+    const query = normalizeSearchText(options.query ?? options.q);
+    if (!query) return this.listJudoka(options);
+    return this.listJudoka(options).filter(judoka => searchableValues(judoka).some(value => value.includes(query))).sort(byImmutableId);
   }
   getJudoka(id, options = {}) {
     const match = this.repository.getJudoka(id);
