@@ -40,6 +40,12 @@ export async function compileArtifacts(sourceGitCommit, sourceRoot = root) {
   if (!/^[0-9a-f]{40}$/i.test(sourceGitCommit)) throw new Error('SOURCE_GIT_COMMIT must be a full Git commit hash');
   const { judoka, techniques, collections, countries, weights, dataset } = await validateCanonical(sourceRoot);
   const service = JSON.parse(await readFile(path.join(sourceRoot, 'package.json'), 'utf8'));
+  if (typeof dataset?.datasetVersion !== 'string' || dataset.datasetVersion.trim() === '') {
+    throw new Error('Invalid dataset: missing datasetVersion');
+  }
+  if (typeof service?.version !== 'string' || service.version.trim() === '') {
+    throw new Error('Invalid package.json: missing version');
+  }
   const compiled = {
     datasetVersion: dataset.datasetVersion,
     judoka: expandJudokaCountries(judoka, countries).sort(byId),
@@ -56,12 +62,6 @@ export async function compileArtifacts(sourceGitCommit, sourceRoot = root) {
     'weight-categories.json': `${JSON.stringify(compiled.weightCategories, null, 2)}\n`,
     'budokon.json': `${JSON.stringify(compiled, null, 2)}\n`,
   };
-  if (!dataset?.datasetVersion) {
-    throw new Error('Invalid dataset: missing datasetVersion');
-  }
-  if (!service?.version) {
-    throw new Error('Invalid package.json: missing version');
-  }
   const manifest = {
     datasetVersion: dataset.datasetVersion,
     serviceVersion: service.version,
