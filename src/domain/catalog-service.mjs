@@ -9,7 +9,7 @@ export function normalizeSearchText(value) {
 
 function searchableValues(judoka) {
   return [judoka.slug, judoka.firstname, judoka.surname,
-    `${judoka.firstname ?? ""} ${judoka.surname ?? ""}`, ...(judoka.aliases ?? [])]
+    `${judoka.firstname ?? ""} ${judoka.surname ?? ""}`.trim(), ...(judoka.aliases ?? [])]
     .map(normalizeSearchText).filter(Boolean);
 }
 
