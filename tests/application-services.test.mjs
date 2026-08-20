@@ -62,3 +62,31 @@ test("version, draw, and MCP results expose the canonical dataset version", () =
   assert.equal(mcp.get_judoka({ id: "shozo-fujii" }).datasetVersion, "2026.08.1");
   assert.equal(mcp.version().datasetVersion, "2026.08.1");
 });
+
+test("search normalizes case, whitespace, punctuation, and diacritics across every text field", () => {
+  assert.deepEqual(catalog.searchJudoka({ query: "  SHŌZŌ---FUJII " }).map(j => j.slug), ["shozo-fujii"]);
+  assert.deepEqual(catalog.searchJudoka({ query: "cutro kelly" }).map(j => j.slug), ["nina-cutro-kelly"]);
+  assert.deepEqual(catalog.searchJudoka({ query: "sulam" }).map(j => j.slug), ["ilia-sulamanidze"]);
+  assert.deepEqual(catalog.searchJudoka({ query: "mckenzie" }).map(j => j.slug), ["ashley-mckenzie"]);
+  assert.deepEqual(catalog.searchJudoka({ query: "sulamanidize" }).map(j => j.slug), ["ilia-sulamanidze"]);
+});
+
+test("search composes with filters, exclusions, visibility, and collection membership in UUID order", () => {
+  const records = [
+    { id: "b", slug: "second-match", firstname: "Renée", surname: "Test", gender: "female" },
+    { id: "a", slug: "first-match", firstname: "Renee", surname: "Test", gender: "female" },
+    { id: "c", slug: "hidden-match", firstname: "Renee", surname: "Test", gender: "female", isHidden: true },
+    { id: "d", slug: "other-match", firstname: "Renee", surname: "Test", gender: "male" }
+  ];
+  const service = new CatalogService({ listJudoka: () => records, getCollection: id => id === "featured" ? { members: ["a", "second-match"] } : undefined });
+  assert.deepEqual(service.searchJudoka({ query: "renee", filters: { gender: "female" }, exclude: ["second-match"], collection: "featured" }).map(j => j.id), ["a"]);
+  assert.deepEqual(service.searchJudoka({ query: "renee", includeHidden: true, authorizedInternal: true }).map(j => j.id), ["a", "b", "c", "d"]);
+});
+
+test("REST and MCP searches conform and an absent query retains list behavior", () => {
+  const restResult = rest.listJudoka({ query: { q: "  SHOZO! ", countryCode: "JP", exclude: "tatsuuma-ushiyama" } }).body;
+  const mcpResult = mcp.search_judoka({ query: "  SHOZO! ", filters: { countryCode: "JP" }, exclude: ["tatsuuma-ushiyama"] }).judoka;
+  assert.deepEqual(restResult, mcpResult);
+  assert.deepEqual(rest.listJudoka().body, catalog.listJudoka());
+  assert.deepEqual(mcp.search_judoka().judoka, catalog.listJudoka());
+});

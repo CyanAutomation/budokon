@@ -32,6 +32,7 @@ export class JsonReadModelRepository extends ReadModelRepository {
   }
   listJudoka() { return this.model.judoka.slice(); }
   getJudoka(key) { return this.model.judoka.find(j => j.id === key || j.slug === key || j.aliases?.includes(key)); }
+  getCollection(key) { return this.model.collections?.find(collection => collection.id === key); }
   listTechniques() { return this.model.techniques.slice(); }
   getTechnique(id) { return this.model.techniques.find(t => t.id === id); }
   listCountries() { return structuredClone(this.model.countries); }
