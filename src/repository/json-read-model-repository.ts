@@ -18,13 +18,14 @@ export class JsonReadModelRepository extends ReadModelRepository {
     })() : value;
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new TypeError("compiled dataset must be an object");
     const model = parsed as CompiledDataset;
-    if (!Array.isArray(model.judoka) || !Array.isArray(model.techniques) || !model.countries || !Array.isArray(model.weightCategories) || !model.manifest) {
+    if (typeof model.datasetVersion !== "string" || model.datasetVersion.trim() === "" || !Array.isArray(model.judoka) || !Array.isArray(model.techniques) || !Array.isArray(model.collections) || !model.countries || !Array.isArray(model.weightCategories)) {
       throw new TypeError("invalid compiled dataset");
+    }
     }
     this.model = { ...model, judoka: [...model.judoka].sort(byId), techniques: [...model.techniques].sort(byId) };
   }
-  get datasetVersion() { if (!this.model.manifest.datasetVersion) throw new Error("Invalid manifest: missing datasetVersion"); return this.model.manifest.datasetVersion; }
-  get serviceVersion() { if (!this.model.manifest.serviceVersion) throw new Error("Invalid manifest: missing serviceVersion"); return this.model.manifest.serviceVersion; }
+  get datasetVersion() { return this.model.datasetVersion; }
+  get serviceVersion() { if (!this.model.manifest?.serviceVersion) throw new Error("Invalid manifest: missing serviceVersion"); return this.model.manifest.serviceVersion; }
   listJudoka() { return this.model.judoka.slice(); }
   getJudoka(key: string | undefined) { return key === undefined ? undefined : this.model.judoka.find(j => j.id === key || j.slug === key || j.aliases?.includes(key)); }
   getCollection(key: string) { return this.model.collections?.find(collection => collection.id === key); }

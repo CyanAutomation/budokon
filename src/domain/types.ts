@@ -31,12 +31,14 @@ export interface ReleaseManifest {
 
 /** The immutable aggregate emitted by the data compiler and suitable for bundling. */
 export interface CompiledDataset {
+  datasetVersion: string;
   judoka: Judoka[];
   techniques: Technique[];
   countries: Record<string, Country>;
   weightCategories: WeightCategoryGroup[];
-  collections?: Collection[];
-  manifest: ReleaseManifest;
+  collections: Collection[];
+  /** Optional deployment metadata; it is deliberately not embedded in budokon.json. */
+  manifest?: ReleaseManifest;
 }
 
 export type FilterField = "countryCode" | "gender" | "weightClass" | "rarity" | "personType" | "signatureMoveId";

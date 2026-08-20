@@ -33,9 +33,7 @@ export async function verifyArtifactConsistency({ artifactDirectory, expectedArt
   if (manifest.sourceGitCommit !== sourceGitCommit) {
     throw new Error(`Stale source commit: manifest records ${JSON.stringify(manifest.sourceGitCommit)}, expected ${sourceGitCommit}`);
   }
-  // The aggregate embeds the manifest, so its integrity is established by the
-  // exact compiler-output comparison below rather than a circular checksum.
-  const payloadNames = actualNames.filter((name) => name !== 'manifest.json' && name !== 'budokon.json');
+  const payloadNames = actualNames.filter((name) => name !== 'manifest.json');
   const checksumNames = Object.keys(manifest.checksums ?? {}).sort();
   if (JSON.stringify(checksumNames) !== JSON.stringify(payloadNames)) {
     throw new Error('Manifest checksum entries do not list every artifact exactly once');
