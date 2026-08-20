@@ -64,6 +64,18 @@ test("search normalizes case, whitespace, punctuation, and diacritics across eve
   assert.deepEqual(catalog.searchJudoka({ query: "sulamanidize" }).map(j => j.slug), ["ilia-sulamanidze"]);
 });
 
+test("search constructs full names consistently when either name is null", () => {
+  const service = new CatalogService({
+    listJudoka: () => [
+      { id: "surname-only", slug: "surname-only", firstname: null, surname: "Test" },
+      { id: "firstname-only", slug: "firstname-only", firstname: "Solo", surname: null }
+    ]
+  });
+
+  assert.deepEqual(service.searchJudoka({ query: "test" }).map(j => j.id), ["surname-only"]);
+  assert.deepEqual(service.searchJudoka({ query: "solo" }).map(j => j.id), ["firstname-only"]);
+});
+
 test("search composes with filters, exclusions, visibility, and collection membership in UUID order", () => {
   const records = [
     { id: "b", slug: "second-match", firstname: "Renée", surname: "Test", gender: "female" },
