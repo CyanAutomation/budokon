@@ -2,7 +2,7 @@
   "id": "c7218eca-bebe-4508-932c-b9ef4813865b",
   "slug": "ashley-mckenzie",
   "aliases": [
-    "askley-mckenzie"
+    "Askley McKenzie"
   ],
   "firstname": "Ashley",
   "surname": "McKenzie",
@@ -17,11 +17,16 @@
     "kumikata": 7,
     "newaza": 8
   },
-  "signatureMoveId": "seoi-nage",
   "lastUpdated": "2026-08-14T00:00:00Z",
   "profileUrl": "https://en.wikipedia.org/wiki/Ashley_McKenzie",
   "bio": "Ashley McKenzie is a British-born lightweight who has represented both Great Britain and Jamaica in international judo.",
   "gender": "male",
   "isHidden": false,
-  "rarity": "Common"
+  "rarity": "Common",
+  "signatureMoveIds": [
+    "seoi-nage"
+  ],
+  "legacySlugs": [
+    "askley-mckenzie"
+  ]
 }

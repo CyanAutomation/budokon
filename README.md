@@ -548,7 +548,7 @@ A slug may change if a spelling or transliteration is corrected.
 
 The UUID must not change.
 
-Previous spellings may be retained in aliases to aid search and backwards compatibility.
+Previous display spellings may be retained in `aliases` to aid search. Previous URL handles belong in the strictly slug-formatted `legacySlugs` field, which remains available for backwards-compatible lookup.
 
 ---
 
@@ -577,6 +577,11 @@ Aliases support:
 * improved MCP and search matching
 
 Aliases must not act as alternative canonical identities.
+
+Aliases are unique, non-blank, human-readable alternative names—not URL slugs.
+Their normalized forms must not resolve to more than one judoka. `legacySlugs`
+contains only retired kebab-case URL handles and is kept separate from display
+aliases; both fields participate in search and lookup.
 
 The UUID remains authoritative.
 
@@ -931,6 +936,11 @@ GET /v1/judoka?personType=real
 ```
 
 Filters may be combined where appropriate.
+
+`signatureMoveIds` is also a supported structured filter for REST, MCP search,
+and draws. It accepts one technique ID or an array; an array matches a judoka
+having any requested technique, while separate filter fields are combined with
+AND semantics.
 
 ### Judoka text search
 

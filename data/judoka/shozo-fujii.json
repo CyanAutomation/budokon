@@ -14,11 +14,16 @@
     "kumikata": 7,
     "newaza": 8
   },
-  "signatureMoveId": "seoi-nage",
   "lastUpdated": "2026-08-14T00:00:00Z",
   "profileUrl": "https://en.wikipedia.org/wiki/Sh%C5%8Dz%C5%8D_Fujii",
   "bio": "Japanese judoka Shōzō Fujii won four consecutive world titles during the 1970s in the divisions now represented by 81 kg.",
   "gender": "male",
   "isHidden": false,
-  "rarity": "Epic"
+  "rarity": "Epic",
+  "signatureMoveIds": [
+    "seoi-nage"
+  ],
+  "aliases": [
+    "Shozo Fujii"
+  ]
 }
