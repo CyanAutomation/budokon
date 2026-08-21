@@ -4,4 +4,7 @@ export * from "./draw/draw-service.js";
 export * from "./repository/read-model-repository.js";
 export * from "./repository/json-read-model-repository.js";
 export * from "./api/handlers.js";
+export * from "./api/router.js";
+export * from "./platform/cloudflare.js";
+export * from "./platform/vercel.js";
 export * from "./mcp/tools.js";
