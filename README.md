@@ -910,7 +910,7 @@ Changing deterministic draw behaviour requires introducing a new draw algorithm 
 
 The REST API is the primary integration mechanism for conventional games and applications.
 
-Potential endpoints include:
+The versioned endpoints are:
 
 ```text
 GET  /v1/judoka
@@ -936,6 +936,21 @@ GET /v1/judoka?personType=real
 ```
 
 Filters may be combined where appropriate.
+
+REST list parameters use one convention: a multi-value parameter may be
+repeated, comma-separated, or both (`?countryCode=JP,FR&countryCode=GE`). Empty
+values and unknown parameters are rejected. Values within one filter use OR
+semantics; different filter fields use AND semantics. `exclude` follows the
+same multi-value convention, while `q`, `collection`, and `includeHidden` are
+single-value parameters.
+
+`POST /v1/draw` requires an `application/json` content type and a JSON object.
+Unknown fields, unsupported filters, and malformed values receive `400`. An
+unauthorized request for `includeHidden=true` receives `403`; missing routes or
+records receive `404`; and a draw count larger than its eligible pool receives
+`409 Conflict`. Error bodies have the stable shape
+`{"error":{"code":"...","message":"..."}}`. Unexpected errors receive a
+generic `500` response and never expose implementation details.
 
 `signatureMoveIds` is also a supported structured filter for REST, MCP search,
 and draws. It accepts one technique ID or an array; an array matches a judoka
