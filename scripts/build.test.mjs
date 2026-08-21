@@ -53,17 +53,17 @@ test('game-specific judoka values are preserved only in the JU-DO-KON import', a
   }
 });
 
-test('technique reference validation allows an omitted signature move', () => {
+test('technique reference validation checks every signature move', () => {
   assert.doesNotThrow(() => validateTechniqueReferences(
-    [{ slug: 'test-judoka' }],
-    new Set(['uchi-mata']),
+    [{ slug: 'test-judoka', signatureMoveIds: ['uchi-mata', 'seoi-nage'] }],
+    new Set(['uchi-mata', 'seoi-nage']),
   ));
 });
 
 test('technique reference validation rejects an unknown signature move', () => {
   assert.throws(
     () => validateTechniqueReferences(
-      [{ slug: 'test-judoka', signatureMoveId: 'unknown-move' }],
+      [{ slug: 'test-judoka', signatureMoveIds: ['uchi-mata', 'unknown-move'] }],
       new Set(['uchi-mata']),
     ),
     /Judoka test-judoka references unknown technique "unknown-move"/,

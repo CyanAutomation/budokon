@@ -22,6 +22,21 @@ test("combined filters, exclusions, lookup, and count validation", () => {
   assert.equal(catalog.getJudoka("shozo-fujii").slug, "shozo-fujii");
   assert.throws(() => draw.draw({ count: 999 }), /exceeds eligible pool/);
 });
+test("display aliases, diacritic-free names, and legacy slugs resolve consistently", () => {
+  assert.equal(catalog.getJudoka("Shozo Fujii")?.slug, "shozo-fujii");
+  assert.equal(catalog.getJudoka("Shōzō Fujii")?.slug, "shozo-fujii");
+  assert.equal(catalog.getJudoka("askley-mckenzie")?.slug, "ashley-mckenzie");
+  assert.deepEqual(catalog.searchJudoka({ query: "Askley McKenzie" }).map(j => j.slug), ["ashley-mckenzie"]);
+});
+
+test("multi-technique filters match any requested technique across catalog, REST, MCP, and draws", () => {
+  const filters = { signatureMoveIds: ["seoi-nage", "o-soto-gari"] };
+  const expected = catalog.listJudoka({ filters }).map(j => j.slug);
+  assert.ok(expected.includes("shozo-fujii") && expected.includes("nina-cutro-kelly"));
+  assert.deepEqual(rest.listJudoka({ query: filters }).body.map(j => j.slug), expected);
+  assert.deepEqual(mcp.search_judoka({ filters }).judoka.map(j => j.slug), expected);
+  assert.equal(draw.draw({ count: 1, filters, seed: "multi-technique" }).poolSize, expected.length);
+});
 test("filters do not coerce missing field values into matches", () => {
   const sparseCatalog = new CatalogService({
     listJudoka: () => [
