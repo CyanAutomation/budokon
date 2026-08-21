@@ -11,6 +11,7 @@ import {
   validateTechniqueReferences,
 } from './build.mjs';
 import { compileArtifacts } from './build.mjs';
+import algorithmContract from '../src/draw/algorithm-contract.json' with { type: 'json' };
 
 const uppercaseUuid = '84D3B821-0CA8-42DE-B42C-2EB8D42C9C3B';
 
@@ -127,6 +128,8 @@ test('compiler produces a versioned manifest with counts and artifact checksums'
   assert.equal(manifest.datasetVersion, dataset.datasetVersion);
   assert.match(manifest.serviceVersion, /^\d+\.\d+\.\d+$/);
   assert.match(manifest.sourceGitCommit, /^[0-9a-f]{40}$/);
+  assert.deepEqual(manifest.drawAlgorithms, algorithmContract.supported);
+  assert.equal(manifest.defaultDrawAlgorithm, algorithmContract.default);
   assert.deepEqual(Object.keys(aggregate), ['datasetVersion', 'judoka', 'techniques', 'collections', 'countries', 'weightCategories']);
   assert.equal(aggregate.datasetVersion, dataset.datasetVersion);
   assert.deepEqual(aggregate.judoka, JSON.parse(artifacts['judoka.json']));
