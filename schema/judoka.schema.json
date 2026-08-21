@@ -3,7 +3,7 @@
   "$id": "https://budokon.example/schema/judoka.schema.json",
   "title": "Canonical judoka",
   "type": "object",
-  "required": ["id", "slug", "firstname", "surname", "personType", "countryCode", "weightClass", "category", "stats", "signatureMoveId", "lastUpdated", "profileUrl", "bio", "gender", "isHidden", "rarity"],
+  "required": ["id", "slug", "firstname", "surname", "personType", "countryCode", "weightClass", "category", "stats", "signatureMoveIds", "lastUpdated", "profileUrl", "bio", "gender", "isHidden", "rarity"],
   "properties": {
     "id": { "type": "string", "format": "uuid" },
     "slug": { "$ref": "#/$defs/slug" },
@@ -23,8 +23,9 @@
       },
       "additionalProperties": false
     },
-    "aliases": { "type": "array", "items": { "$ref": "#/$defs/slug" }, "uniqueItems": true },
-    "signatureMoveId": { "$ref": "#/$defs/slug" },
+    "aliases": { "type": "array", "items": { "$ref": "#/$defs/alias" }, "uniqueItems": true },
+    "legacySlugs": { "type": "array", "items": { "$ref": "#/$defs/slug" }, "uniqueItems": true },
+    "signatureMoveIds": { "type": "array", "items": { "$ref": "#/$defs/slug" }, "minItems": 1, "uniqueItems": true },
     "lastUpdated": { "type": "string", "format": "date-time" },
     "profileUrl": { "type": "string", "format": "uri", "pattern": "^https://" },
     "bio": { "type": "string", "minLength": 20 },
@@ -35,6 +36,7 @@
   "additionalProperties": false,
   "$defs": {
     "slug": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "alias": { "type": "string", "minLength": 1, "pattern": "^(?=.*[^a-z0-9-]).*\\S.*$" },
     "text": { "type": "string", "minLength": 1, "pattern": "\\S" },
     "stat": { "type": "integer", "minimum": 0, "maximum": 10 }
   }

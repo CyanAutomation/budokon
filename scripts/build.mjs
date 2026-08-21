@@ -22,7 +22,7 @@ export function validateCountryReferences(judoka, countries) {
   }
 }
 export function validateTechniqueReferences(judoka, ids) {
-  for (const record of judoka) if (record.signatureMoveId !== undefined && record.signatureMoveId !== null && !ids.has(record.signatureMoveId)) throw new Error(`Judoka ${record.slug} references unknown technique ${JSON.stringify(record.signatureMoveId)}`);
+  for (const record of judoka) for (const techniqueId of record.signatureMoveIds ?? []) if (!ids.has(techniqueId)) throw new Error(`Judoka ${record.slug} references unknown technique ${JSON.stringify(techniqueId)}`);
 }
 export const expandJudokaCountries = (judoka, countries) => judoka.map((record) => ({ ...record, country: countries[record.countryCode]?.country }));
 
