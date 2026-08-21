@@ -3,9 +3,9 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateCanonical } from '../src/validation/validate-canonical.mjs';
+import algorithmContract from '../src/draw/algorithm-contract.json' with { type: 'json' };
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const DRAW_ALGORITHM = 'budokon-v1';
 export const uuidPattern = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/;
 export const countryCodePattern = /^[A-Z]{2}$/;
 
@@ -66,8 +66,8 @@ export async function compileArtifacts(sourceGitCommit, sourceRoot = root) {
   const manifest = {
     datasetVersion: dataset.datasetVersion,
     serviceVersion: service.version,
-    drawAlgorithms: [DRAW_ALGORITHM],
-    defaultDrawAlgorithm: DRAW_ALGORITHM,
+    drawAlgorithms: [...algorithmContract.supported],
+    defaultDrawAlgorithm: algorithmContract.default,
     sourceGitCommit,
     recordCounts: {
       judoka: judoka.length,
