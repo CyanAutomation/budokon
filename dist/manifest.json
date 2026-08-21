@@ -1,7 +1,11 @@
 {
   "datasetVersion": "2026.08.1",
   "serviceVersion": "0.1.0",
-  "sourceGitCommit": "333781839a6e14bbaa95903bb081acd0ec8f8e0b",
+  "drawAlgorithms": [
+    "budokon-v1"
+  ],
+  "defaultDrawAlgorithm": "budokon-v1",
+  "sourceGitCommit": "45f9a528224233c6653cf68abdf0d1252f9411dc",
   "recordCounts": {
     "judoka": 7,
     "techniques": 100,

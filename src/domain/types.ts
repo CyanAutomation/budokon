@@ -26,6 +26,8 @@ export interface WeightCategoryGroup { gender: string; categories: JsonValue[]; 
 export interface ReleaseManifest {
   datasetVersion: string;
   serviceVersion: string;
+  drawAlgorithms: string[];
+  defaultDrawAlgorithm: string;
   [key: string]: JsonValue;
 }
 
@@ -46,7 +48,7 @@ export type Filters = Partial<Record<FilterField, string | string[]>>;
 export interface VisibilityOptions { includeHidden?: boolean; authorizedInternal?: boolean; }
 export interface ListJudokaOptions extends VisibilityOptions { filters?: Filters; exclude?: string[]; collection?: string; }
 export interface SearchJudokaOptions extends ListJudokaOptions { query?: string; q?: string; }
-export interface DrawRequest extends ListJudokaOptions { count?: number; seed?: string; }
+export interface DrawRequest extends ListJudokaOptions { count?: number; seed?: string; algorithm?: string; }
 export interface RequestContext { authorizedInternal?: boolean; }
-export interface DrawResponse { datasetVersion: string; seed?: string; poolSize: number; judoka: Judoka[]; }
-export interface VersionResponse { datasetVersion: string; serviceVersion: string; }
+export interface DrawResponse { datasetVersion: string; algorithm: string; seed?: string; poolSize: number; judoka: Judoka[]; }
+export interface VersionResponse { datasetVersion: string; serviceVersion: string; drawAlgorithms: string[]; defaultDrawAlgorithm: string; }

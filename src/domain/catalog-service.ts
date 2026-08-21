@@ -1,5 +1,6 @@
 import type { Filters, Judoka, ListJudokaOptions, SearchJudokaOptions, VersionResponse } from "./types.js";
 import type { ReadModelRepository } from "../repository/read-model-repository.js";
+import { DRAW_ALGORITHM, SUPPORTED_DRAW_ALGORITHMS } from "../draw/algorithm.js";
 
 const FILTER_FIELDS = new Set(["countryCode", "gender", "weightClass", "rarity", "personType", "signatureMoveId"]);
 const byImmutableId = (a: Judoka, b: Judoka) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
@@ -22,7 +23,7 @@ export function normalizeFilters(filters: Filters = {}): Record<string, string[]
 }
 export class CatalogService {
   constructor(readonly repository: ReadModelRepository) {}
-  version(): VersionResponse { return { datasetVersion: this.repository.datasetVersion, serviceVersion: this.repository.serviceVersion }; }
+  version(): VersionResponse { return { datasetVersion: this.repository.datasetVersion, serviceVersion: this.repository.serviceVersion, drawAlgorithms: [...SUPPORTED_DRAW_ALGORITHMS], defaultDrawAlgorithm: DRAW_ALGORITHM }; }
   listJudoka(options: ListJudokaOptions = {}): Judoka[] {
     const filters = normalizeFilters(options.filters); const exclusions = new Set((options.exclude ?? []).map(String));
     const includeHidden = options.includeHidden === true && options.authorizedInternal === true;
