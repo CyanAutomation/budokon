@@ -13,7 +13,7 @@ export interface Judoka {
   weightClass?: string;
   rarity?: string;
   personType?: string;
-  signatureMoveIds?: string[];
+  signatureMoveIds: string[];
   isHidden?: boolean;
   collections?: string[];
   [key: string]: JsonValue | undefined;
