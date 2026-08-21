@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { cp, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { cp, mkdtemp, readFile, rename, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -8,6 +8,7 @@ import { validateCanonical, validateSchema } from '../src/validation/validate-ca
 
 const repository = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const cases = JSON.parse(await readFile(new URL('./fixtures/semantic-cases.json', import.meta.url)));
+const textCases = JSON.parse(await readFile(new URL('./fixtures/semantic-text-cases.json', import.meta.url)));
 async function sandbox() {
   const root = await mkdtemp(path.join(os.tmpdir(), 'budokon-validation-'));
   for (const directory of ['schema', 'data']) await cp(path.join(repository, directory), path.join(root, directory), { recursive: true });
@@ -35,6 +36,39 @@ test('filenames match canonical slugs', async () => {
   const root = await sandbox();
   await change(path.join(root, 'data/judoka/ashley-mckenzie.json'), (record) => { record.slug = 'different-slug'; });
   await assert.rejects(validateCanonical(root), /filename must match canonical slug/);
+});
+
+test('technique filenames match canonical IDs', async () => {
+  const root = await sandbox();
+  await rename(path.join(root, 'data/techniques/ashi-garami.json'), path.join(root, 'data/techniques/not-ashi-garami.json'));
+  await assert.rejects(validateCanonical(root), /filename must match canonical ID ashi-garami/);
+});
+
+test('fixture-based semantic text rules cover every canonical dataset and nested text', async () => {
+  for (const fixture of textCases) {
+    const root = await sandbox();
+    await change(path.join(root, fixture.file), (record) => {
+      let target = record;
+      for (const segment of fixture.path.slice(0, -1)) target = target[segment];
+      target[fixture.path.at(-1)] = fixture.value;
+    });
+    await assert.rejects(validateCanonical(root), new RegExp(fixture.message), fixture.name);
+  }
+});
+
+test('future country timestamps are rejected', async () => {
+  const root = await sandbox();
+  await change(path.join(root, 'data/reference/countries.json'), countries => { countries.JP.lastUpdated = '2999-01-01T00:00:00Z'; });
+  await assert.rejects(validateCanonical(root), /countries\.JP\.lastUpdated must not be in the future/);
+});
+
+test('prohibited game-state property names remain rejected if schemas expand', async () => {
+  for (const property of ['matchesWon', 'matchesLost', 'matchesDrawn', 'playerOwnership', 'experiencePoints', 'cardInstanceId', 'gameScore']) {
+    const root = await sandbox();
+    await change(path.join(root, 'schema/dataset.schema.json'), schema => { schema.additionalProperties = true; });
+    await change(path.join(root, 'data/dataset.json'), dataset => { dataset.futureSchema = { [property]: true }; });
+    await assert.rejects(validateCanonical(root), new RegExp(`dataset\\.json\\.futureSchema\\.${property} is a prohibited game-state property`));
+  }
 });
 
 test('collections reject invalid references, duplicate IDs and duplicate members', async () => {

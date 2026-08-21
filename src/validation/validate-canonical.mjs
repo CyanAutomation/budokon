@@ -4,6 +4,10 @@ import { fileURLToPath } from 'node:url';
 
 const defaultRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const placeholder = /^(?:todo|tbd|unknown|n\/?a|none|more info to come)(?=$|[\s:_\p{P}\p{S}])/iu;
+const prohibitedGameStateProperties = new Set([
+  'matchesWon', 'matchesLost', 'matchesDrawn', 'playerOwnership',
+  'experiencePoints', 'cardInstanceId', 'gameScore',
+]);
 const rfc3339 = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?Z$/;
 function isValidDateTime(value) {
   if (!rfc3339.test(value)) return false;
@@ -72,6 +76,21 @@ async function records(directory) {
   return Promise.all(names.map(async (name) => ({ name, value: await parse(path.join(directory, name)) })));
 }
 function normalizedName(value) { return String(value).normalize('NFD').replace(/\p{Mark}+/gu, '').toLowerCase().replace(/[^\p{Letter}\p{Number}]+/gu, ' ').trim().replace(/\s+/gu, ' '); }
+function meaningfulText(value, location) {
+  if (!value.trim()) throw new Error(`${location} must contain meaningful text`);
+  if (placeholder.test(value.trim())) throw new Error(`${location} contains placeholder content`);
+}
+function rejectGameStateProperties(value, location) {
+  if (!value || typeof value !== 'object') return;
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => rejectGameStateProperties(item, `${location}[${index}]`));
+    return;
+  }
+  for (const [key, item] of Object.entries(value)) {
+    if (prohibitedGameStateProperties.has(key)) throw new Error(`${location}.${key} is a prohibited game-state property`);
+    rejectGameStateProperties(item, `${location}.${key}`);
+  }
+}
 function unique(items, field, label) {
   const seen = new Map();
   for (const item of items) {
@@ -100,6 +119,12 @@ export async function validateCanonical(root = defaultRoot) {
   validateSchema(countries, countriesSchema, 'data/reference/countries.json');
   validateSchema(weights, weightsSchema, 'data/reference/weight-categories.json');
   validateSchema(dataset, datasetSchema, 'data/dataset.json');
+  for (const { name, value } of judokaFiles) rejectGameStateProperties(value, `data/judoka/${name}`);
+  for (const { name, value } of techniqueFiles) rejectGameStateProperties(value, `data/techniques/${name}`);
+  for (const { name, value } of collectionFiles) rejectGameStateProperties(value, `data/collections/${name}`);
+  rejectGameStateProperties(countries, 'data/reference/countries.json');
+  rejectGameStateProperties(weights, 'data/reference/weight-categories.json');
+  rejectGameStateProperties(dataset, 'data/dataset.json');
   const judoka = judokaFiles.map(({ value }) => value), techniques = techniqueFiles.map(({ value }) => value), collections = collectionFiles.map(({ value }) => value);
   unique(judoka, 'id', 'judoka UUID'); unique(judoka, 'handles', 'judoka slug or legacy slug');
   const names = new Map();
@@ -110,6 +135,9 @@ export async function validateCanonical(root = defaultRoot) {
   } unique(techniques, 'id', 'technique ID'); unique(collections, 'id', 'collection ID');
   for (const file of judokaFiles) if (path.parse(file.name).name !== file.value.slug) {
     throw new Error(`data/judoka/${file.name}: filename must match canonical slug ${file.value.slug}`);
+  }
+  for (const file of techniqueFiles) if (path.parse(file.name).name !== file.value.id) {
+    throw new Error(`data/techniques/${file.name}: filename must match canonical ID ${file.value.id}`);
   }
   const judokaIds = new Set(judoka.map(({ id }) => id));
   for (const file of collectionFiles) {
@@ -124,16 +152,32 @@ export async function validateCanonical(root = defaultRoot) {
     if (new Set(values).size !== values.length) throw new Error(`duplicate ${group.gender} weight category`);
     weightMap.set(group.gender, new Set(values));
   }
-  for (const [key, country] of Object.entries(countries)) if (country.code !== key) throw new Error(`country key ${key} does not match embedded code ${country.code}`);
+  for (const [key, country] of Object.entries(countries)) {
+    if (country.code !== key) throw new Error(`country key ${key} does not match embedded code ${country.code}`);
+    meaningfulText(country.country, `countries.${key}.country`);
+    if (Date.parse(country.lastUpdated) > Date.now()) throw new Error(`countries.${key}.lastUpdated must not be in the future`);
+  }
   for (const record of judoka) {
     if (record.personType === 'fictional' && !record.isHidden) throw new Error(`${record.slug}: fictional judoka must be hidden`);
     if (!countries[record.countryCode]?.active) throw new Error(`${record.slug} references unknown or inactive country ${record.countryCode}`);
     for (const techniqueId of record.signatureMoveIds) if (!techniqueIds.has(techniqueId)) throw new Error(`${record.slug} references unknown technique ${techniqueId}`);
     if (!weightMap.get(record.gender)?.has(record.weightClass)) throw new Error(`${record.slug} has invalid ${record.gender} weight class ${record.weightClass}`);
     if (Date.parse(record.lastUpdated) > Date.now()) throw new Error(`${record.slug} lastUpdated must not be in the future`);
-    for (const [field, value] of Object.entries(record)) if (typeof value === 'string' && placeholder.test(value.trim())) throw new Error(`${record.slug}.${field} contains placeholder content`);
+    meaningfulText(record.firstname, `${record.slug}.firstname`);
+    meaningfulText(record.surname, `${record.slug}.surname`);
+    for (const [index, alias] of (record.aliases ?? []).entries()) meaningfulText(alias, `${record.slug}.aliases[${index}]`);
+    meaningfulText(record.bio, `${record.slug}.bio`);
   }
-  for (const record of techniques) if (placeholder.test(record.description.trim())) throw new Error(`${record.id}.description contains placeholder content`);
+  for (const record of techniques) {
+    meaningfulText(record.name, `${record.id}.name`);
+    meaningfulText(record.japanese, `${record.id}.japanese`);
+    meaningfulText(record.description, `${record.id}.description`);
+  }
+  for (const record of collections) meaningfulText(record.name, `${record.id}.name`);
+  for (const [groupIndex, group] of weights.entries()) {
+    meaningfulText(group.description, `weights[${groupIndex}].description`);
+    for (const [categoryIndex, category] of group.categories.entries()) meaningfulText(category.descriptor, `weights[${groupIndex}].categories[${categoryIndex}].descriptor`);
+  }
   return { judoka, techniques, collections, countries, weights, dataset };
 }
 
