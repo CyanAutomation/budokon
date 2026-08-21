@@ -15,20 +15,22 @@
       "kumikata": 7,
       "newaza": 8
     },
-    "signatureMoveId": "o-soto-gari",
     "lastUpdated": "2026-08-14T00:00:00Z",
     "profileUrl": "https://en.wikipedia.org/wiki/Nina_Cutro-Kelly",
     "bio": "Nina Cutro-Kelly represented the United States in the women’s heavyweight division at the Tokyo 2020 Olympic Games.",
     "gender": "female",
     "isHidden": false,
     "rarity": "Common",
+    "signatureMoveIds": [
+      "o-soto-gari"
+    ],
     "country": "United States"
   },
   {
     "id": "38690882-06a3-4d98-9b06-2789da1015db",
     "slug": "ilia-sulamanidze",
     "aliases": [
-      "ilia-sulamanidize"
+      "Ilia Sulamanidize"
     ],
     "firstname": "Ilia",
     "surname": "Sulamanidze",
@@ -43,13 +45,18 @@
       "kumikata": 9,
       "newaza": 7
     },
-    "signatureMoveId": "uchi-mata",
     "lastUpdated": "2026-08-14T00:00:00Z",
     "profileUrl": "https://en.wikipedia.org/wiki/Ilia_Sulamanidze",
     "bio": "Georgian half-heavyweight Ilia Sulamanidze won Olympic silver at Paris 2024 in the men’s 100 kg division.",
     "gender": "male",
     "isHidden": false,
     "rarity": "Common",
+    "signatureMoveIds": [
+      "uchi-mata"
+    ],
+    "legacySlugs": [
+      "ilia-sulamanidize"
+    ],
     "country": "Georgia"
   },
   {
@@ -68,13 +75,18 @@
       "kumikata": 7,
       "newaza": 8
     },
-    "signatureMoveId": "seoi-nage",
     "lastUpdated": "2026-08-14T00:00:00Z",
     "profileUrl": "https://en.wikipedia.org/wiki/Sh%C5%8Dz%C5%8D_Fujii",
     "bio": "Japanese judoka Shōzō Fujii won four consecutive world titles during the 1970s in the divisions now represented by 81 kg.",
     "gender": "male",
     "isHidden": false,
     "rarity": "Epic",
+    "signatureMoveIds": [
+      "seoi-nage"
+    ],
+    "aliases": [
+      "Shozo Fujii"
+    ],
     "country": "Japan"
   },
   {
@@ -93,20 +105,22 @@
       "kumikata": 9,
       "newaza": 9
     },
-    "signatureMoveId": "ura-nage",
     "lastUpdated": "2026-08-14T00:00:00Z",
     "profileUrl": "https://goldenkamuy.fandom.com/wiki/Tatsuuma_Ushiyama",
     "bio": "Tatsuuma Ushiyama is a fictional Golden Kamuy character: an escaped convict and formidable judo master known as “Ushiyama the Undefeated.”",
     "gender": "male",
     "isHidden": true,
     "rarity": "Legendary",
+    "signatureMoveIds": [
+      "ura-nage"
+    ],
     "country": "Japan"
   },
   {
     "id": "c7218eca-bebe-4508-932c-b9ef4813865b",
     "slug": "ashley-mckenzie",
     "aliases": [
-      "askley-mckenzie"
+      "Askley McKenzie"
     ],
     "firstname": "Ashley",
     "surname": "McKenzie",
@@ -121,13 +135,18 @@
       "kumikata": 7,
       "newaza": 8
     },
-    "signatureMoveId": "seoi-nage",
     "lastUpdated": "2026-08-14T00:00:00Z",
     "profileUrl": "https://en.wikipedia.org/wiki/Ashley_McKenzie",
     "bio": "Ashley McKenzie is a British-born lightweight who has represented both Great Britain and Jamaica in international judo.",
     "gender": "male",
     "isHidden": false,
     "rarity": "Common",
+    "signatureMoveIds": [
+      "seoi-nage"
+    ],
+    "legacySlugs": [
+      "askley-mckenzie"
+    ],
     "country": "Jamaica"
   },
   {
@@ -146,13 +165,15 @@
       "kumikata": 0,
       "newaza": 0
     },
-    "signatureMoveId": "ura-nage",
     "lastUpdated": "2026-08-14T00:00:00Z",
     "profileUrl": "https://en.wikipedia.org/wiki/Judo_Boy",
     "bio": "An unnamed mentor from the fictional world of Judo Boy, this judoka teaches the protagonist while he trains in Bhutan.",
     "gender": "male",
     "isHidden": true,
     "rarity": "Common",
+    "signatureMoveIds": [
+      "ura-nage"
+    ],
     "country": "Bhutan"
   },
   {
@@ -171,13 +192,15 @@
       "kumikata": 7,
       "newaza": 6
     },
-    "signatureMoveId": "uchi-mata",
     "lastUpdated": "2026-08-14T00:00:00Z",
     "profileUrl": "https://en.wikipedia.org/wiki/Joana_Ramos",
     "bio": "Portuguese lightweight Joana Ramos competed internationally in the 52 kg division across three Olympic Games.",
     "gender": "female",
     "isHidden": false,
     "rarity": "Common",
+    "signatureMoveIds": [
+      "uchi-mata"
+    ],
     "country": "Portugal"
   }
 ]

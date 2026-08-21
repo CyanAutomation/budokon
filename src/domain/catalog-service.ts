@@ -2,7 +2,7 @@ import type { Filters, Judoka, ListJudokaOptions, SearchJudokaOptions, VersionRe
 import type { ReadModelRepository } from "../repository/read-model-repository.js";
 import { DRAW_ALGORITHM, SUPPORTED_DRAW_ALGORITHMS } from "../draw/algorithm.js";
 
-const FILTER_FIELDS = new Set(["countryCode", "gender", "weightClass", "rarity", "personType", "signatureMoveId"]);
+const FILTER_FIELDS = new Set(["countryCode", "gender", "weightClass", "rarity", "personType", "signatureMoveIds"]);
 const byImmutableId = (a: Judoka, b: Judoka) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
 
 export function normalizeSearchText(value: unknown): string {
@@ -10,7 +10,7 @@ export function normalizeSearchText(value: unknown): string {
     .replace(/[^\p{Letter}\p{Number}]+/gu, " ").trim().replace(/\s+/gu, " ");
 }
 function searchableValues(judoka: Judoka) {
-  return [judoka.slug, judoka.firstname, judoka.surname, `${judoka.firstname ?? ""} ${judoka.surname ?? ""}`.trim(), ...(judoka.aliases ?? [])].map(normalizeSearchText).filter(Boolean);
+  return [judoka.slug, ...(judoka.legacySlugs ?? []), judoka.firstname, judoka.surname, `${judoka.firstname ?? ""} ${judoka.surname ?? ""}`.trim(), ...(judoka.aliases ?? [])].map(normalizeSearchText).filter(Boolean);
 }
 export function normalizeFilters(filters: Filters = {}): Record<string, string[]> {
   if (filters === null || typeof filters !== "object" || Array.isArray(filters)) throw new TypeError("filters must be an object");
@@ -31,7 +31,9 @@ export class CatalogService {
     const record = collection === undefined ? undefined : this.repository.getCollection(collection);
     const members = record ? new Set((record.members ?? []).map(String)) : undefined;
     return this.repository.listJudoka().filter(j => includeHidden || j.isHidden !== true)
-      .filter(j => Object.entries(filters).every(([field, values]) => j[field] != null && values.includes(String(j[field]))))
+      .filter(j => Object.entries(filters).every(([field, values]) => field === "signatureMoveIds"
+        ? Array.isArray(j.signatureMoveIds) && values.some(value => j.signatureMoveIds!.includes(value))
+        : j[field] != null && values.includes(String(j[field]))))
       .filter(j => !exclusions.has(j.id) && !exclusions.has(j.slug))
       .filter(j => collection === undefined || (members ? members.has(j.id) || members.has(j.slug) : j.collections?.includes(collection)));
   }

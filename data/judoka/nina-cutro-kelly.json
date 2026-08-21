@@ -14,11 +14,13 @@
     "kumikata": 7,
     "newaza": 8
   },
-  "signatureMoveId": "o-soto-gari",
   "lastUpdated": "2026-08-14T00:00:00Z",
   "profileUrl": "https://en.wikipedia.org/wiki/Nina_Cutro-Kelly",
   "bio": "Nina Cutro-Kelly represented the United States in the women’s heavyweight division at the Tokyo 2020 Olympic Games.",
   "gender": "female",
   "isHidden": false,
-  "rarity": "Common"
+  "rarity": "Common",
+  "signatureMoveIds": [
+    "o-soto-gari"
+  ]
 }
