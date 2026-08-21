@@ -68,6 +68,9 @@ test("version, draw, and MCP results expose the canonical dataset version", () =
   assert.equal(mcp.search_judoka().datasetVersion, "2026.08.1");
   assert.equal(mcp.get_judoka({ id: "shozo-fujii" }).datasetVersion, "2026.08.1");
   assert.equal(mcp.version().datasetVersion, "2026.08.1");
+  assert.deepEqual(rest.version().body.drawAlgorithms, ["budokon-v1"]);
+  assert.equal(rest.version().body.defaultDrawAlgorithm, "budokon-v1");
+  assert.equal(rest.draw({ body: {} }).body.algorithm, "budokon-v1");
 });
 
 test("search normalizes case, whitespace, punctuation, and diacritics across every text field", () => {
