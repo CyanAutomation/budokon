@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2022", "module": "NodeNext", "moduleResolution": "NodeNext",
-    "lib": ["ES2022", "DOM"], "strict": true, "declaration": true,
+    "lib": ["ES2022", "DOM"], "strict": true, "declaration": true, "resolveJsonModule": true,
     "outDir": "build/runtime", "rootDir": "src", "noEmitOnError": true,
     "verbatimModuleSyntax": true, "skipLibCheck": true
   },
