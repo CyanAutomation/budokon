@@ -32,7 +32,7 @@ export class CatalogService {
     const members = record ? new Set((record.members ?? []).map(String)) : undefined;
     return this.repository.listJudoka().filter(j => includeHidden || j.isHidden !== true)
       .filter(j => Object.entries(filters).every(([field, values]) => field === "signatureMoveIds"
-        ? Array.isArray(j.signatureMoveIds) && values.some(value => j.signatureMoveIds!.includes(value))
+        ? j.signatureMoveIds && Array.isArray(j.signatureMoveIds) && values.some(value => j.signatureMoveIds!.includes(value))
         : j[field] != null && values.includes(String(j[field]))))
       .filter(j => !exclusions.has(j.id) && !exclusions.has(j.slug))
       .filter(j => collection === undefined || (members ? members.has(j.id) || members.has(j.slug) : j.collections?.includes(collection)));
