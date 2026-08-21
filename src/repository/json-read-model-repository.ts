@@ -26,7 +26,13 @@ export class JsonReadModelRepository extends ReadModelRepository {
   get datasetVersion() { return this.model.datasetVersion; }
   get serviceVersion() { if (!this.model.manifest?.serviceVersion) throw new Error("Invalid manifest: missing serviceVersion"); return this.model.manifest.serviceVersion; }
   listJudoka() { return this.model.judoka.slice(); }
-  getJudoka(key: string | undefined) { return key === undefined ? undefined : this.model.judoka.find(j => j.id === key || j.slug === key || j.aliases?.includes(key)); }
+  getJudoka(key: string | undefined) {
+    if (key === undefined) return undefined;
+    const normalized = String(key).normalize("NFD").replace(/\p{Mark}+/gu, "").toLowerCase().replace(/[^\p{Letter}\p{Number}]+/gu, " ").trim().replace(/\s+/gu, " ");
+    return this.model.judoka.find(j => j.id === key || j.slug === key || j.legacySlugs?.includes(key)
+      || [j.firstname, j.surname, `${j.firstname ?? ""} ${j.surname ?? ""}`.trim(), ...(j.aliases ?? [])]
+        .some(value => String(value ?? "").normalize("NFD").replace(/\p{Mark}+/gu, "").toLowerCase().replace(/[^\p{Letter}\p{Number}]+/gu, " ").trim().replace(/\s+/gu, " ") === normalized));
+  }
   listCollections() { return this.model.collections.slice(); }
   getCollection(key: string | undefined) { return key === undefined ? undefined : this.model.collections.find(collection => collection.id === key); }
   listTechniques() { return this.model.techniques.slice(); }

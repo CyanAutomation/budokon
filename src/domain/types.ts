@@ -7,12 +7,13 @@ export interface Judoka {
   firstname?: string;
   surname?: string;
   aliases?: string[];
+  legacySlugs?: string[];
   countryCode?: string;
   gender?: string;
   weightClass?: string;
   rarity?: string;
   personType?: string;
-  signatureMoveId?: string;
+  signatureMoveIds: string[];
   isHidden?: boolean;
   collections?: string[];
   [key: string]: JsonValue | undefined;
@@ -43,7 +44,7 @@ export interface CompiledDataset {
   manifest?: ReleaseManifest;
 }
 
-export type FilterField = "countryCode" | "gender" | "weightClass" | "rarity" | "personType" | "signatureMoveId";
+export type FilterField = "countryCode" | "gender" | "weightClass" | "rarity" | "personType" | "signatureMoveIds";
 export type Filters = Partial<Record<FilterField, string | string[]>>;
 export interface VisibilityOptions { includeHidden?: boolean; authorizedInternal?: boolean; }
 export interface ListJudokaOptions extends VisibilityOptions { filters?: Filters; exclude?: string[]; collection?: string; }

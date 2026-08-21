@@ -71,10 +71,11 @@ async function records(directory) {
   const names = (await readdir(directory)).filter((name) => name.endsWith('.json')).sort();
   return Promise.all(names.map(async (name) => ({ name, value: await parse(path.join(directory, name)) })));
 }
+function normalizedName(value) { return String(value).normalize('NFD').replace(/\p{Mark}+/gu, '').toLowerCase().replace(/[^\p{Letter}\p{Number}]+/gu, ' ').trim().replace(/\s+/gu, ' '); }
 function unique(items, field, label) {
   const seen = new Map();
   for (const item of items) {
-    for (const value of field === 'handles' ? [item.slug, ...(item.aliases ?? [])] : [item[field]]) {
+    for (const value of field === 'handles' ? [item.slug, ...(item.legacySlugs ?? [])] : [item[field]]) {
       if (seen.has(value)) throw new Error(`duplicate ${label} ${JSON.stringify(value)} in ${seen.get(value)} and ${item.slug ?? item.id}`);
       seen.set(value, item.slug ?? item.id);
     }
@@ -100,7 +101,13 @@ export async function validateCanonical(root = defaultRoot) {
   validateSchema(weights, weightsSchema, 'data/reference/weight-categories.json');
   validateSchema(dataset, datasetSchema, 'data/dataset.json');
   const judoka = judokaFiles.map(({ value }) => value), techniques = techniqueFiles.map(({ value }) => value), collections = collectionFiles.map(({ value }) => value);
-  unique(judoka, 'id', 'judoka UUID'); unique(judoka, 'handles', 'judoka slug or alias'); unique(techniques, 'id', 'technique ID'); unique(collections, 'id', 'collection ID');
+  unique(judoka, 'id', 'judoka UUID'); unique(judoka, 'handles', 'judoka slug or legacy slug');
+  const names = new Map();
+  for (const record of judoka) for (const name of [`${record.firstname} ${record.surname}`, ...(record.aliases ?? [])]) {
+    const normalized = normalizedName(name);
+    if (names.has(normalized) && names.get(normalized) !== record.slug) throw new Error(`ambiguous normalized judoka name ${JSON.stringify(normalized)} in ${names.get(normalized)} and ${record.slug}`);
+    names.set(normalized, record.slug);
+  } unique(techniques, 'id', 'technique ID'); unique(collections, 'id', 'collection ID');
   for (const file of judokaFiles) if (path.parse(file.name).name !== file.value.slug) {
     throw new Error(`data/judoka/${file.name}: filename must match canonical slug ${file.value.slug}`);
   }
@@ -121,7 +128,7 @@ export async function validateCanonical(root = defaultRoot) {
   for (const record of judoka) {
     if (record.personType === 'fictional' && !record.isHidden) throw new Error(`${record.slug}: fictional judoka must be hidden`);
     if (!countries[record.countryCode]?.active) throw new Error(`${record.slug} references unknown or inactive country ${record.countryCode}`);
-    if (!techniqueIds.has(record.signatureMoveId)) throw new Error(`${record.slug} references unknown technique ${record.signatureMoveId}`);
+    for (const techniqueId of record.signatureMoveIds) if (!techniqueIds.has(techniqueId)) throw new Error(`${record.slug} references unknown technique ${techniqueId}`);
     if (!weightMap.get(record.gender)?.has(record.weightClass)) throw new Error(`${record.slug} has invalid ${record.gender} weight class ${record.weightClass}`);
     if (Date.parse(record.lastUpdated) > Date.now()) throw new Error(`${record.slug} lastUpdated must not be in the future`);
     for (const [field, value] of Object.entries(record)) if (typeof value === 'string' && placeholder.test(value.trim())) throw new Error(`${record.slug}.${field} contains placeholder content`);

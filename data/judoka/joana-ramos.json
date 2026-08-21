@@ -14,11 +14,13 @@
     "kumikata": 7,
     "newaza": 6
   },
-  "signatureMoveId": "uchi-mata",
   "lastUpdated": "2026-08-14T00:00:00Z",
   "profileUrl": "https://en.wikipedia.org/wiki/Joana_Ramos",
   "bio": "Portuguese lightweight Joana Ramos competed internationally in the 52 kg division across three Olympic Games.",
   "gender": "female",
   "isHidden": false,
-  "rarity": "Common"
+  "rarity": "Common",
+  "signatureMoveIds": [
+    "uchi-mata"
+  ]
 }

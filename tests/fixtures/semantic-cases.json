@@ -1,10 +1,10 @@
 [
   {"name":"duplicate UUID","kind":"judoka-copy","field":"id","message":"duplicate judoka UUID"},
-  {"name":"duplicate slug","kind":"judoka-copy","field":"slug","message":"duplicate judoka slug or alias"},
-  {"name":"alias collision","kind":"alias","message":"duplicate judoka slug or alias"},
+  {"name":"duplicate slug","kind":"judoka-copy","field":"slug","message":"duplicate judoka slug or legacy slug"},
+  {"name":"normalized alias collision","kind":"alias","message":"ambiguous normalized judoka name"},
   {"name":"duplicate technique ID","kind":"technique-copy","message":"duplicate technique ID"},
   {"name":"unknown country","kind":"judoka","field":"countryCode","value":"ZZ","message":"unknown or inactive country"},
-  {"name":"unknown signature move","kind":"judoka","field":"signatureMoveId","value":"not-a-technique","message":"unknown technique"},
+  {"name":"unknown signature move","kind":"judoka","field":"signatureMoveIds","value":["not-a-technique"],"message":"unknown technique"},
   {"name":"gender-incompatible weight","kind":"judoka","field":"weightClass","value":"-48","message":"invalid male weight class"},
   {"name":"placeholder content","kind":"judoka","field":"bio","value":"TODO: write this biography later","message":"placeholder content"}
 ]

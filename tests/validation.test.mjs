@@ -64,7 +64,7 @@ for (const fixture of cases) test(`rejects ${fixture.name}`, async () => {
   const techniqueDir = path.join(root, 'data/techniques');
   const firstJudoka = path.join(judokaDir, 'ashley-mckenzie.json');
   if (fixture.kind === 'judoka') await change(firstJudoka, (record) => { record[fixture.field] = fixture.value; });
-  if (fixture.kind === 'alias') await change(firstJudoka, (record) => { record.aliases = ['ilia-sulamanidze']; });
+  if (fixture.kind === 'alias') await change(firstJudoka, (record) => { record.aliases = ['Ilia Sulamanidze']; });
   if (fixture.kind === 'judoka-copy') {
     const original = JSON.parse(await readFile(firstJudoka));
     const other = JSON.parse(await readFile(path.join(judokaDir, 'ilia-sulamanidze.json')));
