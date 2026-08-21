@@ -14,11 +14,13 @@
     "kumikata": 0,
     "newaza": 0
   },
-  "signatureMoveId": "ura-nage",
   "lastUpdated": "2026-08-14T00:00:00Z",
   "profileUrl": "https://en.wikipedia.org/wiki/Judo_Boy",
   "bio": "An unnamed mentor from the fictional world of Judo Boy, this judoka teaches the protagonist while he trains in Bhutan.",
   "gender": "male",
   "isHidden": true,
-  "rarity": "Common"
+  "rarity": "Common",
+  "signatureMoveIds": [
+    "ura-nage"
+  ]
 }

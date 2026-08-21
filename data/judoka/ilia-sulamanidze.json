@@ -2,7 +2,7 @@
   "id": "38690882-06a3-4d98-9b06-2789da1015db",
   "slug": "ilia-sulamanidze",
   "aliases": [
-    "ilia-sulamanidize"
+    "Ilia Sulamanidize"
   ],
   "firstname": "Ilia",
   "surname": "Sulamanidze",
@@ -17,11 +17,16 @@
     "kumikata": 9,
     "newaza": 7
   },
-  "signatureMoveId": "uchi-mata",
   "lastUpdated": "2026-08-14T00:00:00Z",
   "profileUrl": "https://en.wikipedia.org/wiki/Ilia_Sulamanidze",
   "bio": "Georgian half-heavyweight Ilia Sulamanidze won Olympic silver at Paris 2024 in the men’s 100 kg division.",
   "gender": "male",
   "isHidden": false,
-  "rarity": "Common"
+  "rarity": "Common",
+  "signatureMoveIds": [
+    "uchi-mata"
+  ],
+  "legacySlugs": [
+    "ilia-sulamanidize"
+  ]
 }

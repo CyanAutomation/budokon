@@ -14,11 +14,13 @@
     "kumikata": 9,
     "newaza": 9
   },
-  "signatureMoveId": "ura-nage",
   "lastUpdated": "2026-08-14T00:00:00Z",
   "profileUrl": "https://goldenkamuy.fandom.com/wiki/Tatsuuma_Ushiyama",
   "bio": "Tatsuuma Ushiyama is a fictional Golden Kamuy character: an escaped convict and formidable judo master known as “Ushiyama the Undefeated.”",
   "gender": "male",
   "isHidden": true,
-  "rarity": "Legendary"
+  "rarity": "Legendary",
+  "signatureMoveIds": [
+    "ura-nage"
+  ]
 }
