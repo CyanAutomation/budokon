@@ -77,7 +77,7 @@ async function records(directory) {
 }
 function normalizedName(value) { return String(value).normalize('NFD').replace(/\p{Mark}+/gu, '').toLowerCase().replace(/[^\p{Letter}\p{Number}]+/gu, ' ').trim().replace(/\s+/gu, ' '); }
 function meaningfulText(value, location) {
-  if (!value.trim()) throw new Error(`${location} must contain meaningful text`);
+  if (typeof value !== 'string' || !value.trim()) throw new Error(`${location} must contain meaningful text`);
   if (placeholder.test(value.trim())) throw new Error(`${location} contains placeholder content`);
 }
 function rejectGameStateProperties(value, location) {
