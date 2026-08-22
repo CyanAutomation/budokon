@@ -1,0 +1,13 @@
+[
+  {"name":"judoka first name placeholder","file":"data/judoka/ashley-mckenzie.json","path":["firstname"],"value":"TODO","message":"firstname contains placeholder content"},
+  {"name":"judoka surname placeholder","file":"data/judoka/ashley-mckenzie.json","path":["surname"],"value":"Unknown person","message":"surname contains placeholder content"},
+  {"name":"judoka nested alias placeholder","file":"data/judoka/ashley-mckenzie.json","path":["aliases",0],"value":"N/A alias","message":"aliases\\[0\\] contains placeholder content"},
+  {"name":"judoka biography placeholder","file":"data/judoka/ashley-mckenzie.json","path":["bio"],"value":"More info to come: biography pending.","message":"bio contains placeholder content"},
+  {"name":"technique name placeholder","file":"data/techniques/ashi-garami.json","path":["name"],"value":"TBD","message":"name contains placeholder content"},
+  {"name":"technique Japanese name placeholder","file":"data/techniques/ashi-garami.json","path":["japanese"],"value":"None yet","message":"japanese contains placeholder content"},
+  {"name":"technique description placeholder","file":"data/techniques/ashi-garami.json","path":["description"],"value":"TODO: describe technique","message":"description contains placeholder content"},
+  {"name":"country display name placeholder","file":"data/reference/countries.json","path":["JP","country"],"value":"Unknown country","message":"countries.JP.country contains placeholder content"},
+  {"name":"weight description placeholder","file":"data/reference/weight-categories.json","path":[0,"description"],"value":"N/A weights","message":"weights\\[0\\].description contains placeholder content"},
+  {"name":"nested weight descriptor placeholder","file":"data/reference/weight-categories.json","path":[0,"categories",0,"descriptor"],"value":"None specified","message":"categories\\[0\\].descriptor contains placeholder content"},
+  {"name":"collection name placeholder","file":"data/collections/featured-judoka.json","path":["name"],"value":"TBD collection","message":"featured-judoka.name contains placeholder content"}
+]
