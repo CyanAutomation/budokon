@@ -56,6 +56,13 @@ test('fixture-based semantic text rules cover every canonical dataset and nested
   }
 });
 
+test('semantic text validation rejects non-string values without crashing', async () => {
+  const root = await sandbox();
+  await change(path.join(root, 'schema/collection.schema.json'), (schema) => { delete schema.properties.name.type; });
+  await change(path.join(root, 'data/collections/featured-judoka.json'), (record) => { record.name = null; });
+  await assert.rejects(validateCanonical(root), /featured-judoka\.name must contain meaningful text/);
+});
+
 test('future country timestamps are rejected', async () => {
   const root = await sandbox();
   await change(path.join(root, 'data/reference/countries.json'), countries => { countries.JP.lastUpdated = '2999-01-01T00:00:00Z'; });
