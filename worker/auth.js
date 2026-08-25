@@ -23,9 +23,4 @@ export function authorized(request, expected) {
     matches |= (credValue.charCodeAt(i) || 0) ^ (expected.charCodeAt(i) || 0);
   }
   return matches === 0;
-  let matches = 0;
-  for (let i = 0; i < expected.length; i++) {
-    matches |= credValue.charCodeAt(i) ^ expected.charCodeAt(i);
-  }
-  return matches === 0;
 }
