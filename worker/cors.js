@@ -55,8 +55,10 @@ function weaklyMatchesEtag(ifNoneMatch, etag) {
 
   return validators.some(validator => {
     if (validator === "*") return true;
-    const opaqueTag = validator.startsWith("W/") ? validator.slice(2) : validator;
-    return /^"[\x21\x23-\x7e\x80-\xff]*"$/.test(opaqueTag) && opaqueTag === etag;
+    const weakPrefix = validator.startsWith("W/") ? "W/" : "";
+    const opaqueTag = weakPrefix ? validator.slice(2) : validator;
+    const isValid = /^"[\x21\x23-\x7e\x80-\xff]*"$/.test(opaqueTag) && validator === weakPrefix + opaqueTag;
+    return isValid && opaqueTag === etag;
   });
 }
 
