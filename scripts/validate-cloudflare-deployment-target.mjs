@@ -21,10 +21,15 @@ if (target.protocol !== "https:" || target.username || target.password || target
 }
 
 async function cloudflare(path) {
-  const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}${path}`, {
+  const response = await fetch(` {
     headers: { authorization: `Bearer ${apiToken}` },
   });
-  const body = await response.json();
+  let body;
+  try {
+    body = await response.json();
+  } catch {
+    throw new Error(`Cloudflare API request ${path} failed (non-JSON response, status ${response.status})`);
+  }
   if (!response.ok || !body.success) {
     const messages = Array.isArray(body.errors) ? body.errors.map(({ code, message }) => `${code}: ${message}`).join("; ") : response.statusText;
     throw new Error(`Cloudflare API request ${path} failed (${messages})`);
