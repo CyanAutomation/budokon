@@ -6,11 +6,16 @@ import { createRestRouter } from "../src/api/router.js";
 import { createMcpTools } from "../src/mcp/tools.js";
 import { JsonReadModelRepository } from "../src/repository/json-read-model-repository.js";
 import { authorized } from "./auth.js";
+import { cachePublicGet, preflightResponse, withCors } from "./cors.js";
+import { rateLimitPublicRequest } from "./rate-limit.js";
 
 interface Env {
   API_KEY: string;
   /** Optional elevated credential which alone may access hidden records. */
   INTERNAL_API_KEY?: string;
+  /** Comma-separated browser origins permitted to read the public REST API. */
+  PUBLIC_ALLOWED_ORIGINS?: string;
+  PUBLIC_RATE_LIMITER?: { limit(options: { key: string }): Promise<{ success: boolean }> };
 }
 
 type JsonObject = Record<string, unknown>;
@@ -61,9 +66,21 @@ async function handleMcp(request: Request, env: Env) {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    if (!authorized(request, env.API_KEY)) return json({ error: { code: "unauthorized", message: "A valid API key is required" } }, 401, { "www-authenticate": "Bearer" });
-    if (new URL(request.url).pathname === "/mcp") return handleMcp(request, env);
-    // The portable REST router's internal-visibility hook needs the deployment secret.
-    return createRestRouter({ catalog, draw }, { authorizeInternal: candidate => authorized(candidate, env.INTERNAL_API_KEY) })(request);
+    const path = new URL(request.url).pathname;
+    if (request.method === "OPTIONS") return path.startsWith("/v1/") ? preflightResponse(request, env) : new Response(null, { status: 405, headers: { allow: "POST" } });
+    let response: Response;
+    if (path === "/mcp") {
+      response = authorized(request, env.API_KEY)
+        ? await handleMcp(request, env)
+        : json({ error: { code: "unauthorized", message: "A valid API key is required" } }, 401, { "www-authenticate": "Bearer" });
+    } else {
+      // Catalogue reads and draws are public; hidden records still require INTERNAL_API_KEY.
+      response = await rateLimitPublicRequest(request, env) ?? cachePublicGet(
+        await createRestRouter({ catalog, draw }, { authorizeInternal: candidate => authorized(candidate, env.INTERNAL_API_KEY) })(request),
+        request,
+        catalog.version().datasetVersion
+      );
+    }
+    return path.startsWith("/v1/") ? withCors(response, request, env) : response;
   }
 };

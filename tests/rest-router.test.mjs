@@ -34,6 +34,21 @@ test("repeated and comma-separated combined filters share OR/AND semantics", asy
   assert.deepEqual(records, catalog.searchJudoka({ filters: { countryCode: ["JP", "GE", "FR"], gender: ["male"], signatureMoveIds: ["seoi-nage", "o-soto-gari"] } }));
 });
 
+test("judoka pagination is opt-in, bounded, and preserves the filtered canonical order", async () => {
+  const all = catalog.listJudoka();
+  const first = await request("/v1/judoka?limit=1");
+  assert.equal(first.status, 200);
+  const firstPage = await body(first);
+  assert.deepEqual(firstPage.judoka, all.slice(0, 1));
+  assert.equal(firstPage.nextCursor, all[0].id);
+
+  const second = await request(`/v1/judoka?limit=1&cursor=${encodeURIComponent(firstPage.nextCursor)}`);
+  assert.deepEqual((await body(second)).judoka, all.slice(1, 2));
+  assert.equal((await request("/v1/judoka?limit=0")).status, 400);
+  assert.equal((await request("/v1/judoka?limit=101")).status, 400);
+  assert.equal((await request("/v1/judoka?cursor=missing")).status, 400);
+});
+
 test("hidden access is explicit and unauthorized access is forbidden", async () => {
   let response = await request("/v1/judoka?includeHidden=true");
   assert.equal(response.status, 403); assert.equal((await body(response)).error.code, "forbidden");

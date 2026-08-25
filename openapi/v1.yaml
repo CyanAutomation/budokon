@@ -1,0 +1,103 @@
+openapi: 3.1.0
+info:
+  title: BU-DO-KON public catalogue API
+  version: 1.0.0
+  description: Read-only, browser-safe REST interface for the BU-DO-KON judoka catalogue.
+servers:
+  - url: https://budokon.scheimann.workers.dev
+paths:
+  /v1/judoka:
+    get:
+      summary: Search, filter, or page public judoka
+      parameters:
+        - $ref: '#/components/parameters/Q'
+        - $ref: '#/components/parameters/CountryCode'
+        - $ref: '#/components/parameters/Gender'
+        - $ref: '#/components/parameters/WeightClass'
+        - $ref: '#/components/parameters/Rarity'
+        - $ref: '#/components/parameters/PersonType'
+        - $ref: '#/components/parameters/SignatureMoveIds'
+        - $ref: '#/components/parameters/Collection'
+        - $ref: '#/components/parameters/Exclude'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200': { description: Judoka array, or a page object when limit is supplied }
+        '400': { $ref: '#/components/responses/BadRequest' }
+  /v1/judoka/{id}:
+    get:
+      summary: Look up a public judoka by UUID, slug, legacy slug, or name alias
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses: { '200': { description: Judoka }, '404': { $ref: '#/components/responses/NotFound' } }
+  /v1/techniques:
+    get: { summary: List techniques, responses: { '200': { description: Technique array } } }
+  /v1/techniques/{id}:
+    get:
+      summary: Get a technique
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses: { '200': { description: Technique }, '404': { $ref: '#/components/responses/NotFound' } }
+  /v1/collections:
+    get: { summary: List collections, responses: { '200': { description: Collection array } } }
+  /v1/collections/{id}:
+    get:
+      summary: Get a collection
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses: { '200': { description: Collection }, '404': { $ref: '#/components/responses/NotFound' } }
+  /v1/countries:
+    get: { summary: List supported countries, responses: { '200': { description: Country map } } }
+  /v1/weight-categories:
+    get: { summary: List weight categories, responses: { '200': { description: Weight-category array } } }
+  /v1/version:
+    get: { summary: Get catalogue and draw-algorithm versions, responses: { '200': { description: Version metadata } } }
+  /v1/draw:
+    post:
+      summary: Draw one or more public judoka
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                count: { type: integer, minimum: 1 }
+                seed: { type: string }
+                algorithm: { type: string, example: budokon-v1 }
+                filters: { $ref: '#/components/schemas/Filters' }
+                exclude: { type: array, items: { type: string } }
+                collection: { type: string }
+      responses:
+        '200': { description: Draw result }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { description: Requested count exceeds the eligible pool }
+components:
+  parameters:
+    Id: { name: id, in: path, required: true, schema: { type: string } }
+    Q: { name: q, in: query, schema: { type: string } }
+    CountryCode: { name: countryCode, in: query, schema: { type: string, example: JP } }
+    Gender: { name: gender, in: query, schema: { type: string, example: female } }
+    WeightClass: { name: weightClass, in: query, schema: { type: string, example: '-81' } }
+    Rarity: { name: rarity, in: query, schema: { type: string, example: Legendary } }
+    PersonType: { name: personType, in: query, schema: { type: string, example: real } }
+    SignatureMoveIds: { name: signatureMoveIds, in: query, schema: { type: string, example: seoi-nage } }
+    Collection: { name: collection, in: query, schema: { type: string } }
+    Exclude: { name: exclude, in: query, schema: { type: string } }
+    Limit: { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
+    Cursor: { name: cursor, in: query, schema: { type: string, description: id returned as nextCursor } }
+  schemas:
+    Filters:
+      type: object
+      additionalProperties: false
+      properties:
+        countryCode: { oneOf: [ { type: string }, { type: array, items: { type: string } } ] }
+        gender: { oneOf: [ { type: string }, { type: array, items: { type: string } } ] }
+        weightClass: { oneOf: [ { type: string }, { type: array, items: { type: string } } ] }
+        rarity: { oneOf: [ { type: string }, { type: array, items: { type: string } } ] }
+        personType: { oneOf: [ { type: string }, { type: array, items: { type: string } } ] }
+        signatureMoveIds: { oneOf: [ { type: string }, { type: array, items: { type: string } } ] }
+    Error:
+      type: object
+      properties: { error: { type: object, properties: { code: { type: string }, message: { type: string } } } }
+  responses:
+    BadRequest: { description: Invalid request, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    NotFound: { description: Resource not found, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
