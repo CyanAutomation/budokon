@@ -244,7 +244,8 @@ minute per client IP and route. Use Workers Logs or Analytics Engine to monitor
 The deployed endpoint will be `https://budokon.<your-subdomain>.workers.dev`.
 For GitHub deployments, add repository secrets `CLOUDFLARE_API_TOKEN` (a scoped
 Workers deployment token) and `CLOUDFLARE_ACCOUNT_ID`. The `main` branch
-workflow validates, tests, and deploys each push. `API_KEY` remains only in
+workflow validates, tests, deploys, and smoke-tests the public endpoint on each
+push. `API_KEY` remains only in
 Cloudflare Worker Secrets and is never placed in GitHub Actions.
 
 ---
@@ -872,7 +873,7 @@ Example response:
 ```json
 {
   "datasetVersion": "2026.08.1",
-  "drawAlgorithm": "budokon-v1",
+  "algorithm": "budokon-v1",
   "seed": "match-472-round-3",
   "poolSize": 37,
   "judoka": [
@@ -954,6 +955,7 @@ GET  /v1/countries
 GET  /v1/weight-categories
 POST /v1/draw
 GET  /v1/version
+GET  /v1/status
 ```
 
 Consumers should eventually be able to filter by attributes such as:
@@ -1006,7 +1008,10 @@ field. Results are not relevance-ranked; all matches are ordered by ascending
 immutable UUID using direct Unicode code-unit comparison. Thus ties and output
 order do not depend on locale or host ICU collation.
 
-API responses should expose enough version information to identify the dataset and service behaviour involved.
+`GET /v1/version` exposes the dataset version, service version, source Git commit,
+compiled dataset checksum, and supported draw algorithms. `GET /v1/status` adds
+`"status": "ok"` for deployment smoke checks. Together these allow consumers to
+identify the exact immutable release behind a response.
 
 ### Browser games
 
@@ -1031,7 +1036,9 @@ Use `limit` (1–100) to opt into cursor pagination; the response becomes
 `{ judoka, nextCursor }`, and the returned `nextCursor` is supplied as `cursor`
 on the following request. Pagination is applied after every filter and search.
 
-The machine-readable contract is [openapi/v1.yaml](openapi/v1.yaml).
+The deployed service has a JSON discovery document at `/`, human-readable docs
+at `/docs`, and the machine-readable contract at `/openapi/v1.yaml` (the source
+contract remains [openapi/v1.yaml](openapi/v1.yaml)).
 
 ---
 

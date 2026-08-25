@@ -4,6 +4,8 @@ import type { Collection, Country, Judoka, Technique, WeightCategoryGroup } from
 export abstract class ReadModelRepository {
   abstract get datasetVersion(): string;
   abstract get serviceVersion(): string;
+  abstract get sourceGitCommit(): string;
+  abstract get datasetChecksum(): string;
   abstract listJudoka(): Judoka[];
   abstract getJudoka(id: string | undefined): Judoka | undefined;
   listCollections(): Collection[] { return []; }

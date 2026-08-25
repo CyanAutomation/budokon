@@ -29,6 +29,8 @@ export interface ReleaseManifest {
   serviceVersion: string;
   drawAlgorithms: string[];
   defaultDrawAlgorithm: string;
+  sourceGitCommit: string;
+  checksums: Record<string, string>;
   [key: string]: JsonValue;
 }
 
@@ -52,4 +54,12 @@ export interface SearchJudokaOptions extends ListJudokaOptions { query?: string;
 export interface DrawRequest extends ListJudokaOptions { count?: number; seed?: string; algorithm?: string; }
 export interface RequestContext { authorizedInternal?: boolean; }
 export interface DrawResponse { datasetVersion: string; algorithm: string; seed?: string; poolSize: number; judoka: Judoka[]; }
-export interface VersionResponse { datasetVersion: string; serviceVersion: string; drawAlgorithms: string[]; defaultDrawAlgorithm: string; }
+export interface VersionResponse {
+  datasetVersion: string;
+  serviceVersion: string;
+  drawAlgorithms: string[];
+  defaultDrawAlgorithm: string;
+  sourceGitCommit: string;
+  datasetChecksum: string;
+}
+export interface StatusResponse extends VersionResponse { status: "ok"; }

@@ -1,7 +1,7 @@
 {
   "dataset": {
     "datasetVersion": "golden-2026-08",
-    "manifest": { "serviceVersion": "1.0.0", "drawAlgorithms": ["budokon-v1"], "defaultDrawAlgorithm": "budokon-v1" },
+    "manifest": { "serviceVersion": "1.0.0", "sourceGitCommit": "0000000000000000000000000000000000000000", "checksums": { "budokon.json": "sha256:0000000000000000000000000000000000000000000000000000000000000000" }, "drawAlgorithms": ["budokon-v1"], "defaultDrawAlgorithm": "budokon-v1" },
     "judoka": [
       { "id": "00000000-0000-4000-8000-000000000004", "slug": "delta", "gender": "female", "countryCode": "JP", "rarity": "common", "collections": ["fallback"] },
       { "id": "00000000-0000-4000-8000-000000000001", "slug": "alpha", "gender": "female", "countryCode": "JP", "rarity": "rare" },
