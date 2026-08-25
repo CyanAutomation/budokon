@@ -1,0 +1,6 @@
+name = "budokon"
+main = "worker/index.ts"
+compatibility_date = "2026-08-25"
+
+# API_KEY and (optionally) INTERNAL_API_KEY are Worker secrets.  Configure them
+# with `wrangler secret put`; never add their values to this file.
