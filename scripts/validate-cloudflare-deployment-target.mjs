@@ -1,10 +1,13 @@
 const workerName = "budokon";
 const accountId = process.env.CLOUDFLARE_ACCOUNT_ID ?? "";
 const apiToken = process.env.CLOUDFLARE_API_TOKEN ?? "";
+const workerName = "budokon";
+const accountId = process.env.CLOUDFLARE_ACCOUNT_ID ?? "";
+const apiToken = process.env.CLOUDFLARE_API_TOKEN ?? "";
 const configuredUrl = process.env.DEPLOYMENT_URL ?? "";
 
-if (!accountId || !apiToken) {
-  throw new Error("CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are required");
+if (!accountId || !apiToken || !configuredUrl) {
+  throw new Error("CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN, and DEPLOYMENT_URL are required");
 }
 
 let target;
