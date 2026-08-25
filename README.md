@@ -218,10 +218,11 @@ regenerate the compiled dataset with `npm run build:data`.
 
 ### Cloudflare Worker deployment
 
-The included Worker exposes the catalogue as an API-key-protected REST service
-and a remote MCP server. REST is served at `/v1/*`; MCP uses the Streamable HTTP
-endpoint at `/mcp`. Supply the key using either `X-API-Key: <key>` or
-`Authorization: Bearer <key>`.
+The included Worker exposes the public catalogue REST service at `/v1/*` and a
+separately API-key-protected remote MCP server at `/mcp`. Browser games must
+use REST only; never embed `API_KEY` or `INTERNAL_API_KEY` in browser code.
+Supply the MCP key using either `X-API-Key: <key>` or `Authorization: Bearer
+<key>`.
 
 Cloudflare configuration (once per account):
 
@@ -232,6 +233,13 @@ npx wrangler secret put API_KEY
 npx wrangler secret put INTERNAL_API_KEY
 npm run deploy
 ```
+
+`PUBLIC_ALLOWED_ORIGINS` is a non-secret Worker variable. It is `*` by default
+because the non-hidden catalogue is intentionally public; replace it with a
+comma-separated list of exact origins to restrict browser reads. The deployed
+Worker also applies a best-effort Cloudflare rate limit of 120 requests per
+minute per client IP and route. Use Workers Logs or Analytics Engine to monitor
+429 responses and adjust it for actual game traffic.
 
 The deployed endpoint will be `https://budokon.<your-subdomain>.workers.dev`.
 For GitHub deployments, add repository secrets `CLOUDFLARE_API_TOKEN` (a scoped
@@ -999,6 +1007,31 @@ immutable UUID using direct Unicode code-unit comparison. Thus ties and output
 order do not depend on locale or host ICU collation.
 
 API responses should expose enough version information to identify the dataset and service behaviour involved.
+
+### Browser games
+
+Public REST calls support CORS for `GET` and JSON `POST` requests, including
+preflight. No credential is required or accepted from browser JavaScript.
+
+```js
+const baseUrl = "https://budokon.scheimann.workers.dev";
+
+const response = await fetch(`${baseUrl}/v1/draw`, {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({ count: 1, seed: "round-42", filters: { personType: "real" } })
+});
+if (!response.ok) throw new Error(`BU-DO-KON request failed: ${response.status}`);
+const draw = await response.json();
+```
+
+Public GET responses include an `ETag` and CDN-friendly `Cache-Control` header.
+`GET /v1/judoka` remains backwards compatible and returns an array by default.
+Use `limit` (1–100) to opt into cursor pagination; the response becomes
+`{ judoka, nextCursor }`, and the returned `nextCursor` is supplied as `cursor`
+on the following request. Pagination is applied after every filter and search.
+
+The machine-readable contract is [openapi/v1.yaml](openapi/v1.yaml).
 
 ---
 
