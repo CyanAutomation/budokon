@@ -16,7 +16,13 @@ export function credential(request) {
 export function authorized(request, expected) {
   // Secrets are mandatory. A missing secret must never accidentally allow access.
   const credValue = credential(request);
-  if (!expected || credValue.length !== expected.length) return false;
+  if (!expected) return false;
+  const maxLen = Math.max(credValue.length, expected.length);
+  let matches = credValue.length ^ expected.length;
+  for (let i = 0; i < maxLen; i++) {
+    matches |= (credValue.charCodeAt(i) || 0) ^ (expected.charCodeAt(i) || 0);
+  }
+  return matches === 0;
   let matches = 0;
   for (let i = 0; i < expected.length; i++) {
     matches |= credValue.charCodeAt(i) ^ expected.charCodeAt(i);
