@@ -4,5 +4,18 @@ compatibility_date = "2026-08-25"
 
 preview_urls = false
 
+[vars]
+# The catalogue contains no private records by default, so any browser game may
+# read it. Replace * with a comma-separated origin allowlist to restrict this.
+PUBLIC_ALLOWED_ORIGINS = "*"
+
+[[ratelimits]]
+name = "PUBLIC_RATE_LIMITER"
+namespace_id = "870281"
+
+  [ratelimits.simple]
+  limit = 120
+  period = 60
+
 # API_KEY and (optionally) INTERNAL_API_KEY are Worker secrets.  Configure them
 # with `wrangler secret put`; never add their values to this file.
