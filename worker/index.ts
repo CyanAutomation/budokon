@@ -5,6 +5,7 @@ import { DrawService } from "../src/draw/draw-service.js";
 import { createRestRouter } from "../src/api/router.js";
 import { createMcpTools } from "../src/mcp/tools.js";
 import { JsonReadModelRepository } from "../src/repository/json-read-model-repository.js";
+import { authorized } from "./auth.js";
 
 interface Env {
   API_KEY: string;
@@ -22,21 +23,6 @@ const tools = createMcpTools({ catalog, draw });
 
 function json(value: unknown, status = 200, headers: HeadersInit = {}) {
   return new Response(JSON.stringify(value), { status, headers: { "content-type": "application/json; charset=utf-8", ...headers } });
-}
-
-function credential(request: Request) {
-  return request.headers.get("x-api-key") ?? request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
-}
-
-function authorized(request: Request, expected?: string) {
-  // Secrets are mandatory. A missing secret must never accidentally allow access.
-  const credValue = credential(request);
-  if (!expected || credValue.length !== expected.length) return false;
-  let matches = 0;
-  for (let i = 0; i < expected.length; i++) {
-    matches |= credValue.charCodeAt(i) ^ expected.charCodeAt(i);
-  }
-  return matches === 0;
 }
 
 function mcpError(id: RpcRequest["id"], code: number, message: string) {
