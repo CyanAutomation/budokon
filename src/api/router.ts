@@ -45,7 +45,7 @@ function paginateJudoka<T extends { id: string }>(records: T[], limit: number | 
   if (limit === undefined && cursor === undefined) return records;
   if (limit === undefined) throw new TypeError("cursor requires limit");
   const index = cursor === undefined ? 0 : records.findIndex(record => record.id === cursor) + 1;
-  if (cursor !== undefined && index === 0) throw new TypeError("cursor must identify a result");
+  if (cursor !== undefined && index === 0) throw new TypeError("cursor must identify a valid result from the current query");
   const judoka = records.slice(index, index + limit);
   return { judoka, nextCursor: index + judoka.length < records.length ? judoka.at(-1)?.id : undefined };
 }
