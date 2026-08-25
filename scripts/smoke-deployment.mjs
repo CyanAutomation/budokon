@@ -2,9 +2,16 @@ const base = (process.env.DEPLOYMENT_URL ?? "").replace(/\/$/, "");
 if (!/^https:\/\//.test(base)) throw new Error("DEPLOYMENT_URL must be an HTTPS URL");
 
 async function request(path, init) {
-  const response = await fetch(`${base}${path}`, init);
-  if (!response.ok) throw new Error(`${path} returned ${response.status}`);
-  return response;
+  try {
+    const response = await fetch(`${base}${path}`, init);
+    if (!response.ok) throw new Error(`${path} returned ${response.status}`);
+    return response;
+  } catch (error) {
+    if (error instanceof TypeError && error.message.includes("fetch")) {
+      throw new Error(`Network error accessing ${path}: ${error.message}`);
+    }
+    throw error;
+  }
 }
 
 const status = await request("/v1/status").then(response => response.json());
