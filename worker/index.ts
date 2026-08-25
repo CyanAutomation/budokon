@@ -30,7 +30,13 @@ function credential(request: Request) {
 
 function authorized(request: Request, expected?: string) {
   // Secrets are mandatory. A missing secret must never accidentally allow access.
-  return Boolean(expected) && credential(request) === expected;
+  const credValue = credential(request);
+  if (!expected || credValue.length !== expected.length) return false;
+  let matches = 0;
+  for (let i = 0; i < expected.length; i++) {
+    matches |= credValue.charCodeAt(i) ^ expected.charCodeAt(i);
+  }
+  return matches === 0;
 }
 
 function mcpError(id: RpcRequest["id"], code: number, message: string) {
