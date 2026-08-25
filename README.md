@@ -241,11 +241,18 @@ Worker also applies a best-effort Cloudflare rate limit of 120 requests per
 minute per client IP and route. Use Workers Logs or Analytics Engine to monitor
 429 responses and adjust it for actual game traffic.
 
-The deployed endpoint will be `https://budokon.<your-subdomain>.workers.dev`.
-For GitHub deployments, add repository secrets `CLOUDFLARE_API_TOKEN` (a scoped
-Workers deployment token) and `CLOUDFLARE_ACCOUNT_ID`. The `main` branch
-workflow validates, tests, deploys, and smoke-tests the public endpoint on each
-push. `API_KEY` remains only in
+The deployed endpoint can be `https://budokon.<your-subdomain>.workers.dev` or
+an HTTPS custom-domain origin. For GitHub deployments, add repository secrets
+`CLOUDFLARE_API_TOKEN` (a scoped Workers deployment token) and
+`CLOUDFLARE_ACCOUNT_ID`, plus the environment or repository variable
+`CLOUDFLARE_DEPLOYMENT_URL` containing that canonical origin (with no path), for
+example `https://budokon.<your-subdomain>.workers.dev`. Its workers.dev
+subdomain or custom-domain route must belong to the configured Cloudflare
+account and route to the production `name = "budokon"` Worker declared in
+`wrangler.toml`; the workflow verifies this through the Cloudflare API before
+making requests. The `main` branch workflow validates, tests, deploys, reports
+the non-secret target, and then verifies `/`, `/v1/status`, and `/v1/judoka` on
+that configured origin after every push. `API_KEY` remains only in
 Cloudflare Worker Secrets and is never placed in GitHub Actions.
 
 ---
