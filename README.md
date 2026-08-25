@@ -216,6 +216,29 @@ optional `loadJsonReadModel` adapter from `budokon-data/node`. Build the reusabl
 TypeScript modules with `npm run build`, check them with `npm run typecheck`, and
 regenerate the compiled dataset with `npm run build:data`.
 
+### Cloudflare Worker deployment
+
+The included Worker exposes the catalogue as an API-key-protected REST service
+and a remote MCP server. REST is served at `/v1/*`; MCP uses the Streamable HTTP
+endpoint at `/mcp`. Supply the key using either `X-API-Key: <key>` or
+`Authorization: Bearer <key>`.
+
+Cloudflare configuration (once per account):
+
+```sh
+npx wrangler login
+npx wrangler secret put API_KEY
+# Optional: a separate key for hidden records only.
+npx wrangler secret put INTERNAL_API_KEY
+npm run deploy
+```
+
+The deployed endpoint will be `https://budokon.<your-subdomain>.workers.dev`.
+For GitHub deployments, add repository secrets `CLOUDFLARE_API_TOKEN` (a scoped
+Workers deployment token) and `CLOUDFLARE_ACCOUNT_ID`. The `main` branch
+workflow validates, tests, and deploys each push. `API_KEY` remains only in
+Cloudflare Worker Secrets and is never placed in GitHub Actions.
+
 ---
 
 ## 🛠️ Implementation Language
