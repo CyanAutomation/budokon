@@ -20,6 +20,7 @@ test("authorized accepts only an exact credential match", () => {
   assert.equal(authorized(request({ "x-api-key": "correct-secret" }), "correct-secret"), true);
   assert.equal(authorized(request({ "x-api-key": "wrong--secret" }), "correct-secret"), false);
   assert.equal(authorized(request({ "x-api-key": "short" }), "correct-secret"), false);
+  assert.equal(authorized(request({ "x-api-key": "correct-secret-with-extra" }), "correct-secret"), false);
 });
 
 test("authorized rejects missing configured and supplied secrets", () => {
