@@ -16,7 +16,8 @@
     "check-artifacts": "node scripts/check-artifacts.mjs",
     "verify-release": "node scripts/verify-release.mjs",
     "validate": "node src/validation/validate-canonical.mjs",
-    "test": "npm run build && node --test scripts/*.test.mjs tests/*.test.mjs"
+    "test": "npm run build && node --test scripts/*.test.mjs tests/*.test.mjs",
+    "deploy": "wrangler deploy"
   },
-  "devDependencies": { "typescript": "^5.7.2" }
+  "devDependencies": { "typescript": "^5.7.2", "wrangler": "^4.0.0" }
 }
