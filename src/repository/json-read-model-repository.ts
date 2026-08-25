@@ -25,6 +25,12 @@ export class JsonReadModelRepository extends ReadModelRepository {
   }
   get datasetVersion() { return this.model.datasetVersion; }
   get serviceVersion() { if (!this.model.manifest?.serviceVersion) throw new Error("Invalid manifest: missing serviceVersion"); return this.model.manifest.serviceVersion; }
+  get sourceGitCommit() { if (!this.model.manifest?.sourceGitCommit) throw new Error("Invalid manifest: missing sourceGitCommit"); return this.model.manifest.sourceGitCommit; }
+  get datasetChecksum() {
+    const value = this.model.manifest?.checksums?.["budokon.json"];
+    if (!value) throw new Error("Invalid manifest: missing budokon.json checksum");
+    return value;
+  }
   listJudoka() { return this.model.judoka.slice(); }
   getJudoka(key: string | undefined) {
     if (key === undefined) return undefined;

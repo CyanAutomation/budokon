@@ -13,6 +13,7 @@ export function createRestHandlers({ catalog, draw }: { catalog: CatalogService;
     listTechniques: () => ok(catalog.listTechniques()), getTechnique: ({ params = {} }: ApiRequest = {}) => { const value = catalog.getTechnique(params?.id); return value ? ok(value) : missing(); },
     listCollections: () => ok(catalog.listCollections()), getCollection: ({ params = {} }: ApiRequest = {}) => { const value = catalog.getCollection(params?.id); return value ? ok(value) : missing(); },
     listCountries: () => ok(catalog.listCountries()), listWeightCategories: () => ok(catalog.listWeightCategories()),
-    draw: ({ body = {}, authorizedInternal = false }: ApiRequest = {}) => ok(draw.draw(body, { authorizedInternal })), version: () => ok(catalog.version())
+    draw: ({ body = {}, authorizedInternal = false }: ApiRequest = {}) => ok(draw.draw(body, { authorizedInternal })),
+    version: () => ok(catalog.version()), status: () => ok(catalog.status())
   };
 }

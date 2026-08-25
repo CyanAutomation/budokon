@@ -8,6 +8,8 @@ import { JsonReadModelRepository } from "../src/repository/json-read-model-repos
 import { authorized } from "./auth.js";
 import { cachePublicGet, preflightResponse, withCors } from "./cors.js";
 import { rateLimitPublicRequest } from "./rate-limit.js";
+import { documentationResponse, landingResponse, openApiResponse } from "./discovery.js";
+import openApiSpecification from "../openapi/v1.yaml" with { type: "text" };
 
 interface Env {
   API_KEY: string;
@@ -67,6 +69,10 @@ async function handleMcp(request: Request, env: Env) {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const path = new URL(request.url).pathname;
+    const origin = new URL(request.url).origin;
+    if (path === "/") return landingResponse(origin);
+    if (path === "/docs") return documentationResponse(origin);
+    if (path === "/openapi/v1.yaml") return openApiResponse(openApiSpecification);
     if (request.method === "OPTIONS") return path.startsWith("/v1/") ? preflightResponse(request, env) : new Response(null, { status: 405, headers: { allow: "POST" } });
     let response: Response;
     if (path === "/mcp") {

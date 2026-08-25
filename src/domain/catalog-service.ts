@@ -1,4 +1,4 @@
-import type { Filters, Judoka, ListJudokaOptions, SearchJudokaOptions, VersionResponse } from "./types.js";
+import type { Filters, Judoka, ListJudokaOptions, SearchJudokaOptions, StatusResponse, VersionResponse } from "./types.js";
 import type { ReadModelRepository } from "../repository/read-model-repository.js";
 import { DRAW_ALGORITHM, SUPPORTED_DRAW_ALGORITHMS } from "../draw/algorithm.js";
 
@@ -23,7 +23,17 @@ export function normalizeFilters(filters: Filters = {}): Record<string, string[]
 }
 export class CatalogService {
   constructor(readonly repository: ReadModelRepository) {}
-  version(): VersionResponse { return { datasetVersion: this.repository.datasetVersion, serviceVersion: this.repository.serviceVersion, drawAlgorithms: [...SUPPORTED_DRAW_ALGORITHMS], defaultDrawAlgorithm: DRAW_ALGORITHM }; }
+  version(): VersionResponse {
+    return {
+      datasetVersion: this.repository.datasetVersion,
+      serviceVersion: this.repository.serviceVersion,
+      sourceGitCommit: this.repository.sourceGitCommit,
+      datasetChecksum: this.repository.datasetChecksum,
+      drawAlgorithms: [...SUPPORTED_DRAW_ALGORITHMS],
+      defaultDrawAlgorithm: DRAW_ALGORITHM
+    };
+  }
+  status(): StatusResponse { return { status: "ok", ...this.version() }; }
   listJudoka(options: ListJudokaOptions = {}): Judoka[] {
     const filters = normalizeFilters(options.filters); const exclusions = new Set((options.exclude ?? []).map(String));
     const includeHidden = options.includeHidden === true && options.authorizedInternal === true;
