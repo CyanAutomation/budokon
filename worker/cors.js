@@ -43,12 +43,14 @@ function weaklyMatchesEtag(ifNoneMatch, etag) {
   let start = 0;
   let quoted = false;
   for (let index = 0; index <= ifNoneMatch.length; index += 1) {
-    const character = ifNoneMatch[index];
+    const character = index < ifNoneMatch.length ? ifNoneMatch[index] : null;
     if (character === '"') quoted = !quoted;
     if ((character === "," && !quoted) || index === ifNoneMatch.length) {
-      validators.push(ifNoneMatch.slice(start, index).trim());
+      const validator = ifNoneMatch.slice(start, index).trim();
+      if (validator) validators.push(validator);
       start = index + 1;
     }
+  }
   }
 
   return validators.some(validator => {
