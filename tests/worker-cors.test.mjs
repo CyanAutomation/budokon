@@ -50,7 +50,19 @@ test("public GET responses receive a versioned cache validator and honour If-Non
   assert.match(initial.headers.get("cache-control"), /s-maxage=86400/);
   const etag = initial.headers.get("etag");
   assert.ok(etag);
-  const cached = cachePublicGet(new Response("catalogue"), request(undefined, { headers: { "if-none-match": etag } }), "2026.08.1");
-  assert.equal(cached.status, 304);
-  assert.equal(await cached.text(), "");
+
+  for (const validator of [
+    etag,
+    `W/${etag}`,
+    `"unrelated", W/"also-unrelated", ${etag}`,
+    "*"
+  ]) {
+    const cached = cachePublicGet(new Response("catalogue"), request(undefined, { headers: { "if-none-match": validator } }), "2026.08.1");
+    assert.equal(cached.status, 304, validator);
+    assert.equal(await cached.text(), "");
+  }
+
+  const fresh = cachePublicGet(new Response("catalogue"), request(undefined, { headers: { "if-none-match": 'W/"unrelated"' } }), "2026.08.1");
+  assert.equal(fresh.status, 200);
+  assert.equal(await fresh.text(), "catalogue");
 });

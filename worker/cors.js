@@ -36,6 +36,32 @@ export function withCors(response, request, env) {
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
+function weaklyMatchesEtag(ifNoneMatch, etag) {
+  if (ifNoneMatch === null) return false;
+
+  const validators = [];
+  let start = 0;
+  let quoted = false;
+  for (let index = 0; index <= ifNoneMatch.length; index += 1) {
+    const character = index < ifNoneMatch.length ? ifNoneMatch[index] : null;
+    if (character === '"') quoted = !quoted;
+    if ((character === "," && !quoted) || index === ifNoneMatch.length) {
+      const validator = ifNoneMatch.slice(start, index).trim();
+      if (validator) validators.push(validator);
+      start = index + 1;
+    }
+  }
+  }
+
+  return validators.some(validator => {
+    if (validator === "*") return true;
+    const weakPrefix = validator.startsWith("W/") ? "W/" : "";
+    const opaqueTag = weakPrefix ? validator.slice(2) : validator;
+    const isValid = /^"[\x21\x23-\x7e\x80-\xff]*"$/.test(opaqueTag) && validator === weakPrefix + opaqueTag;
+    return isValid && opaqueTag === etag;
+  });
+}
+
 /** Cache immutable catalogue GET representations at the edge and validate them cheaply in browsers. */
 export function cachePublicGet(response, request, datasetVersion) {
   if (request.method !== "GET" || response.status !== 200) return response;
@@ -45,6 +71,6 @@ export function cachePublicGet(response, request, datasetVersion) {
   headers.set("cache-control", "public, max-age=300, s-maxage=86400, stale-while-revalidate=86400");
   headers.set("etag", etag);
   headers.set("vary", "Origin");
-  if (request.headers.get("if-none-match") === etag) return new Response(null, { status: 304, headers });
+  if (weaklyMatchesEtag(request.headers.get("if-none-match"), etag)) return new Response(null, { status: 304, headers });
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
