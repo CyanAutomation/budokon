@@ -1,10 +1,12 @@
 const base = (process.env.DEPLOYMENT_URL ?? "").replace(/\/$/, "");
 if (!/^https:\/\//.test(base)) throw new Error("DEPLOYMENT_URL must be an HTTPS URL");
 
-async function request(path, init) {
+async function request(path, init, expectedStatus) {
   try {
     const response = await fetch(`${base}${path}`, init);
-    if (!response.ok) throw new Error(`${path} returned ${response.status}`);
+    if (expectedStatus === undefined ? !response.ok : response.status !== expectedStatus) {
+      throw new Error(`${path} returned ${response.status}${expectedStatus === undefined ? "" : `, expected ${expectedStatus}`}`);
+    }
     return response;
   } catch (error) {
     if (error instanceof TypeError && error.message.includes("fetch")) {
@@ -25,6 +27,5 @@ if (!(await contract.text()).includes("/v1/status:")) throw new Error("OpenAPI c
 const first = await request("/v1/judoka");
 const etag = first.headers.get("etag");
 if (!etag) throw new Error("public catalogue response is missing ETag");
-const cached = await fetch(`${base}/v1/judoka`, { headers: { "if-none-match": etag } });
-if (cached.status !== 304) throw new Error(`conditional catalogue request returned ${cached.status}, expected 304`);
+await request("/v1/judoka", { headers: { "if-none-match": etag } }, 304);
 console.log(`Smoke check passed for ${base} (${status.datasetVersion}, ${status.sourceGitCommit})`);
