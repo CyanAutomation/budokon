@@ -32,6 +32,9 @@ test("CORS preflight allows the public REST methods without accepting API-key he
     method: "OPTIONS", headers: { "access-control-request-method": "POST", "access-control-request-headers": "x-api-key" }
   }), env);
   assert.equal(disallowed.status, 403);
+
+  const missingMethod = preflightResponse(request("https://game.example", { method: "OPTIONS" }), env);
+  assert.equal(missingMethod.status, 403);
 });
 
 test("CORS headers wrap successful and error responses", async () => {

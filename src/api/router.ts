@@ -44,8 +44,9 @@ function parseListQuery(params: URLSearchParams) {
 function paginateJudoka<T extends { id: string }>(records: T[], limit: number | undefined, cursor: string | undefined) {
   if (limit === undefined && cursor === undefined) return records;
   if (limit === undefined) throw new TypeError("cursor requires limit");
-  const index = cursor === undefined ? 0 : records.findIndex(record => record.id === cursor) + 1;
-  if (cursor !== undefined && index === 0) throw new TypeError("cursor must identify a valid result from the current query");
+  const cursorIndex = cursor === undefined ? undefined : records.findIndex(record => record.id === cursor);
+  if (cursorIndex === -1) throw new TypeError("cursor must identify a valid result from the current query");
+  const index = cursorIndex === undefined ? 0 : cursorIndex + 1;
   const judoka = records.slice(index, index + limit);
   return { judoka, nextCursor: index + judoka.length < records.length ? judoka.at(-1)?.id : undefined };
 }
