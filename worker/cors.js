@@ -22,9 +22,10 @@ export function corsHeaders(request, env) {
 /** Handle browser preflight without ever accepting a browser-held API key. */
 export function preflightResponse(request, env) {
   const headers = corsHeaders(request, env);
-  const method = request.headers.get("access-control-request-method")?.toUpperCase();
+  const requestedMethod = request.headers.get("access-control-request-method");
+  const method = requestedMethod?.toUpperCase();
   const requested = request.headers.get("access-control-request-headers")?.split(",").map(value => value.trim().toLowerCase()).filter(Boolean) ?? [];
-  const permitted = headers.has("access-control-allow-origin") && method && (method === "GET" || method === "POST") && requested.every(header => header === "content-type");
+  const permitted = headers.has("access-control-allow-origin") && requestedMethod !== null && (method === "GET" || method === "POST") && requested.every(header => header === "content-type");
   return permitted ? new Response(null, { status: 204, headers }) : new Response(null, { status: 403, headers: { vary: "Origin" } });
 }
 
