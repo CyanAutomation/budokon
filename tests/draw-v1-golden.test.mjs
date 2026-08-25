@@ -38,6 +38,7 @@ test("all draws identify their algorithm and unsupported identifiers are rejecte
 
 test("version metadata declares the supported and default algorithm", () => {
   const expected = { drawAlgorithms: [DRAW_ALGORITHM], defaultDrawAlgorithm: DRAW_ALGORITHM };
-  assert.deepEqual(rest.version().body, { datasetVersion: "golden-2026-08", serviceVersion: "1.0.0", ...expected });
-  assert.deepEqual(mcp.version(), { datasetVersion: "golden-2026-08", serviceVersion: "1.0.0", ...expected });
+  const release = { sourceGitCommit: "0000000000000000000000000000000000000000", datasetChecksum: "sha256:0000000000000000000000000000000000000000000000000000000000000000" };
+  assert.deepEqual(rest.version().body, { datasetVersion: "golden-2026-08", serviceVersion: "1.0.0", ...release, ...expected });
+  assert.deepEqual(mcp.version(), { datasetVersion: "golden-2026-08", serviceVersion: "1.0.0", ...release, ...expected });
 });

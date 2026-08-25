@@ -27,6 +27,18 @@ test("every documented catalogue and metadata endpoint conforms", async () => {
   ]) assert.deepEqual(await body(await request(path)), expected);
 });
 
+test("version and status expose an immutable, traceable release identity", async () => {
+  const version = await request("/v1/version");
+  assert.equal(version.status, 200);
+  const metadata = await body(version);
+  assert.match(metadata.sourceGitCommit, /^[0-9a-f]{40}$/);
+  assert.match(metadata.datasetChecksum, /^sha256:[0-9a-f]{64}$/);
+
+  const status = await request("/v1/status");
+  assert.equal(status.status, 200);
+  assert.deepEqual(await body(status), { status: "ok", ...metadata });
+});
+
 test("repeated and comma-separated combined filters share OR/AND semantics", async () => {
   const response = await request("/v1/judoka?countryCode=JP,GE&countryCode=FR&gender=male&signatureMoveIds=seoi-nage,o-soto-gari");
   assert.equal(response.status, 200);

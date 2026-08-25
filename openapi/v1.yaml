@@ -49,6 +49,8 @@ paths:
     get: { summary: List weight categories, responses: { '200': { description: Weight-category array } } }
   /v1/version:
     get: { summary: Get catalogue and draw-algorithm versions, responses: { '200': { description: Version metadata } } }
+  /v1/status:
+    get: { summary: Get service health and immutable release identity, responses: { '200': { description: Service status and release metadata } } }
   /v1/draw:
     post:
       summary: Draw one or more public judoka
