@@ -1,9 +1,6 @@
 const workerName = "budokon";
 const accountId = process.env.CLOUDFLARE_ACCOUNT_ID ?? "";
 const apiToken = process.env.CLOUDFLARE_API_TOKEN ?? "";
-const workerName = "budokon";
-const accountId = process.env.CLOUDFLARE_ACCOUNT_ID ?? "";
-const apiToken = process.env.CLOUDFLARE_API_TOKEN ?? "";
 const configuredUrl = process.env.DEPLOYMENT_URL ?? "";
 
 if (!accountId || !apiToken || !configuredUrl) {
@@ -21,7 +18,7 @@ if (target.protocol !== "https:" || target.username || target.password || target
 }
 
 async function cloudflare(path) {
-  const response = await fetch(` {
+  const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}${path}`, {
     headers: { authorization: `Bearer ${apiToken}` },
   });
   let body;
@@ -48,18 +45,21 @@ if (target.hostname.endsWith(workersDevSuffix)) {
     throw new Error(`Configured workers.dev hostname does not route to Worker ${workerName} in the deployment account`);
   }
 } else {
-  let allRecords = [];
+  const records = [];
   let page = 1;
-  let hasMore = true;
-  
-  while (hasMore) {
-    const response = await cloudflare(`/workers/domains/records?service=${workerName}&environment=production&per_page=100&page=${page}`);
-    allRecords = allRecords.concat(Array.isArray(response) ? response : []);
-    hasMore = Array.isArray(response) && response.length === 100;
-    page++;
+  while (true) {
+    const result = await cloudflare(
+      `/workers/domains/records?service=${workerName}&environment=production&per_page=100&page=${page}`,
+    );
+    if (!Array.isArray(result)) {
+      throw new Error("Cloudflare API returned an invalid custom-domain response");
+    }
+    records.push(...result);
+    if (result.length < 100) break;
+    page += 1;
   }
-  
-  const record = allRecords.find(({ hostname }) => hostname === target.hostname);
+
+  const record = records.find(({ hostname }) => hostname === target.hostname);
   if (!record || record.service !== workerName || (record.environment && record.environment !== "production")) {
     throw new Error(`Configured custom domain does not route to production Worker ${workerName} in the deployment account`);
   }
