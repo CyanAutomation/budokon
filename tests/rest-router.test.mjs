@@ -44,6 +44,8 @@ test("judoka pagination is opt-in, bounded, and preserves the filtered canonical
 
   const second = await request(`/v1/judoka?limit=1&cursor=${encodeURIComponent(firstPage.nextCursor)}`);
   assert.deepEqual((await body(second)).judoka, all.slice(1, 2));
+  const afterSecondRecord = await request(`/v1/judoka?limit=1&cursor=${encodeURIComponent(all[1].id)}`);
+  assert.deepEqual((await body(afterSecondRecord)).judoka, all.slice(2, 3));
   assert.equal((await request("/v1/judoka?limit=0")).status, 400);
   assert.equal((await request("/v1/judoka?limit=101")).status, 400);
   assert.equal((await request("/v1/judoka?cursor=missing")).status, 400);
