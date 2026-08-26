@@ -27,6 +27,15 @@ test("every documented catalogue and metadata endpoint conforms", async () => {
   ]) assert.deepEqual(await body(await request(path)), expected);
 });
 
+test("coverage exposes public real-judoka counts and stable rarity percentages", async () => {
+  const response = await request("/v1/coverage");
+  assert.equal(response.status, 200);
+  const coverage = await body(response);
+  assert.equal(coverage.publicReal, catalog.listJudoka().filter(record => record.personType === "real").length);
+  assert.deepEqual(Object.keys(coverage.byRarity), ["Common", "Epic", "Legendary", "Rare"]);
+  assert.ok(Math.abs(Object.values(coverage.rarityPercentages).reduce((sum, value) => sum + value, 0) - 100) <= 0.1);
+});
+
 test("version and status expose an immutable, traceable release identity", async () => {
   const version = await request("/v1/version");
   assert.equal(version.status, 200);

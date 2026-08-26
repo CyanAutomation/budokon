@@ -1,4 +1,13 @@
 {
+  "AT": { "country": "Austria", "code": "AT", "lastUpdated": "2026-08-26T00:00:00Z", "active": true },
+  "AU": { "country": "Australia", "code": "AU", "lastUpdated": "2026-08-26T00:00:00Z", "active": true },
+  "BE": { "country": "Belgium", "code": "BE", "lastUpdated": "2026-08-26T00:00:00Z", "active": true },
+  "BG": { "country": "Bulgaria", "code": "BG", "lastUpdated": "2026-08-26T00:00:00Z", "active": true },
+  "CL": { "country": "Chile", "code": "CL", "lastUpdated": "2026-08-26T00:00:00Z", "active": true },
+  "MA": { "country": "Morocco", "code": "MA", "lastUpdated": "2026-08-26T00:00:00Z", "active": true },
+  "MD": { "country": "Moldova", "code": "MD", "lastUpdated": "2026-08-26T00:00:00Z", "active": true },
+  "SE": { "country": "Sweden", "code": "SE", "lastUpdated": "2026-08-26T00:00:00Z", "active": true },
+  "TR": { "country": "Türkiye", "code": "TR", "lastUpdated": "2026-08-26T00:00:00Z", "active": true },
   "VU": {
     "country": "Vanuatu",
     "code": "VU",

@@ -31,6 +31,7 @@ game enrichment:
 * `signatureMoveIds`
 * `bio`
 * `profileUrl`
+* `sourceUrls` for every newly added real judoka (prefer an IJF athlete or results page)
 
 These values must be complete and valid. Do not invent a signature move,
 biography, or rating merely to fill a field; make a deliberate editorial choice

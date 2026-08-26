@@ -996,6 +996,7 @@ GET  /v1/weight-categories
 POST /v1/draw
 GET  /v1/version
 GET  /v1/status
+GET  /v1/coverage
 ```
 
 Consumers should eventually be able to filter by attributes such as:
@@ -1052,6 +1053,11 @@ order do not depend on locale or host ICU collation.
 compiled dataset checksum, and supported draw algorithms. `GET /v1/status` adds
 `"status": "ok"` for deployment smoke checks. Together these allow consumers to
 identify the exact immutable release behind a response.
+
+`GET /v1/coverage` exposes the public real-judoka draw-pool counts by gender,
+country, weight class, and rarity, plus one-decimal rarity percentages. It is the
+recommended source for game menus and curation dashboards; hidden and fictional
+records are intentionally excluded.
 
 ### Browser games
 
