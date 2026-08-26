@@ -1,0 +1,18 @@
+{
+  "id": "81c2c142-58ea-478f-b52a-30e2ebf98132",
+  "slug": "chelsie-giles",
+  "firstname": "Chelsie",
+  "surname": "Giles",
+  "personType": "real",
+  "countryCode": "GB",
+  "weightClass": "-57",
+  "category": "Judo",
+  "stats": { "power": 7, "speed": 9, "technique": 8, "kumikata": 8, "newaza": 8 },
+  "signatureMoveIds": ["seoi-nage"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://www.ijf.org/judoka/17275",
+  "bio": "British lightweight Chelsie Giles won Olympic bronze at Tokyo 2020 and world silver in 2022.",
+  "gender": "female",
+  "isHidden": false,
+  "rarity": "Epic"
+}

@@ -1,0 +1,18 @@
+{
+  "id": "776aa860-970c-4ceb-856d-44f55a52ca38",
+  "slug": "christa-deguchi",
+  "firstname": "Christa",
+  "surname": "Deguchi",
+  "personType": "real",
+  "countryCode": "CA",
+  "weightClass": "-57",
+  "category": "Judo",
+  "stats": { "power": 8, "speed": 9, "technique": 10, "kumikata": 9, "newaza": 8 },
+  "signatureMoveIds": ["uchi-mata"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://www.ijf.org/judoka/41546",
+  "bio": "Canadian lightweight Christa Deguchi won Olympic gold at Paris 2024 and world silver in 2024.",
+  "gender": "female",
+  "isHidden": false,
+  "rarity": "Legendary"
+}
