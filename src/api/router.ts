@@ -103,6 +103,7 @@ export function createRestRouter({ catalog, draw }: { catalog: CatalogService; d
       if (resource === "weight-categories" && request.method === "GET" && id === undefined) return json(catalog.listWeightCategories());
       if (resource === "version" && request.method === "GET" && id === undefined) return json(catalog.version());
       if (resource === "status" && request.method === "GET" && id === undefined) return json(catalog.status());
+      if (resource === "coverage" && request.method === "GET" && id === undefined) return json(catalog.coverage());
       if (resource === "draw" && request.method === "POST" && id === undefined) {
         if (!/^application\/json(?:\s*;|$)/i.test(request.headers.get("content-type") ?? "")) throw new TypeError("content-type must be application/json");
         let body: DrawRequest; try { body = validateDrawBody(await request.json()); } catch (error) { if (error instanceof SyntaxError) throw new TypeError("request body contains malformed JSON"); throw error; }
@@ -110,7 +111,7 @@ export function createRestRouter({ catalog, draw }: { catalog: CatalogService; d
         try { return json(draw.draw(body, { authorizedInternal })); }
         catch (error) { if (error instanceof RangeError && /exceeds eligible pool size/.test(error.message)) return failure(409, "conflict", "requested count exceeds the eligible pool"); throw error; }
       }
-      const known = new Set(["judoka", "techniques", "collections", "countries", "weight-categories", "draw", "version", "status"]);
+      const known = new Set(["judoka", "techniques", "collections", "countries", "weight-categories", "draw", "version", "status", "coverage"]);
       return known.has(resource ?? "") ? failure(405, "method_not_allowed", "method not allowed") : failure(404, "not_found", "route not found");
     } catch (error) {
       const expectedInputError = error instanceof Error && /^(unsupported (query parameter|body field|filter|draw algorithm)|filter .+ must |includeHidden must |collection must |q must |limit must |cursor (must|requires) |content-type must |request body |count must |seed must |algorithm must |exclude must )/.test(error.message);
