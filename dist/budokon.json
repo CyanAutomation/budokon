@@ -1,5 +1,5 @@
 {
-  "datasetVersion": "2026.08.2",
+  "datasetVersion": "2026.08.3",
   "judoka": [
     {
       "id": "0036f7e0-2759-42f3-830f-a4403ea14bc9",
@@ -54,6 +54,36 @@
       "isHidden": false,
       "rarity": "Epic",
       "country": "Japan"
+    },
+    {
+      "id": "1bb6baa9-1b56-4b67-8105-b0b84dde8196",
+      "slug": "francisco-garrigos",
+      "firstname": "Francisco",
+      "surname": "Garrigós",
+      "aliases": [
+        "Francisco Garrigos"
+      ],
+      "personType": "real",
+      "countryCode": "ES",
+      "weightClass": "-60",
+      "category": "Judo",
+      "stats": {
+        "power": 8,
+        "speed": 9,
+        "technique": 9,
+        "kumikata": 8,
+        "newaza": 8
+      },
+      "signatureMoveIds": [
+        "seoi-nage"
+      ],
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "profileUrl": "https://www.ijf.org/judoka/9365",
+      "bio": "Spanish extra-lightweight Francisco Garrigós won the 2023 world title and Olympic bronze at Paris 2024.",
+      "gender": "male",
+      "isHidden": false,
+      "rarity": "Epic",
+      "country": "Spain"
     },
     {
       "id": "1d200634-eb36-4f5e-b5c0-28734b96ac62",
@@ -311,6 +341,33 @@
       "country": "France"
     },
     {
+      "id": "776aa860-970c-4ceb-856d-44f55a52ca38",
+      "slug": "christa-deguchi",
+      "firstname": "Christa",
+      "surname": "Deguchi",
+      "personType": "real",
+      "countryCode": "CA",
+      "weightClass": "-57",
+      "category": "Judo",
+      "stats": {
+        "power": 8,
+        "speed": 9,
+        "technique": 10,
+        "kumikata": 9,
+        "newaza": 8
+      },
+      "signatureMoveIds": [
+        "uchi-mata"
+      ],
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "profileUrl": "https://www.ijf.org/judoka/41546",
+      "bio": "Canadian lightweight Christa Deguchi won Olympic gold at Paris 2024 and world silver in 2024.",
+      "gender": "female",
+      "isHidden": false,
+      "rarity": "Legendary",
+      "country": "Canada"
+    },
+    {
       "id": "7bab938d-586b-47b3-9fe2-14b69d21956b",
       "slug": "rafaela-silva",
       "firstname": "Rafaela",
@@ -338,6 +395,33 @@
       "country": "Brazil"
     },
     {
+      "id": "81c2c142-58ea-478f-b52a-30e2ebf98132",
+      "slug": "chelsie-giles",
+      "firstname": "Chelsie",
+      "surname": "Giles",
+      "personType": "real",
+      "countryCode": "GB",
+      "weightClass": "-57",
+      "category": "Judo",
+      "stats": {
+        "power": 7,
+        "speed": 9,
+        "technique": 8,
+        "kumikata": 8,
+        "newaza": 8
+      },
+      "signatureMoveIds": [
+        "seoi-nage"
+      ],
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "profileUrl": "https://www.ijf.org/judoka/17275",
+      "bio": "British lightweight Chelsie Giles won Olympic bronze at Tokyo 2020 and world silver in 2022.",
+      "gender": "female",
+      "isHidden": false,
+      "rarity": "Epic",
+      "country": "United Kingdom"
+    },
+    {
       "id": "84d3b821-0ca8-42de-b42c-2eb8d42c9c3b",
       "slug": "tatsuuma-ushiyama",
       "firstname": "Tatsuuma",
@@ -363,6 +447,33 @@
         "ura-nage"
       ],
       "country": "Japan"
+    },
+    {
+      "id": "89a40524-4d14-4efd-b437-2f4de7f89948",
+      "slug": "anna-maria-wagner",
+      "firstname": "Anna-Maria",
+      "surname": "Wagner",
+      "personType": "real",
+      "countryCode": "DE",
+      "weightClass": "-78",
+      "category": "Judo",
+      "stats": {
+        "power": 9,
+        "speed": 8,
+        "technique": 9,
+        "kumikata": 9,
+        "newaza": 8
+      },
+      "signatureMoveIds": [
+        "o-uchi-gari"
+      ],
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "profileUrl": "https://www.ijf.org/judoka/17189",
+      "bio": "German half-heavyweight Anna-Maria Wagner won world titles in 2021 and 2024.",
+      "gender": "female",
+      "isHidden": false,
+      "rarity": "Epic",
+      "country": "Germany"
     },
     {
       "id": "8d9f008f-73f0-41fc-b13c-695a4667ff3c",
@@ -420,6 +531,33 @@
       "country": "Japan"
     },
     {
+      "id": "c3167812-acbf-42b4-bda5-1788baea78e4",
+      "slug": "hidayat-heydarov",
+      "firstname": "Hidayat",
+      "surname": "Heydarov",
+      "personType": "real",
+      "countryCode": "AZ",
+      "weightClass": "-73",
+      "category": "Judo",
+      "stats": {
+        "power": 9,
+        "speed": 9,
+        "technique": 9,
+        "kumikata": 9,
+        "newaza": 7
+      },
+      "signatureMoveIds": [
+        "uchi-mata"
+      ],
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "profileUrl": "https://www.ijf.org/athlete/13028",
+      "bio": "Azerbaijani lightweight Hidayat Heydarov won world gold in 2023 and Olympic gold at Paris 2024.",
+      "gender": "male",
+      "isHidden": false,
+      "rarity": "Legendary",
+      "country": "Azerbaijan"
+    },
+    {
       "id": "c7218eca-bebe-4508-932c-b9ef4813865b",
       "slug": "ashley-mckenzie",
       "aliases": [
@@ -451,6 +589,33 @@
         "askley-mckenzie"
       ],
       "country": "Jamaica"
+    },
+    {
+      "id": "c7f3c8d8-c2c9-4e0f-929e-219cc1935f72",
+      "slug": "baasankhuu-bavuudorj",
+      "firstname": "Baasankhuu",
+      "surname": "Bavuudorj",
+      "personType": "real",
+      "countryCode": "MN",
+      "weightClass": "-48",
+      "category": "Judo",
+      "stats": {
+        "power": 8,
+        "speed": 9,
+        "technique": 9,
+        "kumikata": 8,
+        "newaza": 7
+      },
+      "signatureMoveIds": [
+        "o-soto-gari"
+      ],
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "profileUrl": "https://www.ijf.org/judoka/65319",
+      "bio": "Mongolian extra-lightweight Baasankhuu Bavuudorj won the 2024 world title and Olympic silver.",
+      "gender": "female",
+      "isHidden": false,
+      "rarity": "Epic",
+      "country": "Mongolia"
     },
     {
       "id": "ca770dc4-ef60-4a5d-99a4-5bfaf3504849",
@@ -1610,6 +1775,12 @@
     }
   ],
   "countries": {
+    "AZ": {
+      "country": "Azerbaijan",
+      "code": "AZ",
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "active": true
+    },
     "BR": {
       "country": "Brazil",
       "code": "BR",

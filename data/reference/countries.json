@@ -11,6 +11,12 @@
     "lastUpdated": "2025-04-23T10:00:00Z",
     "active": true
   },
+  "AZ": {
+    "country": "Azerbaijan",
+    "code": "AZ",
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "active": true
+  },
   "FR": {
     "country": "France",
     "code": "FR",

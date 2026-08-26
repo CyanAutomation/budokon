@@ -1,0 +1,18 @@
+{
+  "id": "89a40524-4d14-4efd-b437-2f4de7f89948",
+  "slug": "anna-maria-wagner",
+  "firstname": "Anna-Maria",
+  "surname": "Wagner",
+  "personType": "real",
+  "countryCode": "DE",
+  "weightClass": "-78",
+  "category": "Judo",
+  "stats": { "power": 9, "speed": 8, "technique": 9, "kumikata": 9, "newaza": 8 },
+  "signatureMoveIds": ["o-uchi-gari"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://www.ijf.org/judoka/17189",
+  "bio": "German half-heavyweight Anna-Maria Wagner won world titles in 2021 and 2024.",
+  "gender": "female",
+  "isHidden": false,
+  "rarity": "Epic"
+}
