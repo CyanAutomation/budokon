@@ -1,0 +1,18 @@
+{
+  "id": "c7f3c8d8-c2c9-4e0f-929e-219cc1935f72",
+  "slug": "baasankhuu-bavuudorj",
+  "firstname": "Baasankhuu",
+  "surname": "Bavuudorj",
+  "personType": "real",
+  "countryCode": "MN",
+  "weightClass": "-48",
+  "category": "Judo",
+  "stats": { "power": 8, "speed": 9, "technique": 9, "kumikata": 8, "newaza": 7 },
+  "signatureMoveIds": ["o-soto-gari"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://www.ijf.org/judoka/65319",
+  "bio": "Mongolian extra-lightweight Baasankhuu Bavuudorj won the 2024 world title and Olympic silver.",
+  "gender": "female",
+  "isHidden": false,
+  "rarity": "Epic"
+}
