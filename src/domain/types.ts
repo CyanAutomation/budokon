@@ -12,6 +12,7 @@ export interface Judoka {
   gender?: string;
   weightClass?: string;
   rarity?: string;
+  sourceUrls?: string[];
   personType?: string;
   signatureMoveIds: string[];
   isHidden?: boolean;
@@ -63,3 +64,13 @@ export interface VersionResponse {
   datasetChecksum: string;
 }
 export interface StatusResponse extends VersionResponse { status: "ok"; }
+export interface CoverageResponse {
+  total: number;
+  publicReal: number;
+  hidden: number;
+  byGender: Record<string, number>;
+  byCountry: Record<string, number>;
+  byWeightClass: Record<string, number>;
+  byRarity: Record<string, number>;
+  rarityPercentages: Record<string, number>;
+}

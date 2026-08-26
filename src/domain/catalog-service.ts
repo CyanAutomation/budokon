@@ -1,6 +1,7 @@
-import type { Filters, Judoka, ListJudokaOptions, SearchJudokaOptions, StatusResponse, VersionResponse } from "./types.js";
+import type { CoverageResponse, Filters, Judoka, ListJudokaOptions, SearchJudokaOptions, StatusResponse, VersionResponse } from "./types.js";
 import type { ReadModelRepository } from "../repository/read-model-repository.js";
 import { DRAW_ALGORITHM, SUPPORTED_DRAW_ALGORITHMS } from "../draw/algorithm.js";
+import { summarizeCoverage } from "./coverage.js";
 
 const FILTER_FIELDS = new Set(["countryCode", "gender", "weightClass", "rarity", "personType", "signatureMoveIds"]);
 const byImmutableId = (a: Judoka, b: Judoka) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
@@ -34,6 +35,7 @@ export class CatalogService {
     };
   }
   status(): StatusResponse { return { status: "ok", ...this.version() }; }
+  coverage(): CoverageResponse { return summarizeCoverage(this.repository.listJudoka()); }
   listJudoka(options: ListJudokaOptions = {}): Judoka[] {
     const filters = normalizeFilters(options.filters); const exclusions = new Set((options.exclude ?? []).map(String));
     const includeHidden = options.includeHidden === true && options.authorizedInternal === true;
