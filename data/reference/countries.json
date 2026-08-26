@@ -163,5 +163,17 @@
     "code": "TJ",
     "lastUpdated": "2026-08-26T00:00:00Z",
     "active": true
+  },
+  "GR": {
+    "country": "Greece",
+    "code": "GR",
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "active": true
+  },
+  "HU": {
+    "country": "Hungary",
+    "code": "HU",
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "active": true
   }
 }

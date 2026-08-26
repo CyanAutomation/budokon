@@ -1,0 +1,19 @@
+{
+  "id": "2c13bf23-28bb-4bc1-a452-59b8b1323582",
+  "slug": "estrella-lopez-sheriff",
+  "firstname": "Estrella",
+  "surname": "López Sheriff",
+  "personType": "real",
+  "countryCode": "ES",
+  "weightClass": "-57",
+  "category": "Judo",
+  "stats": { "power": 7, "speed": 8, "technique": 7, "kumikata": 7, "newaza": 7 },
+  "signatureMoveIds": ["uchi-mata"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://www.ijf.org/judoka/3238",
+  "sourceUrls": ["https://www.ijf.org/judoka/3238"],
+  "bio": "Spanish lightweight Estrella López Sheriff has competed on the IJF World Judo Tour across the -52 kg and -57 kg categories.",
+  "gender": "female",
+  "isHidden": false,
+  "rarity": "Common"
+}
