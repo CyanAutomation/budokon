@@ -1,5 +1,5 @@
 {
-  "datasetVersion": "2026.08.5",
+  "datasetVersion": "2026.08.6",
   "judoka": [
     {
       "id": "0036f7e0-2759-42f3-830f-a4403ea14bc9",
@@ -52,8 +52,38 @@
       "bio": "Czech heavyweight Luka Krpalek is a two-time Olympic champion who also won Olympic gold at half-heavyweight.",
       "gender": "male",
       "isHidden": false,
-      "rarity": "Epic",
+      "rarity": "Legendary",
       "country": "Czechia"
+    },
+    {
+      "id": "089c582a-247b-4733-aa90-8e4a178e48e2",
+      "slug": "joan-benjamin-gaba",
+      "firstname": "Joan-Benjamin",
+      "surname": "Gaba",
+      "personType": "real",
+      "countryCode": "FR",
+      "weightClass": "-73",
+      "category": "Judo",
+      "stats": {
+        "power": 8,
+        "speed": 9,
+        "technique": 9,
+        "kumikata": 8,
+        "newaza": 8
+      },
+      "signatureMoveIds": [
+        "kata-guruma"
+      ],
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "profileUrl": "https://en.wikipedia.org/wiki/Joan-Benjamin_Gaba",
+      "sourceUrls": [
+        "https://www.ijf.org/news/show/73-kg-gaba-wins-france-s-60th-world-title"
+      ],
+      "bio": "French lightweight Joan-Benjamin Gaba won Olympic silver at Paris 2024 and followed it with the 2025 world title.",
+      "gender": "male",
+      "isHidden": false,
+      "rarity": "Epic",
+      "country": "France"
     },
     {
       "id": "0c317ece-c133-41c4-9131-19ad1c8fabdf",
@@ -200,6 +230,36 @@
       "country": "Brazil"
     },
     {
+      "id": "1f1b356e-74a6-4f42-8c85-647f340a2f14",
+      "slug": "christian-parlati",
+      "firstname": "Christian",
+      "surname": "Parlati",
+      "personType": "real",
+      "countryCode": "IT",
+      "weightClass": "-90",
+      "category": "Judo",
+      "stats": {
+        "power": 8,
+        "speed": 7,
+        "technique": 8,
+        "kumikata": 8,
+        "newaza": 7
+      },
+      "signatureMoveIds": [
+        "sumi-gaeshi"
+      ],
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "profileUrl": "https://www.ijf.org/judoka/18847",
+      "sourceUrls": [
+        "https://www.ijf.org/news/show/90-kg-parlati-prevails-after-a-hard-fought-battle"
+      ],
+      "bio": "Italian middleweight Christian Parlati is a World Judo Tour gold medallist in the men’s -90 kg division.",
+      "gender": "male",
+      "isHidden": false,
+      "rarity": "Common",
+      "country": "Italy"
+    },
+    {
       "id": "213a0432-ab43-4233-a6d7-10619d252ac9",
       "slug": "natsumi-tsunoda",
       "firstname": "Natsumi",
@@ -252,6 +312,36 @@
       "isHidden": false,
       "rarity": "Epic",
       "country": "Georgia"
+    },
+    {
+      "id": "2c13bf23-28bb-4bc1-a452-59b8b1323582",
+      "slug": "estrella-lopez-sheriff",
+      "firstname": "Estrella",
+      "surname": "López Sheriff",
+      "personType": "real",
+      "countryCode": "ES",
+      "weightClass": "-57",
+      "category": "Judo",
+      "stats": {
+        "power": 7,
+        "speed": 8,
+        "technique": 7,
+        "kumikata": 7,
+        "newaza": 7
+      },
+      "signatureMoveIds": [
+        "uchi-mata"
+      ],
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "profileUrl": "https://www.ijf.org/judoka/3238",
+      "sourceUrls": [
+        "https://www.ijf.org/judoka/3238"
+      ],
+      "bio": "Spanish lightweight Estrella López Sheriff has competed on the IJF World Judo Tour across the -52 kg and -57 kg categories.",
+      "gender": "female",
+      "isHidden": false,
+      "rarity": "Common",
+      "country": "Spain"
     },
     {
       "id": "38690882-06a3-4d98-9b06-2789da1015db",
@@ -599,6 +689,36 @@
       "country": "Japan"
     },
     {
+      "id": "592aeda8-a325-4117-8744-1785d620e241",
+      "slug": "daniel-cargnin",
+      "firstname": "Daniel",
+      "surname": "Cargnin",
+      "personType": "real",
+      "countryCode": "BR",
+      "weightClass": "-73",
+      "category": "Judo",
+      "stats": {
+        "power": 7,
+        "speed": 8,
+        "technique": 8,
+        "kumikata": 7,
+        "newaza": 7
+      },
+      "signatureMoveIds": [
+        "seoi-otoshi"
+      ],
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "profileUrl": "https://en.wikipedia.org/wiki/Daniel_Cargnin",
+      "sourceUrls": [
+        "https://www.ijf.org/news/show/73-kg-gaba-wins-france-s-60th-world-title"
+      ],
+      "bio": "Brazilian lightweight Daniel Cargnin is an Olympic bronze medallist and a senior world championship medallist.",
+      "gender": "male",
+      "isHidden": false,
+      "rarity": "Common",
+      "country": "Brazil"
+    },
+    {
       "id": "5a5ad6d1-9050-4247-93e4-0f90e8efbecf",
       "slug": "maria-siderot",
       "firstname": "Maria",
@@ -629,6 +749,36 @@
       "country": "Portugal"
     },
     {
+      "id": "5c5b8b7f-009e-4d92-a6b6-dd6a6cb749cd",
+      "slug": "benjamin-axus",
+      "firstname": "Benjamin",
+      "surname": "Axus",
+      "personType": "real",
+      "countryCode": "FR",
+      "weightClass": "-73",
+      "category": "Judo",
+      "stats": {
+        "power": 7,
+        "speed": 8,
+        "technique": 8,
+        "kumikata": 7,
+        "newaza": 7
+      },
+      "signatureMoveIds": [
+        "tai-otoshi"
+      ],
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "profileUrl": "https://www.ijf.org/judoka/17435",
+      "sourceUrls": [
+        "https://www.ijf.org/judoka/17435/pictures"
+      ],
+      "bio": "French lightweight Benjamin Axus is an experienced World Judo Tour competitor with senior world championship appearances.",
+      "gender": "male",
+      "isHidden": false,
+      "rarity": "Common",
+      "country": "France"
+    },
+    {
       "id": "5e12ad9b-db08-4e41-9423-48a3e91c8f33",
       "slug": "joao-crisostomo",
       "firstname": "João",
@@ -657,6 +807,36 @@
       "isHidden": false,
       "rarity": "Common",
       "country": "Portugal"
+    },
+    {
+      "id": "5e629086-4666-4b4e-b64e-3196a6683225",
+      "slug": "tato-grigalashvili",
+      "firstname": "Tato",
+      "surname": "Grigalashvili",
+      "personType": "real",
+      "countryCode": "GE",
+      "weightClass": "-81",
+      "category": "Judo",
+      "stats": {
+        "power": 8,
+        "speed": 9,
+        "technique": 10,
+        "kumikata": 9,
+        "newaza": 8
+      },
+      "signatureMoveIds": [
+        "sumi-gaeshi"
+      ],
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "profileUrl": "https://en.wikipedia.org/wiki/Tato_Grigalashvili",
+      "sourceUrls": [
+        "https://www.ijf.org/news/show/90-kg-tato-takes-the-trophy"
+      ],
+      "bio": "Georgian half-middleweight Tato Grigalashvili is a three-time senior world champion and a leading athlete of his generation.",
+      "gender": "male",
+      "isHidden": false,
+      "rarity": "Epic",
+      "country": "Georgia"
     },
     {
       "id": "607d6ff2-ad3c-4008-be81-539bacfc50f5",
@@ -749,6 +929,36 @@
       "country": "France"
     },
     {
+      "id": "73a0a188-6596-43e5-80ad-4f06c1521c22",
+      "slug": "ryoko-tani",
+      "aliases": [
+        "Ryoko Tamura"
+      ],
+      "firstname": "Ryoko",
+      "surname": "Tani",
+      "personType": "real",
+      "countryCode": "JP",
+      "weightClass": "-48",
+      "category": "Judo",
+      "stats": {
+        "power": 8,
+        "speed": 10,
+        "technique": 10,
+        "kumikata": 10,
+        "newaza": 9
+      },
+      "signatureMoveIds": [
+        "seoi-nage"
+      ],
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "profileUrl": "https://en.wikipedia.org/wiki/Ryoko_Tani",
+      "bio": "Japanese extra-lightweight Ryoko Tani won two Olympic titles, five Olympic medals, and seven senior world championships.",
+      "gender": "female",
+      "isHidden": false,
+      "rarity": "Legendary",
+      "country": "Japan"
+    },
+    {
       "id": "776aa860-970c-4ceb-856d-44f55a52ca38",
       "slug": "christa-deguchi",
       "firstname": "Christa",
@@ -776,6 +986,36 @@
       "country": "Canada"
     },
     {
+      "id": "77e00097-9c23-4ff2-bf4b-cc608f4d8689",
+      "slug": "larissa-pimenta",
+      "firstname": "Larissa",
+      "surname": "Pimenta",
+      "personType": "real",
+      "countryCode": "BR",
+      "weightClass": "-52",
+      "category": "Judo",
+      "stats": {
+        "power": 7,
+        "speed": 8,
+        "technique": 7,
+        "kumikata": 7,
+        "newaza": 8
+      },
+      "signatureMoveIds": [
+        "okuri-eri-jime"
+      ],
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "profileUrl": "https://www.ijf.org/judoka/23949/overview",
+      "sourceUrls": [
+        "https://www.ijf.org/judoka/23949/overview"
+      ],
+      "bio": "Brazilian half-lightweight Larissa Pimenta is a regular World Judo Tour medallist and a Paris 2024 Olympian.",
+      "gender": "female",
+      "isHidden": false,
+      "rarity": "Common",
+      "country": "Brazil"
+    },
+    {
       "id": "7bab938d-586b-47b3-9fe2-14b69d21956b",
       "slug": "rafaela-silva",
       "firstname": "Rafaela",
@@ -801,6 +1041,36 @@
       "isHidden": false,
       "rarity": "Epic",
       "country": "Brazil"
+    },
+    {
+      "id": "7c22751e-ea74-416b-8fa5-1e2f4d0f6feb",
+      "slug": "theodoros-tselidis",
+      "firstname": "Theodoros",
+      "surname": "Tselidis",
+      "personType": "real",
+      "countryCode": "GR",
+      "weightClass": "-90",
+      "category": "Judo",
+      "stats": {
+        "power": 8,
+        "speed": 7,
+        "technique": 7,
+        "kumikata": 8,
+        "newaza": 7
+      },
+      "signatureMoveIds": [
+        "o-uchi-gari"
+      ],
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "profileUrl": "https://www.ijf.org/judoka/42676",
+      "sourceUrls": [
+        "https://www.ijf.org/athlete/42676/results?results_rank_group=cont_champ"
+      ],
+      "bio": "Greek middleweight Theodoros Tselidis won individual Olympic bronze at Paris 2024 and competes on the World Judo Tour.",
+      "gender": "male",
+      "isHidden": false,
+      "rarity": "Common",
+      "country": "Greece"
     },
     {
       "id": "7c8c031c-d334-4511-b4dd-0cd034b9d0a3",
@@ -970,6 +1240,33 @@
       "isHidden": false,
       "rarity": "Legendary",
       "country": "Japan"
+    },
+    {
+      "id": "8f777c47-8f02-4945-a64b-0a84cd92fea3",
+      "slug": "manuel-lombardo",
+      "firstname": "Manuel",
+      "surname": "Lombardo",
+      "personType": "real",
+      "countryCode": "IT",
+      "weightClass": "-73",
+      "category": "Judo",
+      "stats": {
+        "power": 8,
+        "speed": 8,
+        "technique": 8,
+        "kumikata": 8,
+        "newaza": 7
+      },
+      "signatureMoveIds": [
+        "uchi-mata"
+      ],
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "profileUrl": "https://en.wikipedia.org/wiki/Manuel_Lombardo",
+      "bio": "Italian lightweight Manuel Lombardo is a senior world championship medallist and an established World Judo Tour contender.",
+      "gender": "male",
+      "isHidden": false,
+      "rarity": "Rare",
+      "country": "Italy"
     },
     {
       "id": "999f2a4c-2f81-47e9-8a3a-2c2c72abfd02",
@@ -1544,7 +1841,7 @@
       "bio": "Italian half-lightweight Odette Giuffrida is a multiple Olympic medallist and world champion.",
       "gender": "female",
       "isHidden": false,
-      "rarity": "Rare",
+      "rarity": "Epic",
       "country": "Italy"
     },
     {
@@ -1632,6 +1929,36 @@
       "country": "Tajikistan"
     },
     {
+      "id": "dd665698-12ba-4363-b233-ec5830b82c97",
+      "slug": "sanne-van-dijke",
+      "firstname": "Sanne",
+      "surname": "van Dijke",
+      "personType": "real",
+      "countryCode": "NL",
+      "weightClass": "-70",
+      "category": "Judo",
+      "stats": {
+        "power": 8,
+        "speed": 7,
+        "technique": 8,
+        "kumikata": 8,
+        "newaza": 7
+      },
+      "signatureMoveIds": [
+        "o-soto-gari"
+      ],
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "profileUrl": "https://www.ijf.org/judoka/7672",
+      "sourceUrls": [
+        "https://www.ijf.org/judoka/7672"
+      ],
+      "bio": "Dutch middleweight Sanne van Dijke is an Olympic bronze medallist and a consistent senior world championship medallist.",
+      "gender": "female",
+      "isHidden": false,
+      "rarity": "Rare",
+      "country": "Netherlands"
+    },
+    {
       "id": "dd9ae2a5-e61f-4929-9e05-05ced4d2395f",
       "slug": "shohei-ono",
       "firstname": "Shohei",
@@ -1684,6 +2011,36 @@
         "uchi-mata"
       ],
       "country": "Portugal"
+    },
+    {
+      "id": "ebe2e342-8a59-45f5-86f8-fd91f197d1a0",
+      "slug": "reka-pupp",
+      "firstname": "Réka",
+      "surname": "Pupp",
+      "personType": "real",
+      "countryCode": "HU",
+      "weightClass": "-52",
+      "category": "Judo",
+      "stats": {
+        "power": 7,
+        "speed": 8,
+        "technique": 8,
+        "kumikata": 7,
+        "newaza": 7
+      },
+      "signatureMoveIds": [
+        "o-uchi-gari"
+      ],
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "profileUrl": "https://en.wikipedia.org/wiki/R%C3%A9ka_Pupp",
+      "sourceUrls": [
+        "https://www.ijf.org/news/show/52-kg-krasniqi-never-in-doubt"
+      ],
+      "bio": "Hungarian half-lightweight Réka Pupp is a World Judo Tour finalist and a regular contender in the -52 kg division.",
+      "gender": "female",
+      "isHidden": false,
+      "rarity": "Rare",
+      "country": "Hungary"
     },
     {
       "id": "ed4a5c0e-0279-4621-81d4-2e593a913732",
@@ -2891,9 +3248,21 @@
       "lastUpdated": "2025-04-23T10:00:00Z",
       "active": true
     },
+    "GR": {
+      "country": "Greece",
+      "code": "GR",
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "active": true
+    },
     "HR": {
       "country": "Croatia",
       "code": "HR",
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "active": true
+    },
+    "HU": {
+      "country": "Hungary",
+      "code": "HU",
       "lastUpdated": "2026-08-26T00:00:00Z",
       "active": true
     },

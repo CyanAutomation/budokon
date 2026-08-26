@@ -1,0 +1,19 @@
+{
+  "id": "77e00097-9c23-4ff2-bf4b-cc608f4d8689",
+  "slug": "larissa-pimenta",
+  "firstname": "Larissa",
+  "surname": "Pimenta",
+  "personType": "real",
+  "countryCode": "BR",
+  "weightClass": "-52",
+  "category": "Judo",
+  "stats": { "power": 7, "speed": 8, "technique": 7, "kumikata": 7, "newaza": 8 },
+  "signatureMoveIds": ["okuri-eri-jime"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://www.ijf.org/judoka/23949/overview",
+  "sourceUrls": ["https://www.ijf.org/judoka/23949/overview"],
+  "bio": "Brazilian half-lightweight Larissa Pimenta is a regular World Judo Tour medallist and a Paris 2024 Olympian.",
+  "gender": "female",
+  "isHidden": false,
+  "rarity": "Common"
+}

@@ -1,0 +1,19 @@
+{
+  "id": "089c582a-247b-4733-aa90-8e4a178e48e2",
+  "slug": "joan-benjamin-gaba",
+  "firstname": "Joan-Benjamin",
+  "surname": "Gaba",
+  "personType": "real",
+  "countryCode": "FR",
+  "weightClass": "-73",
+  "category": "Judo",
+  "stats": { "power": 8, "speed": 9, "technique": 9, "kumikata": 8, "newaza": 8 },
+  "signatureMoveIds": ["kata-guruma"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://en.wikipedia.org/wiki/Joan-Benjamin_Gaba",
+  "sourceUrls": ["https://www.ijf.org/news/show/73-kg-gaba-wins-france-s-60th-world-title"],
+  "bio": "French lightweight Joan-Benjamin Gaba won Olympic silver at Paris 2024 and followed it with the 2025 world title.",
+  "gender": "male",
+  "isHidden": false,
+  "rarity": "Epic"
+}

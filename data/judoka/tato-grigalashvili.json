@@ -1,0 +1,19 @@
+{
+  "id": "5e629086-4666-4b4e-b64e-3196a6683225",
+  "slug": "tato-grigalashvili",
+  "firstname": "Tato",
+  "surname": "Grigalashvili",
+  "personType": "real",
+  "countryCode": "GE",
+  "weightClass": "-81",
+  "category": "Judo",
+  "stats": { "power": 8, "speed": 9, "technique": 10, "kumikata": 9, "newaza": 8 },
+  "signatureMoveIds": ["sumi-gaeshi"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://en.wikipedia.org/wiki/Tato_Grigalashvili",
+  "sourceUrls": ["https://www.ijf.org/news/show/90-kg-tato-takes-the-trophy"],
+  "bio": "Georgian half-middleweight Tato Grigalashvili is a three-time senior world champion and a leading athlete of his generation.",
+  "gender": "male",
+  "isHidden": false,
+  "rarity": "Epic"
+}
