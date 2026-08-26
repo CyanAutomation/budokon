@@ -5,7 +5,7 @@
     "budokon-v1"
   ],
   "defaultDrawAlgorithm": "budokon-v1",
-  "sourceGitCommit": "059a07872063f353f9ef4deaba9c4373717fd47f",
+  "sourceGitCommit": "88f0ae8247529d80caa2179c5d3a1bba6b2ac4b0",
   "recordCounts": {
     "judoka": 74,
     "techniques": 100,
