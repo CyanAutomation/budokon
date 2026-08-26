@@ -1,0 +1,19 @@
+{
+  "id": "1bb6baa9-1b56-4b67-8105-b0b84dde8196",
+  "slug": "francisco-garrigos",
+  "firstname": "Francisco",
+  "surname": "Garrigós",
+  "aliases": ["Francisco Garrigos"],
+  "personType": "real",
+  "countryCode": "ES",
+  "weightClass": "-60",
+  "category": "Judo",
+  "stats": { "power": 8, "speed": 9, "technique": 9, "kumikata": 8, "newaza": 8 },
+  "signatureMoveIds": ["seoi-nage"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://www.ijf.org/judoka/9365",
+  "bio": "Spanish extra-lightweight Francisco Garrigós won the 2023 world title and Olympic bronze at Paris 2024.",
+  "gender": "male",
+  "isHidden": false,
+  "rarity": "Epic"
+}

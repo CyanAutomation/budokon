@@ -1,4 +1,10 @@
 {
+  "AZ": {
+    "country": "Azerbaijan",
+    "code": "AZ",
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "active": true
+  },
   "BR": {
     "country": "Brazil",
     "code": "BR",
