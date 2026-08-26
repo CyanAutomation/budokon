@@ -1,0 +1,18 @@
+{
+  "id": "a89700be-266f-4306-9cca-0ce148bb17c3",
+  "slug": "romane-dicko",
+  "firstname": "Romane",
+  "surname": "Dicko",
+  "personType": "real",
+  "countryCode": "FR",
+  "weightClass": "+78",
+  "category": "Judo",
+  "stats": { "power": 10, "speed": 8, "technique": 9, "kumikata": 9, "newaza": 8 },
+  "signatureMoveIds": ["o-soto-gari"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://en.wikipedia.org/wiki/Romane_Dicko",
+  "bio": "French heavyweight Romane Dicko is a world champion and an Olympic bronze medallist in the individual heavyweight event.",
+  "gender": "female",
+  "isHidden": false,
+  "rarity": "Rare"
+}
