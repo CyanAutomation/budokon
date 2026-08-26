@@ -16,8 +16,10 @@ saves, but do not use it as a canonical data source.
 BU-DO-KON is a small, curated game catalogue. Add a person because they make a
 recognisable or enjoyable game card, not to make the catalogue exhaustive or to
 mirror an external ranking database. Work in small batches and use
-`npm run coverage` before choosing the next one so that the catalogue does not
-accidentally concentrate on one gender, country, or weight class.
+`npm run coverage` before choosing the next one. It is an enforced policy gate:
+the public catalogue must retain country, gender, weight-class, and rarity
+coverage. Rarity is a game-distribution label, not an official assessment of
+an athlete; follow the tier definitions and target ranges in the root README.
 
 Every record needs the stable identity and gameplay-routing fields required by
 the schema: UUID, slug, name, real/fictional type, country, gender, primary

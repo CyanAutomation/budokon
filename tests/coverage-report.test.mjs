@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { formatCoverageReport, summarizeCoverage } from '../scripts/coverage-report.mjs';
+import { coverageViolations } from '../scripts/coverage-policy.mjs';
 
 test('coverage summary reports the visible catalogue and its balance', () => {
   const summary = summarizeCoverage([
@@ -13,11 +14,24 @@ test('coverage summary reports the visible catalogue and its balance', () => {
     total: 3,
     publicReal: 2,
     hidden: 1,
-    byGender: { female: 1, male: 2 },
-    byCountry: { FR: 1, JP: 2 },
-    byWeightClass: { '-63': 1, '-81': 1, '+100': 1 },
+    byGender: { female: 1, male: 1 },
+    byCountry: { FR: 1, JP: 1 },
+    byWeightClass: { '-63': 1, '-81': 1 },
+    byRarity: { Epic: 1, Legendary: 1 },
     byPersonType: { fictional: 1, real: 2 },
   });
   assert.match(formatCoverageReport(summary), /Public real judoka: 2/);
+  assert.match(formatCoverageReport(summary), /By rarity/);
   assert.doesNotMatch(formatCoverageReport(summary), /Game-ready records/);
+});
+
+test('coverage policy reports unsupported rarity and representation imbalance', () => {
+  const summary = summarizeCoverage(Array.from({ length: 20 }, (_, index) => ({
+    personType: 'real', isHidden: false, gender: 'male', countryCode: 'JP', weightClass: '-60', rarity: 'Legendary', slug: `judoka-${index}`,
+  })));
+  const violations = coverageViolations(summary, [{ gender: 'male', categories: [{ weight: '-60' }] }]);
+  assert.ok(violations.some(message => message.includes('countries')));
+  assert.ok(violations.some(message => message.includes('male has')));
+  assert.ok(violations.some(message => message.includes('Common is')));
+  assert.ok(violations.some(message => message.includes('Legendary is')));
 });
