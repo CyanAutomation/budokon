@@ -1,0 +1,19 @@
+{
+  "id": "73a0a188-6596-43e5-80ad-4f06c1521c22",
+  "slug": "ryoko-tani",
+  "aliases": ["Ryoko Tamura"],
+  "firstname": "Ryoko",
+  "surname": "Tani",
+  "personType": "real",
+  "countryCode": "JP",
+  "weightClass": "-48",
+  "category": "Judo",
+  "stats": { "power": 8, "speed": 10, "technique": 10, "kumikata": 10, "newaza": 9 },
+  "signatureMoveIds": ["seoi-nage"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://en.wikipedia.org/wiki/Ryoko_Tani",
+  "bio": "Japanese extra-lightweight Ryoko Tani won two Olympic titles, five Olympic medals, and seven senior world championships.",
+  "gender": "female",
+  "isHidden": false,
+  "rarity": "Legendary"
+}

@@ -1,0 +1,19 @@
+{
+  "id": "7c22751e-ea74-416b-8fa5-1e2f4d0f6feb",
+  "slug": "theodoros-tselidis",
+  "firstname": "Theodoros",
+  "surname": "Tselidis",
+  "personType": "real",
+  "countryCode": "GR",
+  "weightClass": "-90",
+  "category": "Judo",
+  "stats": { "power": 8, "speed": 7, "technique": 7, "kumikata": 8, "newaza": 7 },
+  "signatureMoveIds": ["o-uchi-gari"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://www.ijf.org/judoka/42676",
+  "sourceUrls": ["https://www.ijf.org/athlete/42676/results?results_rank_group=cont_champ"],
+  "bio": "Greek middleweight Theodoros Tselidis won individual Olympic bronze at Paris 2024 and competes on the World Judo Tour.",
+  "gender": "male",
+  "isHidden": false,
+  "rarity": "Common"
+}

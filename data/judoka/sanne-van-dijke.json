@@ -1,0 +1,19 @@
+{
+  "id": "dd665698-12ba-4363-b233-ec5830b82c97",
+  "slug": "sanne-van-dijke",
+  "firstname": "Sanne",
+  "surname": "van Dijke",
+  "personType": "real",
+  "countryCode": "NL",
+  "weightClass": "-70",
+  "category": "Judo",
+  "stats": { "power": 8, "speed": 7, "technique": 8, "kumikata": 8, "newaza": 7 },
+  "signatureMoveIds": ["o-soto-gari"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://www.ijf.org/judoka/7672",
+  "sourceUrls": ["https://www.ijf.org/judoka/7672"],
+  "bio": "Dutch middleweight Sanne van Dijke is an Olympic bronze medallist and a consistent senior world championship medallist.",
+  "gender": "female",
+  "isHidden": false,
+  "rarity": "Rare"
+}

@@ -1,0 +1,19 @@
+{
+  "id": "5c5b8b7f-009e-4d92-a6b6-dd6a6cb749cd",
+  "slug": "benjamin-axus",
+  "firstname": "Benjamin",
+  "surname": "Axus",
+  "personType": "real",
+  "countryCode": "FR",
+  "weightClass": "-73",
+  "category": "Judo",
+  "stats": { "power": 7, "speed": 8, "technique": 8, "kumikata": 7, "newaza": 7 },
+  "signatureMoveIds": ["tai-otoshi"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://www.ijf.org/judoka/17435",
+  "sourceUrls": ["https://www.ijf.org/judoka/17435/pictures"],
+  "bio": "French lightweight Benjamin Axus is an experienced World Judo Tour competitor with senior world championship appearances.",
+  "gender": "male",
+  "isHidden": false,
+  "rarity": "Common"
+}
