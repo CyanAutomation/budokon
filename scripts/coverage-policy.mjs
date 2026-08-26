@@ -20,7 +20,7 @@ export function publicRealJudoka(judoka) {
 export function coverageViolations(summary, weightCategories, policy = coveragePolicy) {
   const violations = [];
   const { publicReal } = summary;
-  if (publicReal < policy.minimumPublicReal) return [`public real catalogue has ${publicReal}; need at least ${policy.minimumPublicReal}`];
+  if (publicReal < policy.minimumPublicReal) violations.push(`public real catalogue has ${publicReal}; need at least ${policy.minimumPublicReal}`);
   if (Object.keys(summary.byCountry).length < policy.minimumCountries) violations.push(`catalogue covers ${Object.keys(summary.byCountry).length} countries; need at least ${policy.minimumCountries}`);
   for (const [country, count] of Object.entries(summary.byCountry)) if (count / publicReal > policy.maximumCountryShare) violations.push(`${country} has ${(count / publicReal * 100).toFixed(1)}% of the catalogue; maximum is ${policy.maximumCountryShare * 100}%`);
   for (const [gender, count] of Object.entries(summary.byGender)) if (count / publicReal > policy.maximumGenderShare) violations.push(`${gender} has ${(count / publicReal * 100).toFixed(1)}% of the catalogue; maximum is ${policy.maximumGenderShare * 100}%`);
