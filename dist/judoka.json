@@ -1,5 +1,59 @@
 [
   {
+    "id": "0036f7e0-2759-42f3-830f-a4403ea14bc9",
+    "slug": "funa-tonaki",
+    "firstname": "Funa",
+    "surname": "Tonaki",
+    "personType": "real",
+    "countryCode": "JP",
+    "weightClass": "-48",
+    "category": "Judo",
+    "stats": {
+      "power": 7,
+      "speed": 9,
+      "technique": 9,
+      "kumikata": 8,
+      "newaza": 8
+    },
+    "signatureMoveIds": [
+      "seoi-nage"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://en.wikipedia.org/wiki/Funa_Tonaki",
+    "bio": "Japanese extra-lightweight Funa Tonaki won the 2017 world title and Olympic silver in Tokyo.",
+    "gender": "female",
+    "isHidden": false,
+    "rarity": "Epic",
+    "country": "Japan"
+  },
+  {
+    "id": "0c317ece-c133-41c4-9131-19ad1c8fabdf",
+    "slug": "aaron-wolf",
+    "firstname": "Aaron",
+    "surname": "Wolf",
+    "personType": "real",
+    "countryCode": "JP",
+    "weightClass": "-100",
+    "category": "Judo",
+    "stats": {
+      "power": 9,
+      "speed": 8,
+      "technique": 9,
+      "kumikata": 9,
+      "newaza": 8
+    },
+    "signatureMoveIds": [
+      "uchi-mata"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://en.wikipedia.org/wiki/Aaron_Wolf",
+    "bio": "Japanese half-heavyweight Aaron Wolf won Olympic gold at Tokyo 2020.",
+    "gender": "male",
+    "isHidden": false,
+    "rarity": "Epic",
+    "country": "Japan"
+  },
+  {
     "id": "1d200634-eb36-4f5e-b5c0-28734b96ac62",
     "slug": "nina-cutro-kelly",
     "firstname": "Nina",
@@ -25,6 +79,33 @@
       "o-soto-gari"
     ],
     "country": "United States"
+  },
+  {
+    "id": "249f1726-e06b-497b-875a-2e81e6a65622",
+    "slug": "lasha-bekauri",
+    "firstname": "Lasha",
+    "surname": "Bekauri",
+    "personType": "real",
+    "countryCode": "GE",
+    "weightClass": "-90",
+    "category": "Judo",
+    "stats": {
+      "power": 9,
+      "speed": 8,
+      "technique": 9,
+      "kumikata": 9,
+      "newaza": 8
+    },
+    "signatureMoveIds": [
+      "uchi-mata"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://en.wikipedia.org/wiki/Lasha_Bekauri",
+    "bio": "Georgian middleweight Lasha Bekauri won Olympic gold at Tokyo 2020 and Paris 2024.",
+    "gender": "male",
+    "isHidden": false,
+    "rarity": "Legendary",
+    "country": "Georgia"
   },
   {
     "id": "38690882-06a3-4d98-9b06-2789da1015db",
@@ -60,6 +141,114 @@
     "country": "Georgia"
   },
   {
+    "id": "3ee54e86-bedd-4265-b992-80033ae8ed6a",
+    "slug": "beatriz-souza",
+    "firstname": "Beatriz",
+    "surname": "Souza",
+    "personType": "real",
+    "countryCode": "BR",
+    "weightClass": "+78",
+    "category": "Judo",
+    "stats": {
+      "power": 10,
+      "speed": 7,
+      "technique": 9,
+      "kumikata": 9,
+      "newaza": 8
+    },
+    "signatureMoveIds": [
+      "o-soto-gari"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://en.wikipedia.org/wiki/Beatriz_Souza_(judoka)",
+    "bio": "Brazilian heavyweight Beatriz Souza won Olympic gold at Paris 2024.",
+    "gender": "female",
+    "isHidden": false,
+    "rarity": "Legendary",
+    "country": "Brazil"
+  },
+  {
+    "id": "40c4cd23-fc6f-495d-94c3-68f454038c9c",
+    "slug": "kim-polling",
+    "firstname": "Kim",
+    "surname": "Polling",
+    "personType": "real",
+    "countryCode": "NL",
+    "weightClass": "-70",
+    "category": "Judo",
+    "stats": {
+      "power": 8,
+      "speed": 8,
+      "technique": 9,
+      "kumikata": 9,
+      "newaza": 8
+    },
+    "signatureMoveIds": [
+      "o-uchi-gari"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://en.wikipedia.org/wiki/Kim_Polling",
+    "bio": "Dutch middleweight Kim Polling won the 2013 world title at 70 kg.",
+    "gender": "female",
+    "isHidden": false,
+    "rarity": "Epic",
+    "country": "Netherlands"
+  },
+  {
+    "id": "550785c5-a415-4c8e-952b-ffaa6cd04f68",
+    "slug": "kayla-harrison",
+    "firstname": "Kayla",
+    "surname": "Harrison",
+    "personType": "real",
+    "countryCode": "US",
+    "weightClass": "-78",
+    "category": "Judo",
+    "stats": {
+      "power": 10,
+      "speed": 8,
+      "technique": 9,
+      "kumikata": 9,
+      "newaza": 8
+    },
+    "signatureMoveIds": [
+      "uchi-mata"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://en.wikipedia.org/wiki/Kayla_Harrison",
+    "bio": "American half-heavyweight Kayla Harrison won Olympic gold medals in London and Rio.",
+    "gender": "female",
+    "isHidden": false,
+    "rarity": "Legendary",
+    "country": "United States"
+  },
+  {
+    "id": "55ca9778-7df8-422e-a914-26e47799ed10",
+    "slug": "teddy-riner",
+    "firstname": "Teddy",
+    "surname": "Riner",
+    "personType": "real",
+    "countryCode": "FR",
+    "weightClass": "+100",
+    "category": "Judo",
+    "stats": {
+      "power": 10,
+      "speed": 8,
+      "technique": 10,
+      "kumikata": 10,
+      "newaza": 9
+    },
+    "signatureMoveIds": [
+      "harai-goshi"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://en.wikipedia.org/wiki/Teddy_Riner",
+    "bio": "French heavyweight Teddy Riner won individual Olympic gold in 2012, 2016, and 2024.",
+    "gender": "male",
+    "isHidden": false,
+    "rarity": "Legendary",
+    "country": "France"
+  },
+  {
     "id": "57a86958-73c3-4dd3-b8b8-f0bbaab58b67",
     "slug": "shozo-fujii",
     "firstname": "Shōzō",
@@ -90,6 +279,63 @@
     "country": "Japan"
   },
   {
+    "id": "692bb2da-248d-4d96-8308-aca2e111ab99",
+    "slug": "clarisse-agbegnenou",
+    "firstname": "Clarisse",
+    "surname": "Agbégnénou",
+    "aliases": [
+      "Clarisse Agbegnenou"
+    ],
+    "personType": "real",
+    "countryCode": "FR",
+    "weightClass": "-63",
+    "category": "Judo",
+    "stats": {
+      "power": 9,
+      "speed": 9,
+      "technique": 10,
+      "kumikata": 10,
+      "newaza": 9
+    },
+    "signatureMoveIds": [
+      "o-uchi-gari"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://en.wikipedia.org/wiki/Clarisse_Agb%C3%A9gn%C3%A9nou",
+    "bio": "French half-middleweight Clarisse Agbégnénou is a multiple Olympic and world champion.",
+    "gender": "female",
+    "isHidden": false,
+    "rarity": "Legendary",
+    "country": "France"
+  },
+  {
+    "id": "7bab938d-586b-47b3-9fe2-14b69d21956b",
+    "slug": "rafaela-silva",
+    "firstname": "Rafaela",
+    "surname": "Silva",
+    "personType": "real",
+    "countryCode": "BR",
+    "weightClass": "-57",
+    "category": "Judo",
+    "stats": {
+      "power": 8,
+      "speed": 9,
+      "technique": 9,
+      "kumikata": 8,
+      "newaza": 8
+    },
+    "signatureMoveIds": [
+      "o-soto-gari"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://en.wikipedia.org/wiki/Rafaela_Silva",
+    "bio": "Brazilian lightweight Rafaela Silva won Olympic gold at Rio 2016 and is a multiple world champion.",
+    "gender": "female",
+    "isHidden": false,
+    "rarity": "Legendary",
+    "country": "Brazil"
+  },
+  {
     "id": "84d3b821-0ca8-42de-b42c-2eb8d42c9c3b",
     "slug": "tatsuuma-ushiyama",
     "firstname": "Tatsuuma",
@@ -114,6 +360,61 @@
     "signatureMoveIds": [
       "ura-nage"
     ],
+    "country": "Japan"
+  },
+  {
+    "id": "8d9f008f-73f0-41fc-b13c-695a4667ff3c",
+    "slug": "hifumi-abe",
+    "firstname": "Hifumi",
+    "surname": "Abe",
+    "personType": "real",
+    "countryCode": "JP",
+    "weightClass": "-66",
+    "category": "Judo",
+    "stats": {
+      "power": 8,
+      "speed": 9,
+      "technique": 10,
+      "kumikata": 9,
+      "newaza": 8
+    },
+    "signatureMoveIds": [
+      "o-uchi-gari",
+      "tai-otoshi"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://en.wikipedia.org/wiki/Hifumi_Abe",
+    "bio": "Japanese half-lightweight Hifumi Abe won Olympic gold at Tokyo 2020 and is a multiple world champion.",
+    "gender": "male",
+    "isHidden": false,
+    "rarity": "Legendary",
+    "country": "Japan"
+  },
+  {
+    "id": "999f2a4c-2f81-47e9-8a3a-2c2c72abfd02",
+    "slug": "naohisa-takato",
+    "firstname": "Naohisa",
+    "surname": "Takato",
+    "personType": "real",
+    "countryCode": "JP",
+    "weightClass": "-60",
+    "category": "Judo",
+    "stats": {
+      "power": 7,
+      "speed": 10,
+      "technique": 10,
+      "kumikata": 8,
+      "newaza": 8
+    },
+    "signatureMoveIds": [
+      "sode-tsurikomi-goshi"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://en.wikipedia.org/wiki/Naohisa_Takato",
+    "bio": "Japanese extra-lightweight Naohisa Takato is an Olympic champion and three-time world champion.",
+    "gender": "male",
+    "isHidden": false,
+    "rarity": "Legendary",
     "country": "Japan"
   },
   {
@@ -150,6 +451,33 @@
     "country": "Jamaica"
   },
   {
+    "id": "ca770dc4-ef60-4a5d-99a4-5bfaf3504849",
+    "slug": "takanori-nagase",
+    "firstname": "Takanori",
+    "surname": "Nagase",
+    "personType": "real",
+    "countryCode": "JP",
+    "weightClass": "-81",
+    "category": "Judo",
+    "stats": {
+      "power": 8,
+      "speed": 8,
+      "technique": 9,
+      "kumikata": 9,
+      "newaza": 8
+    },
+    "signatureMoveIds": [
+      "uchi-mata"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://en.wikipedia.org/wiki/Takanori_Nagase",
+    "bio": "Japanese half-middleweight Takanori Nagase is an Olympic champion and world champion.",
+    "gender": "male",
+    "isHidden": false,
+    "rarity": "Epic",
+    "country": "Japan"
+  },
+  {
     "id": "cd8dcb1d-0193-4dd1-a0b7-d4576602bc67",
     "slug": "mystery-judoka",
     "firstname": "Mystery",
@@ -175,6 +503,60 @@
       "ura-nage"
     ],
     "country": "Bhutan"
+  },
+  {
+    "id": "d8387100-01b1-4746-a5a9-0899fb95f5dd",
+    "slug": "uta-abe",
+    "firstname": "Uta",
+    "surname": "Abe",
+    "personType": "real",
+    "countryCode": "JP",
+    "weightClass": "-52",
+    "category": "Judo",
+    "stats": {
+      "power": 8,
+      "speed": 10,
+      "technique": 10,
+      "kumikata": 9,
+      "newaza": 8
+    },
+    "signatureMoveIds": [
+      "o-soto-gari"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://en.wikipedia.org/wiki/Uta_Abe",
+    "bio": "Japanese half-lightweight Uta Abe is an Olympic champion and multiple world champion at 52 kg.",
+    "gender": "female",
+    "isHidden": false,
+    "rarity": "Legendary",
+    "country": "Japan"
+  },
+  {
+    "id": "dd9ae2a5-e61f-4929-9e05-05ced4d2395f",
+    "slug": "shohei-ono",
+    "firstname": "Shohei",
+    "surname": "Ono",
+    "personType": "real",
+    "countryCode": "JP",
+    "weightClass": "-73",
+    "category": "Judo",
+    "stats": {
+      "power": 9,
+      "speed": 9,
+      "technique": 10,
+      "kumikata": 10,
+      "newaza": 8
+    },
+    "signatureMoveIds": [
+      "uchi-mata"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://en.wikipedia.org/wiki/Shohei_Ono",
+    "bio": "Japanese lightweight Shohei Ono is a two-time Olympic champion and three-time world champion.",
+    "gender": "male",
+    "isHidden": false,
+    "rarity": "Legendary",
+    "country": "Japan"
   },
   {
     "id": "e2c7f688-a995-4436-b56c-8e178b0b4bf9",

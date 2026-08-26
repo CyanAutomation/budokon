@@ -1,0 +1,18 @@
+{
+  "id": "249f1726-e06b-497b-875a-2e81e6a65622",
+  "slug": "lasha-bekauri",
+  "firstname": "Lasha",
+  "surname": "Bekauri",
+  "personType": "real",
+  "countryCode": "GE",
+  "weightClass": "-90",
+  "category": "Judo",
+  "stats": { "power": 9, "speed": 8, "technique": 9, "kumikata": 9, "newaza": 8 },
+  "signatureMoveIds": ["uchi-mata"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://en.wikipedia.org/wiki/Lasha_Bekauri",
+  "bio": "Georgian middleweight Lasha Bekauri won Olympic gold at Tokyo 2020 and Paris 2024.",
+  "gender": "male",
+  "isHidden": false,
+  "rarity": "Legendary"
+}

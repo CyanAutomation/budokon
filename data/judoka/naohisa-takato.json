@@ -1,0 +1,18 @@
+{
+  "id": "999f2a4c-2f81-47e9-8a3a-2c2c72abfd02",
+  "slug": "naohisa-takato",
+  "firstname": "Naohisa",
+  "surname": "Takato",
+  "personType": "real",
+  "countryCode": "JP",
+  "weightClass": "-60",
+  "category": "Judo",
+  "stats": { "power": 7, "speed": 10, "technique": 10, "kumikata": 8, "newaza": 8 },
+  "signatureMoveIds": ["sode-tsurikomi-goshi"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://en.wikipedia.org/wiki/Naohisa_Takato",
+  "bio": "Japanese extra-lightweight Naohisa Takato is an Olympic champion and three-time world champion.",
+  "gender": "male",
+  "isHidden": false,
+  "rarity": "Legendary"
+}
