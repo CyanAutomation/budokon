@@ -78,11 +78,11 @@ test("REST and MCP seeded selections are byte-for-byte equivalent", () => {
   assert.equal(apiBytes, mcpBytes);
 });
 test("version, draw, and MCP results expose the canonical dataset version", () => {
-  assert.equal(rest.version().body.datasetVersion, "2026.08.1");
-  assert.equal(rest.draw({ body: { seed: "version-test" } }).body.datasetVersion, "2026.08.1");
-  assert.equal(mcp.search_judoka().datasetVersion, "2026.08.1");
-  assert.equal(mcp.get_judoka({ id: "shozo-fujii" }).datasetVersion, "2026.08.1");
-  assert.equal(mcp.version().datasetVersion, "2026.08.1");
+  assert.equal(rest.version().body.datasetVersion, compiledModel.datasetVersion);
+  assert.equal(rest.draw({ body: { seed: "version-test" } }).body.datasetVersion, compiledModel.datasetVersion);
+  assert.equal(mcp.search_judoka().datasetVersion, compiledModel.datasetVersion);
+  assert.equal(mcp.get_judoka({ id: "shozo-fujii" }).datasetVersion, compiledModel.datasetVersion);
+  assert.equal(mcp.version().datasetVersion, compiledModel.datasetVersion);
   assert.deepEqual(rest.version().body.drawAlgorithms, ["budokon-v1"]);
   assert.equal(rest.version().body.defaultDrawAlgorithm, "budokon-v1");
   assert.equal(rest.draw({ body: {} }).body.algorithm, "budokon-v1");

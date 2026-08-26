@@ -1,0 +1,18 @@
+{
+  "id": "0036f7e0-2759-42f3-830f-a4403ea14bc9",
+  "slug": "funa-tonaki",
+  "firstname": "Funa",
+  "surname": "Tonaki",
+  "personType": "real",
+  "countryCode": "JP",
+  "weightClass": "-48",
+  "category": "Judo",
+  "stats": { "power": 7, "speed": 9, "technique": 9, "kumikata": 8, "newaza": 8 },
+  "signatureMoveIds": ["seoi-nage"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://en.wikipedia.org/wiki/Funa_Tonaki",
+  "bio": "Japanese extra-lightweight Funa Tonaki won the 2017 world title and Olympic silver in Tokyo.",
+  "gender": "female",
+  "isHidden": false,
+  "rarity": "Epic"
+}

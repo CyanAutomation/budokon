@@ -1,0 +1,18 @@
+{
+  "id": "40c4cd23-fc6f-495d-94c3-68f454038c9c",
+  "slug": "kim-polling",
+  "firstname": "Kim",
+  "surname": "Polling",
+  "personType": "real",
+  "countryCode": "NL",
+  "weightClass": "-70",
+  "category": "Judo",
+  "stats": { "power": 8, "speed": 8, "technique": 9, "kumikata": 9, "newaza": 8 },
+  "signatureMoveIds": ["o-uchi-gari"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://en.wikipedia.org/wiki/Kim_Polling",
+  "bio": "Dutch middleweight Kim Polling won the 2013 world title at 70 kg.",
+  "gender": "female",
+  "isHidden": false,
+  "rarity": "Epic"
+}

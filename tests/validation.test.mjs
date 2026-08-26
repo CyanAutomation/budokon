@@ -99,6 +99,14 @@ test('fictional judoka are hidden by default', async () => {
   await assert.rejects(validateCanonical(root), /fictional judoka must be hidden/);
 });
 
+test('every judoka has a complete game-ready profile', async () => {
+  for (const field of ['stats', 'signatureMoveIds', 'rarity', 'bio', 'profileUrl']) {
+    const root = await sandbox();
+    await change(path.join(root, 'data/judoka/ashley-mckenzie.json'), (record) => { delete record[field]; });
+    await assert.rejects(validateCanonical(root), new RegExp(`missing required property ${field}`));
+  }
+});
+
 for (const fixture of cases) test(`rejects ${fixture.name}`, async () => {
   const root = await sandbox();
   const judokaDir = path.join(root, 'data/judoka');

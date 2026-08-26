@@ -1,0 +1,18 @@
+{
+  "id": "55ca9778-7df8-422e-a914-26e47799ed10",
+  "slug": "teddy-riner",
+  "firstname": "Teddy",
+  "surname": "Riner",
+  "personType": "real",
+  "countryCode": "FR",
+  "weightClass": "+100",
+  "category": "Judo",
+  "stats": { "power": 10, "speed": 8, "technique": 10, "kumikata": 10, "newaza": 9 },
+  "signatureMoveIds": ["harai-goshi"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://en.wikipedia.org/wiki/Teddy_Riner",
+  "bio": "French heavyweight Teddy Riner won individual Olympic gold in 2012, 2016, and 2024.",
+  "gender": "male",
+  "isHidden": false,
+  "rarity": "Legendary"
+}
