@@ -23,7 +23,7 @@
     "bio": "Japanese extra-lightweight Funa Tonaki won the 2017 world title and Olympic silver in Tokyo.",
     "gender": "female",
     "isHidden": false,
-    "rarity": "Rare",
+    "rarity": "Epic",
     "country": "Japan"
   },
   {
@@ -77,7 +77,7 @@
     "bio": "Japanese half-heavyweight Aaron Wolf won Olympic gold at Tokyo 2020.",
     "gender": "male",
     "isHidden": false,
-    "rarity": "Rare",
+    "rarity": "Epic",
     "country": "Japan"
   },
   {
@@ -136,6 +136,66 @@
       "o-soto-gari"
     ],
     "country": "United States"
+  },
+  {
+    "id": "1e030791-c8a8-48aa-ab5f-8b35bf705763",
+    "slug": "denis-vieru",
+    "firstname": "Denis",
+    "surname": "Vieru",
+    "personType": "real",
+    "countryCode": "MD",
+    "weightClass": "-66",
+    "category": "Judo",
+    "stats": {
+      "power": 7,
+      "speed": 8,
+      "technique": 8,
+      "kumikata": 7,
+      "newaza": 7
+    },
+    "signatureMoveIds": [
+      "seoi-nage"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://www.ijf.org/news/show/diyora-keldiyorova-makes-history",
+    "sourceUrls": [
+      "https://www.ijf.org/news/show/diyora-keldiyorova-makes-history"
+    ],
+    "bio": "Moldovan half-lightweight Denis Vieru won Olympic bronze at Paris 2024.",
+    "gender": "male",
+    "isHidden": false,
+    "rarity": "Rare",
+    "country": "Moldova"
+  },
+  {
+    "id": "1f132a83-5843-45d1-ae07-f3bd09dbbf73",
+    "slug": "willian-lima",
+    "firstname": "Willian",
+    "surname": "Lima",
+    "personType": "real",
+    "countryCode": "BR",
+    "weightClass": "-66",
+    "category": "Judo",
+    "stats": {
+      "power": 7,
+      "speed": 8,
+      "technique": 8,
+      "kumikata": 7,
+      "newaza": 7
+    },
+    "signatureMoveIds": [
+      "seoi-nage"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://www.ijf.org/news/show/diyora-keldiyorova-makes-history",
+    "sourceUrls": [
+      "https://www.ijf.org/news/show/diyora-keldiyorova-makes-history"
+    ],
+    "bio": "Brazilian half-lightweight Willian Lima won Olympic silver at Paris 2024.",
+    "gender": "male",
+    "isHidden": false,
+    "rarity": "Rare",
+    "country": "Brazil"
   },
   {
     "id": "213a0432-ab43-4233-a6d7-10619d252ac9",
@@ -215,7 +275,7 @@
     "bio": "Georgian half-heavyweight Ilia Sulamanidze won Olympic silver at Paris 2024 in the men’s 100 kg division.",
     "gender": "male",
     "isHidden": false,
-    "rarity": "Common",
+    "rarity": "Rare",
     "signatureMoveIds": [
       "uchi-mata"
     ],
@@ -223,6 +283,36 @@
       "ilia-sulamanidize"
     ],
     "country": "Georgia"
+  },
+  {
+    "id": "39a60e85-318b-4e07-9a70-143e2d11fbd1",
+    "slug": "jorre-verstraeten",
+    "firstname": "Jorre",
+    "surname": "Verstraeten",
+    "personType": "real",
+    "countryCode": "BE",
+    "weightClass": "-60",
+    "category": "Judo",
+    "stats": {
+      "power": 6,
+      "speed": 8,
+      "technique": 7,
+      "kumikata": 6,
+      "newaza": 6
+    },
+    "signatureMoveIds": [
+      "seoi-otoshi"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://en.wikipedia.org/wiki/Jorre_Verstraeten",
+    "sourceUrls": [
+      "https://en.wikipedia.org/wiki/Jorre_Verstraeten"
+    ],
+    "bio": "Belgian extra-lightweight Jorre Verstraeten has competed for Belgium on the IJF World Judo Tour.",
+    "gender": "male",
+    "isHidden": false,
+    "rarity": "Common",
+    "country": "Belgium"
   },
   {
     "id": "3ee54e86-bedd-4265-b992-80033ae8ed6a",
@@ -275,8 +365,68 @@
     "bio": "Dutch middleweight Kim Polling won the 2013 world title at 70 kg.",
     "gender": "female",
     "isHidden": false,
-    "rarity": "Common",
+    "rarity": "Rare",
     "country": "Netherlands"
+  },
+  {
+    "id": "41703214-ceb6-4471-8619-0be736a25444",
+    "slug": "michaela-polleres",
+    "firstname": "Michaela",
+    "surname": "Polleres",
+    "personType": "real",
+    "countryCode": "AT",
+    "weightClass": "-70",
+    "category": "Judo",
+    "stats": {
+      "power": 7,
+      "speed": 7,
+      "technique": 8,
+      "kumikata": 8,
+      "newaza": 7
+    },
+    "signatureMoveIds": [
+      "uchi-mata"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://www.ijf.org/judoka/13682",
+    "sourceUrls": [
+      "https://www.ijf.org/judoka/13682"
+    ],
+    "bio": "Austrian middleweight Michaela Polleres is a double Olympic medallist and World Judo Tour champion.",
+    "gender": "female",
+    "isHidden": false,
+    "rarity": "Rare",
+    "country": "Austria"
+  },
+  {
+    "id": "41ecddbd-530b-440d-97af-fe91d935855d",
+    "slug": "lubjana-piovesana",
+    "firstname": "Lubjana",
+    "surname": "Piovesana",
+    "personType": "real",
+    "countryCode": "AT",
+    "weightClass": "-63",
+    "category": "Judo",
+    "stats": {
+      "power": 6,
+      "speed": 7,
+      "technique": 7,
+      "kumikata": 6,
+      "newaza": 6
+    },
+    "signatureMoveIds": [
+      "uchi-mata"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://en.wikipedia.org/wiki/Lubjana_Piovesana",
+    "sourceUrls": [
+      "https://en.wikipedia.org/wiki/Lubjana_Piovesana"
+    ],
+    "bio": "Austrian half-middleweight Lubjana Piovesana represented Austria at the Paris 2024 Olympic Games.",
+    "gender": "female",
+    "isHidden": false,
+    "rarity": "Common",
+    "country": "Austria"
   },
   {
     "id": "4dc02482-a08c-4da0-b75b-d4fdda49fe1c",
@@ -331,6 +481,36 @@
     "isHidden": false,
     "rarity": "Epic",
     "country": "Azerbaijan"
+  },
+  {
+    "id": "524fb114-42d9-46f4-89b1-5eeec5110ef0",
+    "slug": "catarina-costa",
+    "firstname": "Catarina",
+    "surname": "Costa",
+    "personType": "real",
+    "countryCode": "PT",
+    "weightClass": "-48",
+    "category": "Judo",
+    "stats": {
+      "power": 5,
+      "speed": 8,
+      "technique": 7,
+      "kumikata": 6,
+      "newaza": 7
+    },
+    "signatureMoveIds": [
+      "sumi-gaeshi"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://en.wikipedia.org/wiki/Catarina_Costa",
+    "sourceUrls": [
+      "https://en.wikipedia.org/wiki/Catarina_Costa"
+    ],
+    "bio": "Portuguese extra-lightweight Catarina Costa represented Portugal at the Tokyo 2020 Olympic Games.",
+    "gender": "female",
+    "isHidden": false,
+    "rarity": "Common",
+    "country": "Portugal"
   },
   {
     "id": "550785c5-a415-4c8e-952b-ffaa6cd04f68",
@@ -407,7 +587,7 @@
     "bio": "Japanese judoka Shōzō Fujii won four consecutive world titles during the 1970s in the divisions now represented by 81 kg.",
     "gender": "male",
     "isHidden": false,
-    "rarity": "Common",
+    "rarity": "Legendary",
     "signatureMoveIds": [
       "seoi-nage"
     ],
@@ -415,6 +595,126 @@
       "Shozo Fujii"
     ],
     "country": "Japan"
+  },
+  {
+    "id": "5a5ad6d1-9050-4247-93e4-0f90e8efbecf",
+    "slug": "maria-siderot",
+    "firstname": "Maria",
+    "surname": "Siderot",
+    "personType": "real",
+    "countryCode": "PT",
+    "weightClass": "-48",
+    "category": "Judo",
+    "stats": {
+      "power": 5,
+      "speed": 7,
+      "technique": 7,
+      "kumikata": 6,
+      "newaza": 6
+    },
+    "signatureMoveIds": [
+      "tomoe-nage"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://www.fpj.pt/noticia/anri-egutidze-e-jorge-fonseca-5o-lugar-grand-slam-de-toquio/",
+    "sourceUrls": [
+      "https://www.fpj.pt/noticia/anri-egutidze-e-jorge-fonseca-5o-lugar-grand-slam-de-toquio/"
+    ],
+    "bio": "Portuguese extra-lightweight Maria Siderot has represented Portugal in international judo.",
+    "gender": "female",
+    "isHidden": false,
+    "rarity": "Common",
+    "country": "Portugal"
+  },
+  {
+    "id": "5e12ad9b-db08-4e41-9423-48a3e91c8f33",
+    "slug": "joao-crisostomo",
+    "firstname": "João",
+    "surname": "Crisóstomo",
+    "personType": "real",
+    "countryCode": "PT",
+    "weightClass": "-66",
+    "category": "Judo",
+    "stats": {
+      "power": 6,
+      "speed": 7,
+      "technique": 6,
+      "kumikata": 7,
+      "newaza": 6
+    },
+    "signatureMoveIds": [
+      "o-uchi-gari"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://www.fpj.pt/noticia/anri-egutidze-e-jorge-fonseca-5o-lugar-grand-slam-de-toquio/",
+    "sourceUrls": [
+      "https://www.fpj.pt/noticia/anri-egutidze-e-jorge-fonseca-5o-lugar-grand-slam-de-toquio/"
+    ],
+    "bio": "Portuguese half-lightweight João Crisóstomo represented Portugal in international senior competition.",
+    "gender": "male",
+    "isHidden": false,
+    "rarity": "Common",
+    "country": "Portugal"
+  },
+  {
+    "id": "607d6ff2-ad3c-4008-be81-539bacfc50f5",
+    "slug": "joshua-katz",
+    "firstname": "Joshua",
+    "surname": "Katz",
+    "personType": "real",
+    "countryCode": "AU",
+    "weightClass": "-60",
+    "category": "Judo",
+    "stats": {
+      "power": 6,
+      "speed": 7,
+      "technique": 7,
+      "kumikata": 6,
+      "newaza": 6
+    },
+    "signatureMoveIds": [
+      "seoi-nage"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://en.wikipedia.org/wiki/Joshua_Katz_(judoka)",
+    "sourceUrls": [
+      "https://en.wikipedia.org/wiki/Joshua_Katz_(judoka)"
+    ],
+    "bio": "Australian extra-lightweight Joshua Katz represented Australia at the Rio 2016 Olympic Games.",
+    "gender": "male",
+    "isHidden": false,
+    "rarity": "Common",
+    "country": "Australia"
+  },
+  {
+    "id": "62b14688-eef7-48b4-856a-592ef3622b36",
+    "slug": "nuno-saraiva",
+    "firstname": "Nuno",
+    "surname": "Saraiva",
+    "personType": "real",
+    "countryCode": "PT",
+    "weightClass": "-73",
+    "category": "Judo",
+    "stats": {
+      "power": 6,
+      "speed": 7,
+      "technique": 7,
+      "kumikata": 6,
+      "newaza": 6
+    },
+    "signatureMoveIds": [
+      "tai-otoshi"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://www.fpj.pt/noticia/anri-egutidze-e-jorge-fonseca-5o-lugar-grand-slam-de-toquio/",
+    "sourceUrls": [
+      "https://www.fpj.pt/noticia/anri-egutidze-e-jorge-fonseca-5o-lugar-grand-slam-de-toquio/"
+    ],
+    "bio": "Portuguese lightweight Nuno Saraiva has represented Portugal on the international circuit.",
+    "gender": "male",
+    "isHidden": false,
+    "rarity": "Common",
+    "country": "Portugal"
   },
   {
     "id": "692bb2da-248d-4d96-8308-aca2e111ab99",
@@ -497,8 +797,68 @@
     "bio": "Brazilian lightweight Rafaela Silva won Olympic gold at Rio 2016 and is a multiple world champion.",
     "gender": "female",
     "isHidden": false,
-    "rarity": "Rare",
+    "rarity": "Epic",
     "country": "Brazil"
+  },
+  {
+    "id": "7c8c031c-d334-4511-b4dd-0cd034b9d0a3",
+    "slug": "gusman-kyrgyzbayev",
+    "firstname": "Gusman",
+    "surname": "Kyrgyzbayev",
+    "personType": "real",
+    "countryCode": "KZ",
+    "weightClass": "-66",
+    "category": "Judo",
+    "stats": {
+      "power": 7,
+      "speed": 8,
+      "technique": 8,
+      "kumikata": 7,
+      "newaza": 7
+    },
+    "signatureMoveIds": [
+      "seoi-nage"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://www.ijf.org/news/show/diyora-keldiyorova-makes-history",
+    "sourceUrls": [
+      "https://www.ijf.org/news/show/diyora-keldiyorova-makes-history"
+    ],
+    "bio": "Kazakh half-lightweight Gusman Kyrgyzbayev won Olympic bronze at Paris 2024.",
+    "gender": "male",
+    "isHidden": false,
+    "rarity": "Rare",
+    "country": "Kazakhstan"
+  },
+  {
+    "id": "80883bd7-bb5c-4fc0-95d6-084c61d9e013",
+    "slug": "shamil-borchashvili",
+    "firstname": "Shamil",
+    "surname": "Borchashvili",
+    "personType": "real",
+    "countryCode": "AT",
+    "weightClass": "-81",
+    "category": "Judo",
+    "stats": {
+      "power": 7,
+      "speed": 7,
+      "technique": 7,
+      "kumikata": 8,
+      "newaza": 7
+    },
+    "signatureMoveIds": [
+      "uchi-mata"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://www.ijf.org/news/show/changing-of-the-guard-in-austrian-judo",
+    "sourceUrls": [
+      "https://www.ijf.org/news/show/changing-of-the-guard-in-austrian-judo"
+    ],
+    "bio": "Austrian half-middleweight Shamil Borchashvili won Olympic and world bronze medals.",
+    "gender": "male",
+    "isHidden": false,
+    "rarity": "Rare",
+    "country": "Austria"
   },
   {
     "id": "81c2c142-58ea-478f-b52a-30e2ebf98132",
@@ -578,7 +938,7 @@
     "bio": "German half-heavyweight Anna-Maria Wagner won world titles in 2021 and 2024.",
     "gender": "female",
     "isHidden": false,
-    "rarity": "Rare",
+    "rarity": "Epic",
     "country": "Germany"
   },
   {
@@ -633,7 +993,7 @@
     "bio": "Japanese extra-lightweight Naohisa Takato is an Olympic champion and three-time world champion.",
     "gender": "male",
     "isHidden": false,
-    "rarity": "Rare",
+    "rarity": "Epic",
     "country": "Japan"
   },
   {
@@ -660,8 +1020,101 @@
     "bio": "Uzbek half-lightweight Diyora Keldiyorova won Olympic gold at Paris 2024 and is a world championship medallist.",
     "gender": "female",
     "isHidden": false,
-    "rarity": "Rare",
+    "rarity": "Epic",
     "country": "Uzbekistan"
+  },
+  {
+    "id": "a11183a7-f348-479b-8ac5-c26715c93bb6",
+    "slug": "bilal-ciloglu",
+    "firstname": "Bilal",
+    "surname": "Çiloğlu",
+    "personType": "real",
+    "countryCode": "TR",
+    "weightClass": "-73",
+    "category": "Judo",
+    "stats": {
+      "power": 6,
+      "speed": 7,
+      "technique": 7,
+      "kumikata": 6,
+      "newaza": 6
+    },
+    "signatureMoveIds": [
+      "uchi-mata"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://en.wikipedia.org/wiki/Bilal_%C3%87ilo%C4%9Flu",
+    "sourceUrls": [
+      "https://en.wikipedia.org/wiki/Bilal_%C3%87ilo%C4%9Flu"
+    ],
+    "bio": "Turkish lightweight Bilal Çiloğlu has represented Türkiye at Olympic and IJF events.",
+    "gender": "male",
+    "isHidden": false,
+    "rarity": "Common",
+    "country": "Türkiye"
+  },
+  {
+    "id": "a3620116-4b2e-47da-8f81-7277f031c064",
+    "slug": "masha-ballhaus",
+    "firstname": "Mascha",
+    "surname": "Ballhaus",
+    "personType": "real",
+    "countryCode": "DE",
+    "weightClass": "-52",
+    "category": "Judo",
+    "stats": {
+      "power": 6,
+      "speed": 8,
+      "technique": 8,
+      "kumikata": 7,
+      "newaza": 7
+    },
+    "signatureMoveIds": [
+      "seoi-nage"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://www.ijf.org/index.php/news/show/52kg-keldiyorova-upset-the-olympic-champion",
+    "sourceUrls": [
+      "https://www.ijf.org/index.php/news/show/52kg-keldiyorova-upset-the-olympic-champion"
+    ],
+    "bio": "German half-lightweight Mascha Ballhaus is an established World Judo Tour medallist.",
+    "gender": "female",
+    "isHidden": false,
+    "rarity": "Rare",
+    "aliases": [
+      "Masha Ballhaus"
+    ],
+    "country": "Germany"
+  },
+  {
+    "id": "a7855b7e-36c5-49df-8138-452808d88166",
+    "slug": "patricia-sampaio",
+    "firstname": "Patrícia",
+    "surname": "Sampaio",
+    "personType": "real",
+    "countryCode": "PT",
+    "weightClass": "-78",
+    "category": "Judo",
+    "stats": {
+      "power": 7,
+      "speed": 7,
+      "technique": 8,
+      "kumikata": 8,
+      "newaza": 7
+    },
+    "signatureMoveIds": [
+      "o-soto-gari"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://en.wikipedia.org/wiki/Patr%C3%ADcia_Sampaio",
+    "sourceUrls": [
+      "https://en.wikipedia.org/wiki/Patr%C3%ADcia_Sampaio"
+    ],
+    "bio": "Portuguese half-heavyweight Patrícia Sampaio won Olympic bronze at Paris 2024.",
+    "gender": "female",
+    "isHidden": false,
+    "rarity": "Rare",
+    "country": "Portugal"
   },
   {
     "id": "a89700be-266f-4306-9cca-0ce148bb17c3",
@@ -689,6 +1142,96 @@
     "isHidden": false,
     "rarity": "Rare",
     "country": "France"
+  },
+  {
+    "id": "abdc875d-bfa2-4f16-82a5-e3f2134bfc83",
+    "slug": "mary-dee-vargas",
+    "firstname": "Mary Dee",
+    "surname": "Vargas",
+    "personType": "real",
+    "countryCode": "CL",
+    "weightClass": "-48",
+    "category": "Judo",
+    "stats": {
+      "power": 5,
+      "speed": 7,
+      "technique": 7,
+      "kumikata": 6,
+      "newaza": 6
+    },
+    "signatureMoveIds": [
+      "seoi-nage"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://en.wikipedia.org/wiki/Mary_Dee_Vargas",
+    "sourceUrls": [
+      "https://en.wikipedia.org/wiki/Mary_Dee_Vargas"
+    ],
+    "bio": "Chilean extra-lightweight Mary Dee Vargas represented Chile at the Tokyo 2020 Olympic Games.",
+    "gender": "female",
+    "isHidden": false,
+    "rarity": "Common",
+    "country": "Chile"
+  },
+  {
+    "id": "acb6b468-b349-4709-a744-facb44b8700e",
+    "slug": "ivaylo-ivanov",
+    "firstname": "Ivaylo",
+    "surname": "Ivanov",
+    "personType": "real",
+    "countryCode": "BG",
+    "weightClass": "-81",
+    "category": "Judo",
+    "stats": {
+      "power": 6,
+      "speed": 7,
+      "technique": 7,
+      "kumikata": 7,
+      "newaza": 6
+    },
+    "signatureMoveIds": [
+      "seoi-nage"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://en.wikipedia.org/wiki/Ivaylo_Ivanov_(judoka)",
+    "sourceUrls": [
+      "https://en.wikipedia.org/wiki/Ivaylo_Ivanov_(judoka)"
+    ],
+    "bio": "Bulgarian half-middleweight Ivaylo Ivanov has represented Bulgaria in major international judo events.",
+    "gender": "male",
+    "isHidden": false,
+    "rarity": "Common",
+    "country": "Bulgaria"
+  },
+  {
+    "id": "acd20d00-abdd-4705-b73c-15ba6681e9d9",
+    "slug": "tara-babulfath",
+    "firstname": "Tara",
+    "surname": "Babulfath",
+    "personType": "real",
+    "countryCode": "SE",
+    "weightClass": "-48",
+    "category": "Judo",
+    "stats": {
+      "power": 6,
+      "speed": 8,
+      "technique": 7,
+      "kumikata": 7,
+      "newaza": 7
+    },
+    "signatureMoveIds": [
+      "uchi-mata"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://www.ijf.org/index.php/news/show/48-kg-tsunoda-takes-the-biggest-prize-of-all",
+    "sourceUrls": [
+      "https://www.ijf.org/index.php/news/show/48-kg-tsunoda-takes-the-biggest-prize-of-all"
+    ],
+    "bio": "Swedish extra-lightweight Tara Babulfath won Olympic bronze at Paris 2024.",
+    "gender": "female",
+    "isHidden": false,
+    "rarity": "Rare",
+    "country": "Sweden"
   },
   {
     "id": "ae21f110-6ce3-4125-8970-4a866f94ea13",
@@ -772,6 +1315,36 @@
     "country": "Italy"
   },
   {
+    "id": "c13166ab-1690-4c22-b081-cd4256f774a0",
+    "slug": "assmaa-niang",
+    "firstname": "Assmaa",
+    "surname": "Niang",
+    "personType": "real",
+    "countryCode": "MA",
+    "weightClass": "-70",
+    "category": "Judo",
+    "stats": {
+      "power": 6,
+      "speed": 6,
+      "technique": 7,
+      "kumikata": 7,
+      "newaza": 6
+    },
+    "signatureMoveIds": [
+      "o-soto-gari"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://en.wikipedia.org/wiki/Assmaa_Niang",
+    "sourceUrls": [
+      "https://en.wikipedia.org/wiki/Assmaa_Niang"
+    ],
+    "bio": "Moroccan middleweight Assmaa Niang competed at the Tokyo 2020 Olympic Games.",
+    "gender": "female",
+    "isHidden": false,
+    "rarity": "Common",
+    "country": "Morocco"
+  },
+  {
     "id": "c3167812-acbf-42b4-bda5-1788baea78e4",
     "slug": "hidayat-heydarov",
     "firstname": "Hidayat",
@@ -795,7 +1368,7 @@
     "bio": "Azerbaijani lightweight Hidayat Heydarov won world gold in 2023 and Olympic gold at Paris 2024.",
     "gender": "male",
     "isHidden": false,
-    "rarity": "Rare",
+    "rarity": "Epic",
     "country": "Azerbaijan"
   },
   {
@@ -855,7 +1428,7 @@
     "bio": "Mongolian extra-lightweight Baasankhuu Bavuudorj won the 2024 world title and Olympic silver.",
     "gender": "female",
     "isHidden": false,
-    "rarity": "Common",
+    "rarity": "Epic",
     "country": "Mongolia"
   },
   {
@@ -886,6 +1459,36 @@
     "country": "Japan"
   },
   {
+    "id": "cc2a2899-3da2-4dce-839b-dc30bc587998",
+    "slug": "yahima-ramirez",
+    "firstname": "Yahima",
+    "surname": "Ramirez",
+    "personType": "real",
+    "countryCode": "PT",
+    "weightClass": "-78",
+    "category": "Judo",
+    "stats": {
+      "power": 7,
+      "speed": 6,
+      "technique": 7,
+      "kumikata": 7,
+      "newaza": 6
+    },
+    "signatureMoveIds": [
+      "harai-goshi"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://en.wikipedia.org/wiki/Yahima_Ram%C3%ADrez",
+    "sourceUrls": [
+      "https://en.wikipedia.org/wiki/Yahima_Ram%C3%ADrez"
+    ],
+    "bio": "Portuguese half-heavyweight Yahima Ramírez represented Portugal at the Rio 2016 Olympic Games.",
+    "gender": "female",
+    "isHidden": false,
+    "rarity": "Common",
+    "country": "Portugal"
+  },
+  {
     "id": "cd8dcb1d-0193-4dd1-a0b7-d4576602bc67",
     "slug": "mystery-judoka",
     "firstname": "Mystery",
@@ -911,6 +1514,66 @@
       "ura-nage"
     ],
     "country": "Bhutan"
+  },
+  {
+    "id": "d16c3588-632e-484b-b5c1-6a1f92b791cb",
+    "slug": "odette-giuffrida",
+    "firstname": "Odette",
+    "surname": "Giuffrida",
+    "personType": "real",
+    "countryCode": "IT",
+    "weightClass": "-52",
+    "category": "Judo",
+    "stats": {
+      "power": 7,
+      "speed": 8,
+      "technique": 8,
+      "kumikata": 8,
+      "newaza": 7
+    },
+    "signatureMoveIds": [
+      "o-uchi-gari"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://en.wikipedia.org/wiki/Odette_Giuffrida",
+    "sourceUrls": [
+      "https://en.wikipedia.org/wiki/Odette_Giuffrida"
+    ],
+    "bio": "Italian half-lightweight Odette Giuffrida is a multiple Olympic medallist and world champion.",
+    "gender": "female",
+    "isHidden": false,
+    "rarity": "Rare",
+    "country": "Italy"
+  },
+  {
+    "id": "d7b8cc61-e0b2-40d1-b259-0a66b05aed60",
+    "slug": "katharina-haecker",
+    "firstname": "Katharina",
+    "surname": "Haecker",
+    "personType": "real",
+    "countryCode": "AU",
+    "weightClass": "-63",
+    "category": "Judo",
+    "stats": {
+      "power": 6,
+      "speed": 7,
+      "technique": 7,
+      "kumikata": 6,
+      "newaza": 6
+    },
+    "signatureMoveIds": [
+      "uchi-mata"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://en.wikipedia.org/wiki/Katharina_Haecker",
+    "sourceUrls": [
+      "https://en.wikipedia.org/wiki/Katharina_Haecker"
+    ],
+    "bio": "Australian half-middleweight Katharina Haecker represented Australia at the Tokyo 2020 Olympic Games.",
+    "gender": "female",
+    "isHidden": false,
+    "rarity": "Common",
+    "country": "Australia"
   },
   {
     "id": "d8387100-01b1-4746-a5a9-0899fb95f5dd",
@@ -1021,6 +1684,36 @@
     "country": "Portugal"
   },
   {
+    "id": "ed4a5c0e-0279-4621-81d4-2e593a913732",
+    "slug": "cedric-revol",
+    "firstname": "Cédric",
+    "surname": "Revol",
+    "personType": "real",
+    "countryCode": "FR",
+    "weightClass": "-60",
+    "category": "Judo",
+    "stats": {
+      "power": 6,
+      "speed": 8,
+      "technique": 7,
+      "kumikata": 6,
+      "newaza": 6
+    },
+    "signatureMoveIds": [
+      "seoi-otoshi"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://en.wikipedia.org/wiki/C%C3%A9dric_Revol",
+    "sourceUrls": [
+      "https://en.wikipedia.org/wiki/C%C3%A9dric_Revol"
+    ],
+    "bio": "French extra-lightweight Cédric Revol has competed for France on the international judo circuit.",
+    "gender": "male",
+    "isHidden": false,
+    "rarity": "Common",
+    "country": "France"
+  },
+  {
     "id": "f274d152-bfd5-419a-8d41-f47976378015",
     "slug": "barbara-matic",
     "firstname": "Barbara",
@@ -1046,5 +1739,35 @@
     "isHidden": false,
     "rarity": "Epic",
     "country": "Croatia"
+  },
+  {
+    "id": "f4520940-8311-4505-a3e8-dc2df3acedde",
+    "slug": "angelica-delgado",
+    "firstname": "Angelica",
+    "surname": "Delgado",
+    "personType": "real",
+    "countryCode": "US",
+    "weightClass": "-52",
+    "category": "Judo",
+    "stats": {
+      "power": 6,
+      "speed": 7,
+      "technique": 7,
+      "kumikata": 7,
+      "newaza": 6
+    },
+    "signatureMoveIds": [
+      "sumi-gaeshi"
+    ],
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "profileUrl": "https://en.wikipedia.org/wiki/Angelica_Delgado",
+    "sourceUrls": [
+      "https://en.wikipedia.org/wiki/Angelica_Delgado"
+    ],
+    "bio": "American half-lightweight Angelica Delgado competed for the United States at multiple Olympic Games.",
+    "gender": "female",
+    "isHidden": false,
+    "rarity": "Common",
+    "country": "United States"
   }
 ]
