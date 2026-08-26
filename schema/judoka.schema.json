@@ -28,6 +28,12 @@
     "signatureMoveIds": { "type": "array", "items": { "$ref": "#/$defs/slug" }, "minItems": 1, "uniqueItems": true },
     "lastUpdated": { "type": "string", "format": "date-time" },
     "profileUrl": { "type": "string", "format": "uri", "pattern": "^https://" },
+    "sourceUrls": {
+      "type": "array",
+      "items": { "type": "string", "format": "uri", "pattern": "^https://" },
+      "minItems": 1,
+      "uniqueItems": true
+    },
     "bio": { "type": "string", "minLength": 20 },
     "gender": { "enum": ["male", "female"] },
     "isHidden": { "type": "boolean" },

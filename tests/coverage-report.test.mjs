@@ -22,6 +22,7 @@ test('coverage summary reports the visible catalogue and its balance', () => {
   });
   assert.match(formatCoverageReport(summary), /Public real judoka: 2/);
   assert.match(formatCoverageReport(summary), /By rarity/);
+  assert.match(formatCoverageReport(summary), /Epic: 1 \(50\.0%\)/);
   assert.doesNotMatch(formatCoverageReport(summary), /Game-ready records/);
 });
 

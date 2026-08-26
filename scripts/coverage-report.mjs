@@ -30,7 +30,7 @@ export function summarizeCoverage(judoka) {
   };
 }
 
-const formatCounts = counts => Object.entries(counts).map(([key, count]) => `  ${key}: ${count}`).join('\n') || '  (none)';
+const formatCounts = (counts, total) => Object.entries(counts).map(([key, count]) => `  ${key}: ${count}${total ? ` (${(count / total * 100).toFixed(1)}%)` : ''}`).join('\n') || '  (none)';
 
 export function formatCoverageReport(summary) {
   return [
@@ -38,10 +38,10 @@ export function formatCoverageReport(summary) {
     `Total judoka: ${summary.total}`,
     `Public real judoka: ${summary.publicReal}`,
     `Hidden judoka: ${summary.hidden}`,
-    '', 'By gender', formatCounts(summary.byGender),
-    '', 'By country', formatCounts(summary.byCountry),
-    '', 'By weight class', formatCounts(summary.byWeightClass),
-    '', 'By rarity (public real judoka)', formatCounts(summary.byRarity),
+    '', 'By gender', formatCounts(summary.byGender, summary.publicReal),
+    '', 'By country', formatCounts(summary.byCountry, summary.publicReal),
+    '', 'By weight class', formatCounts(summary.byWeightClass, summary.publicReal),
+    '', 'By rarity (public real judoka)', formatCounts(summary.byRarity, summary.publicReal),
     '', 'By person type', formatCounts(summary.byPersonType),
   ].join('\n');
 }
