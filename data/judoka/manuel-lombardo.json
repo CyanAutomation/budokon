@@ -1,0 +1,18 @@
+{
+  "id": "8f777c47-8f02-4945-a64b-0a84cd92fea3",
+  "slug": "manuel-lombardo",
+  "firstname": "Manuel",
+  "surname": "Lombardo",
+  "personType": "real",
+  "countryCode": "IT",
+  "weightClass": "-73",
+  "category": "Judo",
+  "stats": { "power": 8, "speed": 8, "technique": 8, "kumikata": 8, "newaza": 7 },
+  "signatureMoveIds": ["uchi-mata"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://en.wikipedia.org/wiki/Manuel_Lombardo",
+  "bio": "Italian lightweight Manuel Lombardo is a senior world championship medallist and an established World Judo Tour contender.",
+  "gender": "male",
+  "isHidden": false,
+  "rarity": "Rare"
+}

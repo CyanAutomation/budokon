@@ -1,0 +1,19 @@
+{
+  "id": "ebe2e342-8a59-45f5-86f8-fd91f197d1a0",
+  "slug": "reka-pupp",
+  "firstname": "Réka",
+  "surname": "Pupp",
+  "personType": "real",
+  "countryCode": "HU",
+  "weightClass": "-52",
+  "category": "Judo",
+  "stats": { "power": 7, "speed": 8, "technique": 8, "kumikata": 7, "newaza": 7 },
+  "signatureMoveIds": ["o-uchi-gari"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://en.wikipedia.org/wiki/R%C3%A9ka_Pupp",
+  "sourceUrls": ["https://www.ijf.org/news/show/52-kg-krasniqi-never-in-doubt"],
+  "bio": "Hungarian half-lightweight Réka Pupp is a World Judo Tour finalist and a regular contender in the -52 kg division.",
+  "gender": "female",
+  "isHidden": false,
+  "rarity": "Rare"
+}

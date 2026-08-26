@@ -1,0 +1,19 @@
+{
+  "id": "1f1b356e-74a6-4f42-8c85-647f340a2f14",
+  "slug": "christian-parlati",
+  "firstname": "Christian",
+  "surname": "Parlati",
+  "personType": "real",
+  "countryCode": "IT",
+  "weightClass": "-90",
+  "category": "Judo",
+  "stats": { "power": 8, "speed": 7, "technique": 8, "kumikata": 8, "newaza": 7 },
+  "signatureMoveIds": ["sumi-gaeshi"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://www.ijf.org/judoka/18847",
+  "sourceUrls": ["https://www.ijf.org/news/show/90-kg-parlati-prevails-after-a-hard-fought-battle"],
+  "bio": "Italian middleweight Christian Parlati is a World Judo Tour gold medallist in the men’s -90 kg division.",
+  "gender": "male",
+  "isHidden": false,
+  "rarity": "Common"
+}

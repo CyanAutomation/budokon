@@ -1,0 +1,19 @@
+{
+  "id": "592aeda8-a325-4117-8744-1785d620e241",
+  "slug": "daniel-cargnin",
+  "firstname": "Daniel",
+  "surname": "Cargnin",
+  "personType": "real",
+  "countryCode": "BR",
+  "weightClass": "-73",
+  "category": "Judo",
+  "stats": { "power": 7, "speed": 8, "technique": 8, "kumikata": 7, "newaza": 7 },
+  "signatureMoveIds": ["seoi-otoshi"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://en.wikipedia.org/wiki/Daniel_Cargnin",
+  "sourceUrls": ["https://www.ijf.org/news/show/73-kg-gaba-wins-france-s-60th-world-title"],
+  "bio": "Brazilian lightweight Daniel Cargnin is an Olympic bronze medallist and a senior world championship medallist.",
+  "gender": "male",
+  "isHidden": false,
+  "rarity": "Common"
+}
