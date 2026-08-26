@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { CatalogService, DrawService, JsonReadModelRepository, createRestRouter } from "../build/runtime/index.js";
+import { CatalogService, DrawService, JsonReadModelRepository, createRestRouter, summarizeCoverage } from "../build/runtime/index.js";
 import compiledModel from "./fixtures/compiled-model.mjs";
 
 const repository = new JsonReadModelRepository(compiledModel);
@@ -25,6 +25,17 @@ test("every documented catalogue and metadata endpoint conforms", async () => {
     [`/v1/techniques/${catalog.listTechniques()[0].id}`, catalog.listTechniques()[0]],
     [`/v1/collections/${catalog.listCollections()[0].id}`, catalog.listCollections()[0]]
   ]) assert.deepEqual(await body(await request(path)), expected);
+});
+
+test("coverage returns empty rarity percentages when no public real judoka exist", () => {
+  const coverage = summarizeCoverage([
+    { personType: "real", isHidden: true, rarity: "Rare" },
+    { personType: "fictional", isHidden: false, rarity: "Common" },
+  ]);
+
+  assert.equal(coverage.publicReal, 0);
+  assert.deepEqual(coverage.byRarity, {});
+  assert.deepEqual(coverage.rarityPercentages, {});
 });
 
 test("coverage exposes public real-judoka counts and stable rarity percentages", async () => {

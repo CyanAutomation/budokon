@@ -15,7 +15,7 @@ function countBy(records: Judoka[], field: "gender" | "countryCode" | "weightCla
 export function summarizeCoverage(judoka: Judoka[]): CoverageResponse {
   const publicJudoka = judoka.filter(record => record.personType === "real" && record.isHidden !== true);
   const byRarity = countBy(publicJudoka, "rarity");
-  const rarityPercentages = Object.fromEntries(Object.entries(byRarity).map(([rarity, count]) => [rarity, Number((count / publicJudoka.length * 100).toFixed(1))]));
+  const rarityPercentages = publicJudoka.length > 0 ? Object.fromEntries(Object.entries(byRarity).map(([rarity, count]) => [rarity, Number((count / publicJudoka.length * 100).toFixed(1))])) : {};
   return {
     total: judoka.length,
     publicReal: publicJudoka.length,
