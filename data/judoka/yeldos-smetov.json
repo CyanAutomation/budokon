@@ -1,0 +1,18 @@
+{
+  "id": "4dc02482-a08c-4da0-b75b-d4fdda49fe1c",
+  "slug": "yeldos-smetov",
+  "firstname": "Yeldos",
+  "surname": "Smetov",
+  "personType": "real",
+  "countryCode": "KZ",
+  "weightClass": "-60",
+  "category": "Judo",
+  "stats": { "power": 8, "speed": 10, "technique": 9, "kumikata": 9, "newaza": 8 },
+  "signatureMoveIds": ["ippon-seoi-nage"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://en.wikipedia.org/wiki/Yeldos_Smetov",
+  "bio": "Kazakh extra-lightweight Yeldos Smetov completed an Olympic medal set by winning gold at Paris 2024.",
+  "gender": "male",
+  "isHidden": false,
+  "rarity": "Epic"
+}

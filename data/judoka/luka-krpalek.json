@@ -1,0 +1,18 @@
+{
+  "id": "03b1da63-584e-418c-9496-5a748c324f70",
+  "slug": "luka-krpalek",
+  "firstname": "Luka",
+  "surname": "Krpalek",
+  "personType": "real",
+  "countryCode": "CZ",
+  "weightClass": "+100",
+  "category": "Judo",
+  "stats": { "power": 10, "speed": 8, "technique": 10, "kumikata": 10, "newaza": 9 },
+  "signatureMoveIds": ["uchi-mata"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://en.wikipedia.org/wiki/Luk%C3%A1%C5%A1_Krp%C3%A1lek",
+  "bio": "Czech heavyweight Luka Krpalek is a two-time Olympic champion who also won Olympic gold at half-heavyweight.",
+  "gender": "male",
+  "isHidden": false,
+  "rarity": "Epic"
+}

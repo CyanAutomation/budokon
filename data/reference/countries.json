@@ -118,5 +118,41 @@
     "code": "JM",
     "lastUpdated": "2025-04-23T10:00:00Z",
     "active": true
+  },
+  "KZ": {
+    "country": "Kazakhstan",
+    "code": "KZ",
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "active": true
+  },
+  "HR": {
+    "country": "Croatia",
+    "code": "HR",
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "active": true
+  },
+  "UZ": {
+    "country": "Uzbekistan",
+    "code": "UZ",
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "active": true
+  },
+  "CZ": {
+    "country": "Czechia",
+    "code": "CZ",
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "active": true
+  },
+  "MX": {
+    "country": "Mexico",
+    "code": "MX",
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "active": true
+  },
+  "TJ": {
+    "country": "Tajikistan",
+    "code": "TJ",
+    "lastUpdated": "2026-08-26T00:00:00Z",
+    "active": true
   }
 }

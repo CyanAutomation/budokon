@@ -1,0 +1,18 @@
+{
+  "id": "ae21f110-6ce3-4125-8970-4a866f94ea13",
+  "slug": "prisca-awiti-alcaraz",
+  "firstname": "Prisca",
+  "surname": "Awiti-Alcaraz",
+  "personType": "real",
+  "countryCode": "MX",
+  "weightClass": "-63",
+  "category": "Judo",
+  "stats": { "power": 8, "speed": 9, "technique": 9, "kumikata": 8, "newaza": 8 },
+  "signatureMoveIds": ["seoi-nage"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://en.wikipedia.org/wiki/Prisca_Awiti-Alcaraz",
+  "bio": "Mexican half-middleweight Prisca Awiti-Alcaraz won silver at Paris 2024, Mexico's first Olympic judo medal.",
+  "gender": "female",
+  "isHidden": false,
+  "rarity": "Common"
+}

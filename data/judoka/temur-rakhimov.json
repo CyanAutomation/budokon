@@ -1,0 +1,18 @@
+{
+  "id": "db731ce3-d0b2-464f-8e18-55439df0b210",
+  "slug": "temur-rakhimov",
+  "firstname": "Temur",
+  "surname": "Rakhimov",
+  "personType": "real",
+  "countryCode": "TJ",
+  "weightClass": "+100",
+  "category": "Judo",
+  "stats": { "power": 10, "speed": 7, "technique": 8, "kumikata": 9, "newaza": 7 },
+  "signatureMoveIds": ["ippon-seoi-nage"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://en.wikipedia.org/wiki/Temur_Rakhimov",
+  "bio": "Tajik heavyweight Temur Rakhimov won bronze at Paris 2024 and is a multiple World Tour medallist.",
+  "gender": "male",
+  "isHidden": false,
+  "rarity": "Common"
+}
