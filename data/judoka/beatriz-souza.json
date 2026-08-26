@@ -1,0 +1,18 @@
+{
+  "id": "3ee54e86-bedd-4265-b992-80033ae8ed6a",
+  "slug": "beatriz-souza",
+  "firstname": "Beatriz",
+  "surname": "Souza",
+  "personType": "real",
+  "countryCode": "BR",
+  "weightClass": "+78",
+  "category": "Judo",
+  "stats": { "power": 10, "speed": 7, "technique": 9, "kumikata": 9, "newaza": 8 },
+  "signatureMoveIds": ["o-soto-gari"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://en.wikipedia.org/wiki/Beatriz_Souza_(judoka)",
+  "bio": "Brazilian heavyweight Beatriz Souza won Olympic gold at Paris 2024.",
+  "gender": "female",
+  "isHidden": false,
+  "rarity": "Legendary"
+}

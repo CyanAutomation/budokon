@@ -1,0 +1,18 @@
+{
+  "id": "d8387100-01b1-4746-a5a9-0899fb95f5dd",
+  "slug": "uta-abe",
+  "firstname": "Uta",
+  "surname": "Abe",
+  "personType": "real",
+  "countryCode": "JP",
+  "weightClass": "-52",
+  "category": "Judo",
+  "stats": { "power": 8, "speed": 10, "technique": 10, "kumikata": 9, "newaza": 8 },
+  "signatureMoveIds": ["o-soto-gari"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://en.wikipedia.org/wiki/Uta_Abe",
+  "bio": "Japanese half-lightweight Uta Abe is an Olympic champion and multiple world champion at 52 kg.",
+  "gender": "female",
+  "isHidden": false,
+  "rarity": "Legendary"
+}

@@ -10,3 +10,31 @@ the consumer's migration/import artifact, keyed by the judoka's immutable
 `id`. Historical JU-DO-KON values are stored in
 `../../migrations/ju-do-kon-judoka-import.json`; keep that artifact for existing
 saves, but do not use it as a canonical data source.
+
+## Adding a real judoka
+
+BU-DO-KON is a small, curated game catalogue. Add a person because they make a
+recognisable or enjoyable game card, not to make the catalogue exhaustive or to
+mirror an external ranking database. Work in small batches and use
+`npm run coverage` before choosing the next one so that the catalogue does not
+accidentally concentrate on one gender, country, or weight class.
+
+Every record needs the stable identity and gameplay-routing fields required by
+the schema: UUID, slug, name, real/fictional type, country, gender, primary
+weight class, visibility, and `lastUpdated`. Every record also needs complete
+game enrichment:
+
+* `stats`
+* `rarity`
+* `signatureMoveIds`
+* `bio`
+* `profileUrl`
+
+These values must be complete and valid. Do not invent a signature move,
+biography, or rating merely to fill a field; make a deliberate editorial choice
+before publishing the record.
+
+Before committing, confirm that the name and basic sporting association are
+credible, add useful aliases where a spelling is common, and run `npm test`,
+`npm run validate`, and `npm run coverage`. Do not create a collection solely
+to add a judoka.
