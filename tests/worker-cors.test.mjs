@@ -62,7 +62,14 @@ test("public GET responses receive a versioned cache validator and honour If-Non
     assert.equal(await cached.text(), "");
   }
 
-  const fresh = cachePublicGet(new Response("catalogue"), request(undefined, { headers: { "if-none-match": 'W/"unrelated"' } }), "2026.08.1");
-  assert.equal(fresh.status, 200);
-  assert.equal(await fresh.text(), "catalogue");
+  for (const validator of [
+    'W/"unrelated"',
+    `W/${etag}malicious`,
+    `${etag}malicious`,
+    ", ,"
+  ]) {
+    const fresh = cachePublicGet(new Response("catalogue"), request(undefined, { headers: { "if-none-match": validator } }), "2026.08.1");
+    assert.equal(fresh.status, 200, validator);
+    assert.equal(await fresh.text(), "catalogue");
+  }
 });
