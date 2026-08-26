@@ -295,8 +295,24 @@ fun, varied draw pool—not exhaustive athlete coverage.
 
 Use `npm run coverage` before selecting the next batch. It reports the current
 number of public real judoka and hidden records, plus the spread across gender,
-country, weight class, and person type. It is a decision aid, not a quota or a
-CI gate.
+country, weight class, rarity, and person type. It also enforces the catalogue
+coverage policy, so it fails when a proposed batch creates an imbalance.
+
+### Editorial coverage and rarity policy
+
+Coverage targets apply to public, real judoka only: at least 20 records from
+10 countries; no country may exceed 35% of the pool; neither gender may exceed
+60%; and every current senior IJF weight class must be represented. These
+targets prevent a small set of countries or divisions from dominating draws.
+
+Rarity is a game-distribution attribute, not a statement of an athlete's worth
+or an official IJF classification. Curators should keep the public pool within
+these shares: **Common 25–45%**, **Rare 20–40%**, **Epic 15–30%**, and
+**Legendary 5–20%**. Common profiles make up the reliable breadth of ordinary
+draws; Rare profiles represent notable specialists and established international
+competitors; Epic profiles are major champions and consistently elite judoka;
+Legendary profiles are reserved for athletes with exceptional, era-defining
+records. All four tiers must be represented.
 
 Every published judoka is a complete game profile. `stats`, `rarity`,
 `signatureMoveIds`, `bio`, and `profileUrl` are mandatory alongside stable

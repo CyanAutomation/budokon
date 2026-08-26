@@ -1,0 +1,18 @@
+{
+  "id": "9b21844c-fbda-4b0a-b8c8-977f471f2691",
+  "slug": "diyora-keldiyorova",
+  "firstname": "Diyora",
+  "surname": "Keldiyorova",
+  "personType": "real",
+  "countryCode": "UZ",
+  "weightClass": "-52",
+  "category": "Judo",
+  "stats": { "power": 8, "speed": 10, "technique": 9, "kumikata": 8, "newaza": 8 },
+  "signatureMoveIds": ["uchi-mata"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://en.wikipedia.org/wiki/Diyora_Keldiyorova",
+  "bio": "Uzbek half-lightweight Diyora Keldiyorova won Olympic gold at Paris 2024 and is a world championship medallist.",
+  "gender": "female",
+  "isHidden": false,
+  "rarity": "Rare"
+}
