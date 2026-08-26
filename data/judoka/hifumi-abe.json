@@ -1,0 +1,18 @@
+{
+  "id": "8d9f008f-73f0-41fc-b13c-695a4667ff3c",
+  "slug": "hifumi-abe",
+  "firstname": "Hifumi",
+  "surname": "Abe",
+  "personType": "real",
+  "countryCode": "JP",
+  "weightClass": "-66",
+  "category": "Judo",
+  "stats": { "power": 8, "speed": 9, "technique": 10, "kumikata": 9, "newaza": 8 },
+  "signatureMoveIds": ["o-uchi-gari", "tai-otoshi"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://en.wikipedia.org/wiki/Hifumi_Abe",
+  "bio": "Japanese half-lightweight Hifumi Abe won Olympic gold at Tokyo 2020 and is a multiple world champion.",
+  "gender": "male",
+  "isHidden": false,
+  "rarity": "Legendary"
+}

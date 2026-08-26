@@ -1,0 +1,18 @@
+{
+  "id": "7bab938d-586b-47b3-9fe2-14b69d21956b",
+  "slug": "rafaela-silva",
+  "firstname": "Rafaela",
+  "surname": "Silva",
+  "personType": "real",
+  "countryCode": "BR",
+  "weightClass": "-57",
+  "category": "Judo",
+  "stats": { "power": 8, "speed": 9, "technique": 9, "kumikata": 8, "newaza": 8 },
+  "signatureMoveIds": ["o-soto-gari"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://en.wikipedia.org/wiki/Rafaela_Silva",
+  "bio": "Brazilian lightweight Rafaela Silva won Olympic gold at Rio 2016 and is a multiple world champion.",
+  "gender": "female",
+  "isHidden": false,
+  "rarity": "Legendary"
+}

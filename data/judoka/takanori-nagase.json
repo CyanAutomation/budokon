@@ -1,0 +1,18 @@
+{
+  "id": "ca770dc4-ef60-4a5d-99a4-5bfaf3504849",
+  "slug": "takanori-nagase",
+  "firstname": "Takanori",
+  "surname": "Nagase",
+  "personType": "real",
+  "countryCode": "JP",
+  "weightClass": "-81",
+  "category": "Judo",
+  "stats": { "power": 8, "speed": 8, "technique": 9, "kumikata": 9, "newaza": 8 },
+  "signatureMoveIds": ["uchi-mata"],
+  "lastUpdated": "2026-08-26T00:00:00Z",
+  "profileUrl": "https://en.wikipedia.org/wiki/Takanori_Nagase",
+  "bio": "Japanese half-middleweight Takanori Nagase is an Olympic champion and world champion.",
+  "gender": "male",
+  "isHidden": false,
+  "rarity": "Epic"
+}

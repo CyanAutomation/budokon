@@ -286,6 +286,23 @@ The individual JSON records under `data/judoka/` and `data/techniques/`, togethe
 
 Do not edit generated files under `dist/` directly.
 
+### Curated catalogue growth
+
+BU-DO-KON is a hobbyist, game-oriented catalogue rather than a mirror of the
+IJF or a continuously ingested sports database. Add recognisable current or
+historic judoka in small editorial batches when they suit a game. The aim is a
+fun, varied draw pool—not exhaustive athlete coverage.
+
+Use `npm run coverage` before selecting the next batch. It reports the current
+number of public real judoka and hidden records, plus the spread across gender,
+country, weight class, and person type. It is a decision aid, not a quota or a
+CI gate.
+
+Every published judoka is a complete game profile. `stats`, `rarity`,
+`signatureMoveIds`, `bio`, and `profileUrl` are mandatory alongside stable
+identity and routing fields. Ratings and signature moves remain editorial
+choices, but they must be intentionally chosen rather than omitted.
+
 After changing source data:
 
 ```sh

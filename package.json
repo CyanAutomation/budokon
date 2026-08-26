@@ -14,6 +14,7 @@
     "build:data": "node scripts/build.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "check-artifacts": "node scripts/check-artifacts.mjs",
+    "coverage": "node scripts/coverage-report.mjs",
     "verify-release": "node scripts/verify-release.mjs",
     "validate": "node src/validation/validate-canonical.mjs",
     "test": "npm run build && node --test scripts/*.test.mjs tests/*.test.mjs",
