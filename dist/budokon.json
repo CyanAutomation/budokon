@@ -1,5 +1,5 @@
 {
-  "datasetVersion": "2026.08.3",
+  "datasetVersion": "2026.08.4",
   "judoka": [
     {
       "id": "0036f7e0-2759-42f3-830f-a4403ea14bc9",
@@ -25,8 +25,35 @@
       "bio": "Japanese extra-lightweight Funa Tonaki won the 2017 world title and Olympic silver in Tokyo.",
       "gender": "female",
       "isHidden": false,
-      "rarity": "Epic",
+      "rarity": "Rare",
       "country": "Japan"
+    },
+    {
+      "id": "03b1da63-584e-418c-9496-5a748c324f70",
+      "slug": "luka-krpalek",
+      "firstname": "Luka",
+      "surname": "Krpalek",
+      "personType": "real",
+      "countryCode": "CZ",
+      "weightClass": "+100",
+      "category": "Judo",
+      "stats": {
+        "power": 10,
+        "speed": 8,
+        "technique": 10,
+        "kumikata": 10,
+        "newaza": 9
+      },
+      "signatureMoveIds": [
+        "uchi-mata"
+      ],
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "profileUrl": "https://en.wikipedia.org/wiki/Luk%C3%A1%C5%A1_Krp%C3%A1lek",
+      "bio": "Czech heavyweight Luka Krpalek is a two-time Olympic champion who also won Olympic gold at half-heavyweight.",
+      "gender": "male",
+      "isHidden": false,
+      "rarity": "Epic",
+      "country": "Czechia"
     },
     {
       "id": "0c317ece-c133-41c4-9131-19ad1c8fabdf",
@@ -52,7 +79,7 @@
       "bio": "Japanese half-heavyweight Aaron Wolf won Olympic gold at Tokyo 2020.",
       "gender": "male",
       "isHidden": false,
-      "rarity": "Epic",
+      "rarity": "Rare",
       "country": "Japan"
     },
     {
@@ -82,7 +109,7 @@
       "bio": "Spanish extra-lightweight Francisco Garrigós won the 2023 world title and Olympic bronze at Paris 2024.",
       "gender": "male",
       "isHidden": false,
-      "rarity": "Epic",
+      "rarity": "Rare",
       "country": "Spain"
     },
     {
@@ -113,6 +140,33 @@
       "country": "United States"
     },
     {
+      "id": "213a0432-ab43-4233-a6d7-10619d252ac9",
+      "slug": "natsumi-tsunoda",
+      "firstname": "Natsumi",
+      "surname": "Tsunoda",
+      "personType": "real",
+      "countryCode": "JP",
+      "weightClass": "-48",
+      "category": "Judo",
+      "stats": {
+        "power": 8,
+        "speed": 9,
+        "technique": 10,
+        "kumikata": 9,
+        "newaza": 9
+      },
+      "signatureMoveIds": [
+        "tomoe-nage"
+      ],
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "profileUrl": "https://en.wikipedia.org/wiki/Natsumi_Tsunoda",
+      "bio": "Japanese extra-lightweight Natsumi Tsunoda won Olympic gold at Paris 2024 and is a multiple world champion.",
+      "gender": "female",
+      "isHidden": false,
+      "rarity": "Epic",
+      "country": "Japan"
+    },
+    {
       "id": "249f1726-e06b-497b-875a-2e81e6a65622",
       "slug": "lasha-bekauri",
       "firstname": "Lasha",
@@ -136,7 +190,7 @@
       "bio": "Georgian middleweight Lasha Bekauri won Olympic gold at Tokyo 2020 and Paris 2024.",
       "gender": "male",
       "isHidden": false,
-      "rarity": "Legendary",
+      "rarity": "Epic",
       "country": "Georgia"
     },
     {
@@ -196,7 +250,7 @@
       "bio": "Brazilian heavyweight Beatriz Souza won Olympic gold at Paris 2024.",
       "gender": "female",
       "isHidden": false,
-      "rarity": "Legendary",
+      "rarity": "Epic",
       "country": "Brazil"
     },
     {
@@ -223,8 +277,62 @@
       "bio": "Dutch middleweight Kim Polling won the 2013 world title at 70 kg.",
       "gender": "female",
       "isHidden": false,
-      "rarity": "Epic",
+      "rarity": "Common",
       "country": "Netherlands"
+    },
+    {
+      "id": "4dc02482-a08c-4da0-b75b-d4fdda49fe1c",
+      "slug": "yeldos-smetov",
+      "firstname": "Yeldos",
+      "surname": "Smetov",
+      "personType": "real",
+      "countryCode": "KZ",
+      "weightClass": "-60",
+      "category": "Judo",
+      "stats": {
+        "power": 8,
+        "speed": 10,
+        "technique": 9,
+        "kumikata": 9,
+        "newaza": 8
+      },
+      "signatureMoveIds": [
+        "ippon-seoi-nage"
+      ],
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "profileUrl": "https://en.wikipedia.org/wiki/Yeldos_Smetov",
+      "bio": "Kazakh extra-lightweight Yeldos Smetov completed an Olympic medal set by winning gold at Paris 2024.",
+      "gender": "male",
+      "isHidden": false,
+      "rarity": "Epic",
+      "country": "Kazakhstan"
+    },
+    {
+      "id": "4de2febb-ec90-4dbc-9019-6f442e965def",
+      "slug": "zelim-kotsoiev",
+      "firstname": "Zelim",
+      "surname": "Kotsoiev",
+      "personType": "real",
+      "countryCode": "AZ",
+      "weightClass": "-100",
+      "category": "Judo",
+      "stats": {
+        "power": 10,
+        "speed": 8,
+        "technique": 9,
+        "kumikata": 9,
+        "newaza": 7
+      },
+      "signatureMoveIds": [
+        "uchi-mata"
+      ],
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "profileUrl": "https://en.wikipedia.org/wiki/Zelim_Kotsoiev",
+      "bio": "Azerbaijani half-heavyweight Zelim Kotsoiev won Olympic gold at Paris 2024 and has medalled at world championships.",
+      "gender": "male",
+      "isHidden": false,
+      "rarity": "Epic",
+      "country": "Azerbaijan"
     },
     {
       "id": "550785c5-a415-4c8e-952b-ffaa6cd04f68",
@@ -301,7 +409,7 @@
       "bio": "Japanese judoka Shōzō Fujii won four consecutive world titles during the 1970s in the divisions now represented by 81 kg.",
       "gender": "male",
       "isHidden": false,
-      "rarity": "Epic",
+      "rarity": "Common",
       "signatureMoveIds": [
         "seoi-nage"
       ],
@@ -364,7 +472,7 @@
       "bio": "Canadian lightweight Christa Deguchi won Olympic gold at Paris 2024 and world silver in 2024.",
       "gender": "female",
       "isHidden": false,
-      "rarity": "Legendary",
+      "rarity": "Epic",
       "country": "Canada"
     },
     {
@@ -391,7 +499,7 @@
       "bio": "Brazilian lightweight Rafaela Silva won Olympic gold at Rio 2016 and is a multiple world champion.",
       "gender": "female",
       "isHidden": false,
-      "rarity": "Legendary",
+      "rarity": "Rare",
       "country": "Brazil"
     },
     {
@@ -418,7 +526,7 @@
       "bio": "British lightweight Chelsie Giles won Olympic bronze at Tokyo 2020 and world silver in 2022.",
       "gender": "female",
       "isHidden": false,
-      "rarity": "Epic",
+      "rarity": "Rare",
       "country": "United Kingdom"
     },
     {
@@ -442,7 +550,7 @@
       "bio": "Tatsuuma Ushiyama is a fictional Golden Kamuy character: an escaped convict and formidable judo master known as “Ushiyama the Undefeated.”",
       "gender": "male",
       "isHidden": true,
-      "rarity": "Legendary",
+      "rarity": "Common",
       "signatureMoveIds": [
         "ura-nage"
       ],
@@ -472,7 +580,7 @@
       "bio": "German half-heavyweight Anna-Maria Wagner won world titles in 2021 and 2024.",
       "gender": "female",
       "isHidden": false,
-      "rarity": "Epic",
+      "rarity": "Rare",
       "country": "Germany"
     },
     {
@@ -527,8 +635,143 @@
       "bio": "Japanese extra-lightweight Naohisa Takato is an Olympic champion and three-time world champion.",
       "gender": "male",
       "isHidden": false,
-      "rarity": "Legendary",
+      "rarity": "Rare",
       "country": "Japan"
+    },
+    {
+      "id": "9b21844c-fbda-4b0a-b8c8-977f471f2691",
+      "slug": "diyora-keldiyorova",
+      "firstname": "Diyora",
+      "surname": "Keldiyorova",
+      "personType": "real",
+      "countryCode": "UZ",
+      "weightClass": "-52",
+      "category": "Judo",
+      "stats": {
+        "power": 8,
+        "speed": 10,
+        "technique": 9,
+        "kumikata": 8,
+        "newaza": 8
+      },
+      "signatureMoveIds": [
+        "uchi-mata"
+      ],
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "profileUrl": "https://en.wikipedia.org/wiki/Diyora_Keldiyorova",
+      "bio": "Uzbek half-lightweight Diyora Keldiyorova won Olympic gold at Paris 2024 and is a world championship medallist.",
+      "gender": "female",
+      "isHidden": false,
+      "rarity": "Rare",
+      "country": "Uzbekistan"
+    },
+    {
+      "id": "a89700be-266f-4306-9cca-0ce148bb17c3",
+      "slug": "romane-dicko",
+      "firstname": "Romane",
+      "surname": "Dicko",
+      "personType": "real",
+      "countryCode": "FR",
+      "weightClass": "+78",
+      "category": "Judo",
+      "stats": {
+        "power": 10,
+        "speed": 8,
+        "technique": 9,
+        "kumikata": 9,
+        "newaza": 8
+      },
+      "signatureMoveIds": [
+        "o-soto-gari"
+      ],
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "profileUrl": "https://en.wikipedia.org/wiki/Romane_Dicko",
+      "bio": "French heavyweight Romane Dicko is a world champion and an Olympic bronze medallist in the individual heavyweight event.",
+      "gender": "female",
+      "isHidden": false,
+      "rarity": "Rare",
+      "country": "France"
+    },
+    {
+      "id": "ae21f110-6ce3-4125-8970-4a866f94ea13",
+      "slug": "prisca-awiti-alcaraz",
+      "firstname": "Prisca",
+      "surname": "Awiti-Alcaraz",
+      "personType": "real",
+      "countryCode": "MX",
+      "weightClass": "-63",
+      "category": "Judo",
+      "stats": {
+        "power": 8,
+        "speed": 9,
+        "technique": 9,
+        "kumikata": 8,
+        "newaza": 8
+      },
+      "signatureMoveIds": [
+        "seoi-nage"
+      ],
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "profileUrl": "https://en.wikipedia.org/wiki/Prisca_Awiti-Alcaraz",
+      "bio": "Mexican half-middleweight Prisca Awiti-Alcaraz won silver at Paris 2024, Mexico's first Olympic judo medal.",
+      "gender": "female",
+      "isHidden": false,
+      "rarity": "Common",
+      "country": "Mexico"
+    },
+    {
+      "id": "b459d97d-83c6-4dee-8789-323bacc6a232",
+      "slug": "muzafarbek-turoboyev",
+      "firstname": "Muzafarbek",
+      "surname": "Turoboyev",
+      "personType": "real",
+      "countryCode": "UZ",
+      "weightClass": "-100",
+      "category": "Judo",
+      "stats": {
+        "power": 9,
+        "speed": 8,
+        "technique": 9,
+        "kumikata": 9,
+        "newaza": 7
+      },
+      "signatureMoveIds": [
+        "uchi-mata"
+      ],
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "profileUrl": "https://en.wikipedia.org/wiki/Muzafarbek_Turoboyev",
+      "bio": "Uzbek half-heavyweight Muzafarbek Turoboyev won the 2022 world title and competed at the Paris 2024 Olympic Games.",
+      "gender": "male",
+      "isHidden": false,
+      "rarity": "Epic",
+      "country": "Uzbekistan"
+    },
+    {
+      "id": "b8b148ac-b01a-418a-9c6b-ab4d6f2789b7",
+      "slug": "alice-bellandi",
+      "firstname": "Alice",
+      "surname": "Bellandi",
+      "personType": "real",
+      "countryCode": "IT",
+      "weightClass": "-78",
+      "category": "Judo",
+      "stats": {
+        "power": 9,
+        "speed": 8,
+        "technique": 9,
+        "kumikata": 9,
+        "newaza": 8
+      },
+      "signatureMoveIds": [
+        "uchi-mata"
+      ],
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "profileUrl": "https://en.wikipedia.org/wiki/Alice_Bellandi",
+      "bio": "Italian half-heavyweight Alice Bellandi won Olympic gold at Paris 2024 after becoming a world championship medallist.",
+      "gender": "female",
+      "isHidden": false,
+      "rarity": "Epic",
+      "country": "Italy"
     },
     {
       "id": "c3167812-acbf-42b4-bda5-1788baea78e4",
@@ -554,7 +797,7 @@
       "bio": "Azerbaijani lightweight Hidayat Heydarov won world gold in 2023 and Olympic gold at Paris 2024.",
       "gender": "male",
       "isHidden": false,
-      "rarity": "Legendary",
+      "rarity": "Rare",
       "country": "Azerbaijan"
     },
     {
@@ -614,7 +857,7 @@
       "bio": "Mongolian extra-lightweight Baasankhuu Bavuudorj won the 2024 world title and Olympic silver.",
       "gender": "female",
       "isHidden": false,
-      "rarity": "Epic",
+      "rarity": "Common",
       "country": "Mongolia"
     },
     {
@@ -641,7 +884,7 @@
       "bio": "Japanese half-middleweight Takanori Nagase is an Olympic champion and world champion.",
       "gender": "male",
       "isHidden": false,
-      "rarity": "Epic",
+      "rarity": "Rare",
       "country": "Japan"
     },
     {
@@ -699,6 +942,33 @@
       "country": "Japan"
     },
     {
+      "id": "db731ce3-d0b2-464f-8e18-55439df0b210",
+      "slug": "temur-rakhimov",
+      "firstname": "Temur",
+      "surname": "Rakhimov",
+      "personType": "real",
+      "countryCode": "TJ",
+      "weightClass": "+100",
+      "category": "Judo",
+      "stats": {
+        "power": 10,
+        "speed": 7,
+        "technique": 8,
+        "kumikata": 9,
+        "newaza": 7
+      },
+      "signatureMoveIds": [
+        "ippon-seoi-nage"
+      ],
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "profileUrl": "https://en.wikipedia.org/wiki/Temur_Rakhimov",
+      "bio": "Tajik heavyweight Temur Rakhimov won bronze at Paris 2024 and is a multiple World Tour medallist.",
+      "gender": "male",
+      "isHidden": false,
+      "rarity": "Common",
+      "country": "Tajikistan"
+    },
+    {
       "id": "dd9ae2a5-e61f-4929-9e05-05ced4d2395f",
       "slug": "shohei-ono",
       "firstname": "Shohei",
@@ -751,6 +1021,33 @@
         "uchi-mata"
       ],
       "country": "Portugal"
+    },
+    {
+      "id": "f274d152-bfd5-419a-8d41-f47976378015",
+      "slug": "barbara-matic",
+      "firstname": "Barbara",
+      "surname": "Matic",
+      "personType": "real",
+      "countryCode": "HR",
+      "weightClass": "-70",
+      "category": "Judo",
+      "stats": {
+        "power": 8,
+        "speed": 9,
+        "technique": 9,
+        "kumikata": 9,
+        "newaza": 8
+      },
+      "signatureMoveIds": [
+        "uchi-mata"
+      ],
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "profileUrl": "https://en.wikipedia.org/wiki/Barbara_Mati%C4%87",
+      "bio": "Croatian middleweight Barbara Matic is a two-time world champion and the Olympic champion from Paris 2024.",
+      "gender": "female",
+      "isHidden": false,
+      "rarity": "Epic",
+      "country": "Croatia"
     }
   ],
   "techniques": [
@@ -1805,6 +2102,12 @@
       "lastUpdated": "2025-04-23T10:00:00Z",
       "active": true
     },
+    "CZ": {
+      "country": "Czechia",
+      "code": "CZ",
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "active": true
+    },
     "DE": {
       "country": "Germany",
       "code": "DE",
@@ -1835,6 +2138,12 @@
       "lastUpdated": "2025-04-23T10:00:00Z",
       "active": true
     },
+    "HR": {
+      "country": "Croatia",
+      "code": "HR",
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "active": true
+    },
     "IT": {
       "country": "Italy",
       "code": "IT",
@@ -1859,10 +2168,22 @@
       "lastUpdated": "2025-04-23T10:00:00Z",
       "active": true
     },
+    "KZ": {
+      "country": "Kazakhstan",
+      "code": "KZ",
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "active": true
+    },
     "MN": {
       "country": "Mongolia",
       "code": "MN",
       "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "MX": {
+      "country": "Mexico",
+      "code": "MX",
+      "lastUpdated": "2026-08-26T00:00:00Z",
       "active": true
     },
     "NL": {
@@ -1883,10 +2204,22 @@
       "lastUpdated": "2025-04-23T10:00:00Z",
       "active": true
     },
+    "TJ": {
+      "country": "Tajikistan",
+      "code": "TJ",
+      "lastUpdated": "2026-08-26T00:00:00Z",
+      "active": true
+    },
     "US": {
       "country": "United States",
       "code": "US",
       "lastUpdated": "2025-04-23T10:00:00Z",
+      "active": true
+    },
+    "UZ": {
+      "country": "Uzbekistan",
+      "code": "UZ",
+      "lastUpdated": "2026-08-26T00:00:00Z",
       "active": true
     },
     "VU": {
