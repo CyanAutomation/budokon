@@ -36,3 +36,33 @@ test('coverage policy reports unsupported rarity and representation imbalance', 
   assert.ok(violations.some(message => message.includes('Common is')));
   assert.ok(violations.some(message => message.includes('Legendary is')));
 });
+
+test('coverage policy reports every violation when the catalogue is too small', () => {
+  const summary = summarizeCoverage([
+    { personType: 'real', isHidden: false, gender: 'male', countryCode: 'JP', weightClass: '-60', rarity: 'Legendary', slug: 'only-judoka' },
+  ]);
+  const violations = coverageViolations(summary, [{
+    gender: 'male',
+    categories: [{ weight: '-60' }, { weight: '-66' }],
+  }], {
+    minimumPublicReal: 2,
+    minimumCountries: 2,
+    maximumCountryShare: 0.5,
+    maximumGenderShare: 0.5,
+    requireEveryWeightClass: true,
+    rarity: {
+      Common: { min: 0.5, max: 1 },
+      Legendary: { min: 0, max: 0.5 },
+    },
+  });
+
+  assert.deepEqual(violations, [
+    'public real catalogue has 1; need at least 2',
+    'catalogue covers 1 countries; need at least 2',
+    'JP has 100.0% of the catalogue; maximum is 50%',
+    'male has 100.0% of the catalogue; maximum is 50%',
+    'weight class -66 has no public real judoka',
+    'Common is 0.0%; target is 50-100%',
+    'Legendary is 100.0%; target is 0-50%',
+  ]);
+});
