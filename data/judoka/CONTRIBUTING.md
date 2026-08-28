@@ -39,5 +39,4 @@ before publishing the record.
 
 Before committing, confirm that the name and basic sporting association are
 credible, add useful aliases where a spelling is common, and run `npm test`,
-`npm run validate`, and `npm run coverage`. Do not create a collection solely
-to add a judoka.
+`npm run validate`, and `npm run coverage`.

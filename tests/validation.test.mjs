@@ -58,9 +58,9 @@ test('fixture-based semantic text rules cover every canonical dataset and nested
 
 test('semantic text validation rejects non-string values without crashing', async () => {
   const root = await sandbox();
-  await change(path.join(root, 'schema/collection.schema.json'), (schema) => { delete schema.properties.name.type; });
-  await change(path.join(root, 'data/collections/featured-judoka.json'), (record) => { record.name = null; });
-  await assert.rejects(validateCanonical(root), /featured-judoka\.name must contain meaningful text/);
+  await change(path.join(root, 'schema/judoka.schema.json'), (schema) => { delete schema.$defs.text.type; });
+  await change(path.join(root, 'data/judoka/ashley-mckenzie.json'), (record) => { record.firstname = null; });
+  await assert.rejects(validateCanonical(root), /ashley-mckenzie\.firstname must contain meaningful text/);
 });
 
 test('future country timestamps are rejected', async () => {
@@ -76,21 +76,6 @@ test('prohibited game-state property names remain rejected if schemas expand', a
     await change(path.join(root, 'data/dataset.json'), dataset => { dataset.futureSchema = { [property]: true }; });
     await assert.rejects(validateCanonical(root), new RegExp(`dataset\\.json\\.futureSchema\\.${property} is a prohibited game-state property`));
   }
-});
-
-test('collections reject invalid references, duplicate IDs and duplicate members', async () => {
-  const invalid = await sandbox();
-  await change(path.join(invalid, 'data/collections/featured-judoka.json'), record => { record.members[0] = '00000000-0000-4000-8000-000000000000'; });
-  await assert.rejects(validateCanonical(invalid), /references unknown judoka UUID/);
-
-  const duplicateId = await sandbox();
-  const featured = JSON.parse(await readFile(path.join(duplicateId, 'data/collections/featured-judoka.json')));
-  await writeFile(path.join(duplicateId, 'data/collections/japanese-judoka.json'), `${JSON.stringify({ ...featured }, null, 2)}\n`);
-  await assert.rejects(validateCanonical(duplicateId), /duplicate collection ID/);
-
-  const duplicateMember = await sandbox();
-  await change(path.join(duplicateMember, 'data/collections/featured-judoka.json'), record => { record.members.push(record.members[0]); });
-  await assert.rejects(validateCanonical(duplicateMember), /must contain unique items/);
 });
 
 test('fictional judoka are hidden by default', async () => {

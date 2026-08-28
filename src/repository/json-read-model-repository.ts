@@ -18,10 +18,10 @@ export class JsonReadModelRepository extends ReadModelRepository {
     })() : value;
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new TypeError("compiled dataset must be an object");
     const model = parsed as CompiledDataset;
-    if (typeof model.datasetVersion !== "string" || model.datasetVersion.trim() === "" || !Array.isArray(model.judoka) || !Array.isArray(model.techniques) || !Array.isArray(model.collections) || !model.countries || !Array.isArray(model.weightCategories)) {
+    if (typeof model.datasetVersion !== "string" || model.datasetVersion.trim() === "" || !Array.isArray(model.judoka) || !Array.isArray(model.techniques) || !model.countries || !Array.isArray(model.weightCategories)) {
       throw new TypeError("invalid compiled dataset");
     }
-    this.model = { ...model, judoka: [...model.judoka].sort(byId), techniques: [...model.techniques].sort(byId), collections: [...model.collections].sort(byId) };
+    this.model = { ...model, judoka: [...model.judoka].sort(byId), techniques: [...model.techniques].sort(byId) };
   }
   get datasetVersion() { return this.model.datasetVersion; }
   get serviceVersion() { if (!this.model.manifest?.serviceVersion) throw new Error("Invalid manifest: missing serviceVersion"); return this.model.manifest.serviceVersion; }
@@ -39,8 +39,6 @@ export class JsonReadModelRepository extends ReadModelRepository {
       || [j.firstname, j.surname, `${j.firstname ?? ""} ${j.surname ?? ""}`.trim(), ...(j.aliases ?? [])]
         .some(value => String(value ?? "").normalize("NFD").replace(/\p{Mark}+/gu, "").toLowerCase().replace(/[^\p{Letter}\p{Number}]+/gu, " ").trim().replace(/\s+/gu, " ") === normalized));
   }
-  listCollections() { return this.model.collections.slice(); }
-  getCollection(key: string | undefined) { return key === undefined ? undefined : this.model.collections.find(collection => collection.id === key); }
   listTechniques() { return this.model.techniques.slice(); }
   getTechnique(id: string | undefined) { return id === undefined ? undefined : this.model.techniques.find(t => t.id === id); }
   listCountries() { return structuredClone(this.model.countries); }

@@ -6,10 +6,8 @@ export function createMcpTools({ catalog, draw }: { catalog: CatalogService; dra
   const versioned = <T extends object>(body: T) => ({ datasetVersion: catalog.repository.datasetVersion, ...body });
   return {
     get_judoka: ({ id, includeHidden }: { id: string; includeHidden?: boolean }, context: RequestContext = {}) => versioned({ judoka: catalog.getJudoka(id, { includeHidden, authorizedInternal: context.authorizedInternal }) ?? null }),
-    search_judoka: ({ query, q, filters = {}, exclude = [], collection, includeHidden }: SearchToolRequest = {}, context: RequestContext = {}) => versioned({ judoka: catalog.searchJudoka({ query: query ?? q, filters, exclude, collection, includeHidden, authorizedInternal: context.authorizedInternal }) }),
+    search_judoka: ({ query, q, filters = {}, exclude = [], includeHidden }: SearchToolRequest = {}, context: RequestContext = {}) => versioned({ judoka: catalog.searchJudoka({ query: query ?? q, filters, exclude, includeHidden, authorizedInternal: context.authorizedInternal }) }),
     draw_judoka: (input: DrawRequest = {}, context: RequestContext = {}) => draw.draw(input, context), list_techniques: () => versioned({ techniques: catalog.listTechniques() }),
-    get_technique: ({ id }: { id: string }) => versioned({ technique: catalog.getTechnique(id) ?? null }),
-    list_collections: () => versioned({ collections: catalog.listCollections() }),
-    get_collection: ({ id }: { id: string }) => versioned({ collection: catalog.getCollection(id) ?? null }), version: () => catalog.version(),
+    get_technique: ({ id }: { id: string }) => versioned({ technique: catalog.getTechnique(id) ?? null }), version: () => catalog.version(),
   };
 }
