@@ -108,15 +108,15 @@ test("search constructs full names consistently when either name is null", () =>
   assert.deepEqual(service.searchJudoka({ query: "solo" }).map(j => j.id), ["firstname-only"]);
 });
 
-test("search composes with filters, exclusions, visibility, and collection membership in UUID order", () => {
+test("search composes with filters, exclusions, and visibility in UUID order", () => {
   const records = [
     { id: "b", slug: "second-match", firstname: "Renée", surname: "Test", gender: "female" },
     { id: "a", slug: "first-match", firstname: "Renee", surname: "Test", gender: "female" },
     { id: "c", slug: "hidden-match", firstname: "Renee", surname: "Test", gender: "female", isHidden: true },
     { id: "d", slug: "other-match", firstname: "Renee", surname: "Test", gender: "male" }
   ];
-  const service = new CatalogService({ listJudoka: () => records, getCollection: id => id === "featured" ? { members: ["a", "second-match"] } : undefined });
-  assert.deepEqual(service.searchJudoka({ query: "renee", filters: { gender: "female" }, exclude: ["second-match"], collection: "featured" }).map(j => j.id), ["a"]);
+  const service = new CatalogService({ listJudoka: () => records });
+  assert.deepEqual(service.searchJudoka({ query: "renee", filters: { gender: "female" }, exclude: ["second-match"] }).map(j => j.id), ["a"]);
   assert.deepEqual(service.searchJudoka({ query: "renee", includeHidden: true, authorizedInternal: true }).map(j => j.id), ["a", "b", "c", "d"]);
 });
 
@@ -126,25 +126,4 @@ test("REST and MCP searches conform and an absent query retains list behavior", 
   assert.deepEqual(restResult, mcpResult);
   assert.deepEqual(rest.listJudoka().body, catalog.listJudoka());
   assert.deepEqual(mcp.search_judoka().judoka, catalog.listJudoka());
-});
-
-test("collections support repository, catalog, REST, and MCP lookup", () => {
-  const collections = catalog.listCollections();
-  assert.ok(collections.length > 0);
-  assert.deepEqual(repository.getCollection(collections[0].id), collections[0]);
-  assert.deepEqual(rest.listCollections().body, collections);
-  assert.deepEqual(rest.getCollection({ params: { id: collections[0].id } }).body, collections[0]);
-  assert.equal(rest.getCollection({ params: { id: "missing" } }).status, 404);
-  assert.deepEqual(mcp.list_collections().collections, collections);
-  assert.deepEqual(mcp.get_collection({ id: collections[0].id }).collection, collections[0]);
-});
-
-test("collection draws constrain membership, preserve hidden visibility, and are deterministic", () => {
-  const collection = catalog.getCollection("japanese-judoka");
-  const visible = draw.draw({ collection: collection.id, count: 1, seed: "collection-round" });
-  assert.ok(collection.members.includes(visible.judoka[0].id));
-  assert.equal(visible.judoka[0].isHidden, false);
-  assert.deepEqual(draw.draw({ collection: collection.id, count: 1, seed: "collection-round" }), visible);
-  assert.equal(draw.draw({ collection: collection.id, count: 2, seed: "internal", includeHidden: true }, { authorizedInternal: true }).poolSize, 2);
-  assert.throws(() => draw.draw({ collection: collection.id, count: 2 }), /exceeds eligible pool/);
 });

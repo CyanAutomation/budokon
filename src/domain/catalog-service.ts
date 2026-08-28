@@ -39,19 +39,14 @@ export class CatalogService {
   listJudoka(options: ListJudokaOptions = {}): Judoka[] {
     const filters = normalizeFilters(options.filters); const exclusions = new Set((options.exclude ?? []).map(String));
     const includeHidden = options.includeHidden === true && options.authorizedInternal === true;
-    const collection = options.collection === undefined ? undefined : String(options.collection);
-    const record = collection === undefined ? undefined : this.repository.getCollection(collection);
-    const members = record ? new Set((record.members ?? []).map(String)) : undefined;
     return this.repository.listJudoka().filter(j => includeHidden || j.isHidden !== true)
       .filter(j => Object.entries(filters).every(([field, values]) => field === "signatureMoveIds"
         ? values.some(value => j.signatureMoveIds.includes(value))
         : j[field] != null && values.includes(String(j[field]))))
-      .filter(j => !exclusions.has(j.id) && !exclusions.has(j.slug))
-      .filter(j => collection === undefined || (members ? members.has(j.id) || members.has(j.slug) : j.collections?.includes(collection)));
+      .filter(j => !exclusions.has(j.id) && !exclusions.has(j.slug));
   }
   searchJudoka(options: SearchJudokaOptions = {}) { const query = normalizeSearchText(options.query ?? options.q); return (query ? this.listJudoka(options).filter(j => searchableValues(j).some(value => value.includes(query))) : this.listJudoka(options)).sort(query ? byImmutableId : () => 0); }
   getJudoka(id: string | undefined, options: Pick<ListJudokaOptions, "includeHidden" | "authorizedInternal"> = {}) { const match = this.repository.getJudoka(id); return match && (match.isHidden !== true || (options.includeHidden === true && options.authorizedInternal === true)) ? match : undefined; }
   listTechniques() { return this.repository.listTechniques(); } getTechnique(id: string | undefined) { return this.repository.getTechnique(id); }
-  listCollections() { return this.repository.listCollections(); } getCollection(id: string | undefined) { return this.repository.getCollection(id); }
   listCountries() { return this.repository.listCountries(); } listWeightCategories() { return this.repository.listWeightCategories(); }
 }

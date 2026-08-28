@@ -20,7 +20,7 @@ function values(params: URLSearchParams, name: string): string[] {
 }
 
 function parseListQuery(params: URLSearchParams) {
-  const allowed = new Set(["q", "exclude", "collection", "includeHidden", "limit", "cursor", ...FILTERS]);
+  const allowed = new Set(["q", "exclude", "includeHidden", "limit", "cursor", ...FILTERS]);
   params.forEach((_value, key) => { if (!allowed.has(key)) throw new TypeError(`unsupported query parameter: ${key}`); });
   const filters: Record<string, string[]> = {};
   for (const field of FILTERS) {
@@ -30,15 +30,13 @@ function parseListQuery(params: URLSearchParams) {
   }
   const hidden = values(params, "includeHidden");
   if (hidden.length > 1 || (hidden.length === 1 && hidden[0] !== "true" && hidden[0] !== "false")) throw new TypeError("includeHidden must be true or false");
-  const collection = values(params, "collection");
   const query = values(params, "q");
   const limit = values(params, "limit");
   const cursor = values(params, "cursor");
-  if (collection.length > 1) throw new TypeError("collection must have one value");
   if (query.length > 1) throw new TypeError("q must have one value");
   if (limit.length > 1 || (limit.length === 1 && !/^(?:[1-9]|[1-9][0-9]|100)$/.test(limit[0]))) throw new TypeError("limit must be an integer from 1 through 100");
   if (cursor.length > 1) throw new TypeError("cursor must have one value");
-  return { filters: filters as Filters, exclude: values(params, "exclude"), collection: collection[0], query: query[0], includeHidden: hidden[0] === "true", limit: limit[0] === undefined ? undefined : Number(limit[0]), cursor: cursor[0] };
+  return { filters: filters as Filters, exclude: values(params, "exclude"), query: query[0], includeHidden: hidden[0] === "true", limit: limit[0] === undefined ? undefined : Number(limit[0]), cursor: cursor[0] };
 }
 
 function paginateJudoka<T extends { id: string }>(records: T[], limit: number | undefined, cursor: string | undefined) {
@@ -54,10 +52,10 @@ function paginateJudoka<T extends { id: string }>(records: T[], limit: number | 
 function validateDrawBody(value: unknown): DrawRequest {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new TypeError("request body must be a JSON object");
   const body = value as Record<string, unknown>;
-  const allowed = new Set(["count", "seed", "algorithm", "filters", "exclude", "collection", "includeHidden"]);
+  const allowed = new Set(["count", "seed", "algorithm", "filters", "exclude", "includeHidden"]);
   for (const key of Object.keys(body)) if (!allowed.has(key)) throw new TypeError(`unsupported body field: ${key}`);
   if (body.count !== undefined && (!Number.isSafeInteger(body.count) || (body.count as number) < 1)) throw new TypeError("count must be a positive integer");
-  for (const key of ["seed", "algorithm", "collection"] as const) if (body[key] !== undefined && typeof body[key] !== "string") throw new TypeError(`${key} must be a string`);
+  for (const key of ["seed", "algorithm"] as const) if (body[key] !== undefined && typeof body[key] !== "string") throw new TypeError(`${key} must be a string`);
   if (body.includeHidden !== undefined && typeof body.includeHidden !== "boolean") throw new TypeError("includeHidden must be a boolean");
   if (body.exclude !== undefined && (!Array.isArray(body.exclude) || body.exclude.some(item => typeof item !== "string"))) throw new TypeError("exclude must be an array of strings");
   if (body.filters !== undefined) {
@@ -98,7 +96,6 @@ export function createRestRouter({ catalog, draw }: { catalog: CatalogService; d
         return json(paginateJudoka(catalog.searchJudoka({ ...query, authorizedInternal }), query.limit, query.cursor));
       }
       if (resource === "techniques" && request.method === "GET") return id === undefined ? json(catalog.listTechniques()) : (catalog.getTechnique(id) ? json(catalog.getTechnique(id)) : failure(404, "not_found", "technique not found"));
-      if (resource === "collections" && request.method === "GET") return id === undefined ? json(catalog.listCollections()) : (catalog.getCollection(id) ? json(catalog.getCollection(id)) : failure(404, "not_found", "collection not found"));
       if (resource === "countries" && request.method === "GET" && id === undefined) return json(catalog.listCountries());
       if (resource === "weight-categories" && request.method === "GET" && id === undefined) return json(catalog.listWeightCategories());
       if (resource === "version" && request.method === "GET" && id === undefined) return json(catalog.version());
@@ -111,10 +108,10 @@ export function createRestRouter({ catalog, draw }: { catalog: CatalogService; d
         try { return json(draw.draw(body, { authorizedInternal })); }
         catch (error) { if (error instanceof RangeError && /exceeds eligible pool size/.test(error.message)) return failure(409, "conflict", "requested count exceeds the eligible pool"); throw error; }
       }
-      const known = new Set(["judoka", "techniques", "collections", "countries", "weight-categories", "draw", "version", "status", "coverage"]);
+      const known = new Set(["judoka", "techniques", "countries", "weight-categories", "draw", "version", "status", "coverage"]);
       return known.has(resource ?? "") ? failure(405, "method_not_allowed", "method not allowed") : failure(404, "not_found", "route not found");
     } catch (error) {
-      const expectedInputError = error instanceof Error && /^(unsupported (query parameter|body field|filter|draw algorithm)|filter .+ must |includeHidden must |collection must |q must |limit must |cursor (must|requires) |content-type must |request body |count must |seed must |algorithm must |exclude must )/.test(error.message);
+      const expectedInputError = error instanceof Error && /^(unsupported (query parameter|body field|filter|draw algorithm)|filter .+ must |includeHidden must |q must |limit must |cursor (must|requires) |content-type must |request body |count must |seed must |algorithm must |exclude must )/.test(error.message);
       if (expectedInputError) return badRequest(error.message);
       return failure(500, "internal_error", "internal server error");
     }
