@@ -17,7 +17,6 @@ paths:
         - $ref: '#/components/parameters/Rarity'
         - $ref: '#/components/parameters/PersonType'
         - $ref: '#/components/parameters/SignatureMoveIds'
-        - $ref: '#/components/parameters/Collection'
         - $ref: '#/components/parameters/Exclude'
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Cursor'
@@ -36,13 +35,6 @@ paths:
       summary: Get a technique
       parameters: [ { $ref: '#/components/parameters/Id' } ]
       responses: { '200': { description: Technique }, '404': { $ref: '#/components/responses/NotFound' } }
-  /v1/collections:
-    get: { summary: List collections, responses: { '200': { description: Collection array } } }
-  /v1/collections/{id}:
-    get:
-      summary: Get a collection
-      parameters: [ { $ref: '#/components/parameters/Id' } ]
-      responses: { '200': { description: Collection }, '404': { $ref: '#/components/responses/NotFound' } }
   /v1/countries:
     get: { summary: List supported countries, responses: { '200': { description: Country map } } }
   /v1/weight-categories:
@@ -69,7 +61,6 @@ paths:
                 algorithm: { type: string, example: budokon-v1 }
                 filters: { $ref: '#/components/schemas/Filters' }
                 exclude: { type: array, items: { type: string } }
-                collection: { type: string }
       responses:
         '200': { description: Draw result }
         '400': { $ref: '#/components/responses/BadRequest' }
@@ -84,7 +75,6 @@ components:
     Rarity: { name: rarity, in: query, schema: { type: string, example: Legendary } }
     PersonType: { name: personType, in: query, schema: { type: string, example: real } }
     SignatureMoveIds: { name: signatureMoveIds, in: query, schema: { type: string, example: seoi-nage } }
-    Collection: { name: collection, in: query, schema: { type: string } }
     Exclude: { name: exclude, in: query, schema: { type: string } }
     Limit: { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
     Cursor: { name: cursor, in: query, schema: { type: string, description: id returned as nextCursor } }

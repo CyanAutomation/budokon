@@ -38,12 +38,10 @@ function mcpError(id: RpcRequest["id"], code: number, message: string) {
 
 const toolDefinitions = [
   ["get_judoka", "Get one judoka by immutable ID or slug.", { type: "object", properties: { id: { type: "string" }, includeHidden: { type: "boolean" } }, required: ["id"] }],
-  ["search_judoka", "Search and filter judoka.", { type: "object", properties: { query: { type: "string" }, q: { type: "string" }, filters: { type: "object" }, exclude: { type: "array", items: { type: "string" } }, collection: { type: "string" }, includeHidden: { type: "boolean" } } }],
-  ["draw_judoka", "Draw one or more judoka, optionally deterministically with a seed.", { type: "object", properties: { count: { type: "integer", minimum: 1 }, seed: { type: "string" }, algorithm: { type: "string" }, filters: { type: "object" }, exclude: { type: "array", items: { type: "string" } }, collection: { type: "string" }, includeHidden: { type: "boolean" } } }],
+  ["search_judoka", "Search and filter judoka.", { type: "object", properties: { query: { type: "string" }, q: { type: "string" }, filters: { type: "object" }, exclude: { type: "array", items: { type: "string" } }, includeHidden: { type: "boolean" } } }],
+  ["draw_judoka", "Draw one or more judoka, optionally deterministically with a seed.", { type: "object", properties: { count: { type: "integer", minimum: 1 }, seed: { type: "string" }, algorithm: { type: "string" }, filters: { type: "object" }, exclude: { type: "array", items: { type: "string" } }, includeHidden: { type: "boolean" } } }],
   ["list_techniques", "List all techniques.", { type: "object", properties: {} }],
   ["get_technique", "Get one technique by ID.", { type: "object", properties: { id: { type: "string" } }, required: ["id"] }],
-  ["list_collections", "List all collections.", { type: "object", properties: {} }],
-  ["get_collection", "Get one collection by ID.", { type: "object", properties: { id: { type: "string" } }, required: ["id"] }],
   ["version", "Get dataset and draw-algorithm versions.", { type: "object", properties: {} }]
 ] as const;
 

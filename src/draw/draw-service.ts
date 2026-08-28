@@ -11,10 +11,9 @@ export { DRAW_ALGORITHM, SUPPORTED_DRAW_ALGORITHMS } from "./algorithm.js";
  *    its string value must equal one allowed value.
  * 3. Hide hidden records unless both visibility flags are true. Exclusions are
  *    stringified, de-duplicated, ordered, and match either UUID or slug.
- * 4. If a collection record exists, its UUIDs/slugs define membership; otherwise
- *    candidate `collections` fields define membership. Order the resulting pool by
- *    UUID using JavaScript's locale-independent UTF-16 relational comparison.
- * 5. For seeded draws, encode exactly JSON.stringify({version, collection, filters,
+ * 4. Order the resulting pool by UUID using JavaScript's locale-independent UTF-16
+ *    relational comparison.
+ * 5. For seeded draws, encode exactly JSON.stringify({version, filters,
  *    exclude, count, seed}) in that property order. FNV-1a consumes Unicode code
  *    points (not UTF-8 bytes), with 32-bit Math.imul arithmetic. Each random value
  *    then uses Mulberry32's unsigned 32-bit arithmetic below and division by 2^32.
@@ -30,10 +29,9 @@ export class DrawService {
     if (!SUPPORTED_DRAW_ALGORITHMS.includes(algorithm)) throw new RangeError(`unsupported draw algorithm: ${algorithm}`);
     const count = input.count ?? 1; if (!Number.isSafeInteger(count) || count < 1) throw new RangeError("count must be a positive integer");
     const filters = normalizeFilters(input.filters); const exclude = [...new Set((input.exclude ?? []).map(String))].sort();
-    const collection = input.collection === undefined ? undefined : String(input.collection);
-    const pool = this.catalog.listJudoka({ collection, filters, exclude, includeHidden: input.includeHidden, authorizedInternal: context.authorizedInternal }).sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+    const pool = this.catalog.listJudoka({ filters, exclude, includeHidden: input.includeHidden, authorizedInternal: context.authorizedInternal }).sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
     if (count > pool.length) throw new RangeError(`count ${count} exceeds eligible pool size ${pool.length}`);
-    const seed = input.seed === undefined ? undefined : String(input.seed); const random = seed === undefined ? this.random : seededRandom(JSON.stringify({ version: this.catalog.repository.datasetVersion, collection, filters, exclude, count, seed }));
+    const seed = input.seed === undefined ? undefined : String(input.seed); const random = seed === undefined ? this.random : seededRandom(JSON.stringify({ version: this.catalog.repository.datasetVersion, filters, exclude, count, seed }));
     const remaining = pool.slice(); const judoka = []; while (judoka.length < count) judoka.push(remaining.splice(Math.floor(random() * remaining.length), 1)[0]!);
     return { datasetVersion: this.catalog.repository.datasetVersion, algorithm: DRAW_ALGORITHM, ...(seed === undefined ? {} : { seed }), poolSize: pool.length, judoka };
   }

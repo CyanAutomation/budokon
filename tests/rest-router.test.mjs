@@ -14,7 +14,7 @@ const body = response => response.json();
 test("every documented catalogue and metadata endpoint conforms", async () => {
   for (const [path, expected] of [
     ["/v1/judoka", catalog.listJudoka()], ["/v1/techniques", catalog.listTechniques()],
-    ["/v1/collections", catalog.listCollections()], ["/v1/countries", catalog.listCountries()],
+    ["/v1/countries", catalog.listCountries()],
     ["/v1/weight-categories", catalog.listWeightCategories()], ["/v1/version", catalog.version()]
   ]) {
     const response = await request(path); assert.equal(response.status, 200, path);
@@ -22,8 +22,7 @@ test("every documented catalogue and metadata endpoint conforms", async () => {
   }
   for (const [path, expected] of [
     ["/v1/judoka/shozo-fujii", catalog.getJudoka("shozo-fujii")],
-    [`/v1/techniques/${catalog.listTechniques()[0].id}`, catalog.listTechniques()[0]],
-    [`/v1/collections/${catalog.listCollections()[0].id}`, catalog.listCollections()[0]]
+    [`/v1/techniques/${catalog.listTechniques()[0].id}`, catalog.listTechniques()[0]]
   ]) assert.deepEqual(await body(await request(path)), expected);
 });
 
@@ -111,8 +110,11 @@ test("draw succeeds and impossible counts have the documented conflict response"
 
 test("missing resources, unsupported input, methods, and unexpected failures are stable", async () => {
   assert.equal((await request("/v1/judoka/missing")).status, 404);
+  assert.equal((await request("/v1/collections")).status, 404);
   assert.equal((await request("/v1/unknown")).status, 404);
   assert.equal((await request("/v1/judoka?unknown=x")).status, 400);
+  assert.equal((await request("/v1/judoka?collection=featured")).status, 400);
+  assert.equal((await request("/v1/draw", { method: "POST", headers: { "content-type": "application/json" }, body: '{"collection":"featured"}' })).status, 400);
   assert.equal((await request("/v1/version", { method: "POST" })).status, 405);
   const broken = createRestRouter({ catalog: { version() { throw new Error("secret database detail"); } }, draw: {} });
   const response = await broken(new Request("https://example.test/v1/version"));

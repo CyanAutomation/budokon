@@ -3,7 +3,7 @@
     "datasetVersion": "golden-2026-08",
     "manifest": { "serviceVersion": "1.0.0", "sourceGitCommit": "0000000000000000000000000000000000000000", "checksums": { "budokon.json": "sha256:0000000000000000000000000000000000000000000000000000000000000000" }, "drawAlgorithms": ["budokon-v1"], "defaultDrawAlgorithm": "budokon-v1" },
     "judoka": [
-      { "id": "00000000-0000-4000-8000-000000000004", "slug": "delta", "gender": "female", "countryCode": "JP", "rarity": "common", "collections": ["fallback"] },
+      { "id": "00000000-0000-4000-8000-000000000004", "slug": "delta", "gender": "female", "countryCode": "JP", "rarity": "common" },
       { "id": "00000000-0000-4000-8000-000000000001", "slug": "alpha", "gender": "female", "countryCode": "JP", "rarity": "rare" },
       { "id": "00000000-0000-4000-8000-000000000006", "slug": "hidden", "gender": "female", "countryCode": "JP", "rarity": "common", "isHidden": true },
       { "id": "00000000-0000-4000-8000-000000000003", "slug": "gamma", "gender": "male", "countryCode": "FR", "rarity": "common" },
@@ -11,9 +11,6 @@
       { "id": "00000000-0000-4000-8000-000000000005", "slug": "epsilon", "gender": "male", "countryCode": "JP", "rarity": "rare" }
     ],
     "techniques": [],
-    "collections": [
-      { "id": "featured", "name": "Featured", "members": ["delta", "00000000-0000-4000-8000-000000000001", "hidden"] }
-    ],
     "countries": {},
     "weightCategories": []
   },
@@ -23,11 +20,6 @@
       "request": { "algorithm": "budokon-v1", "seed": "大会🥋 café", "count": 3, "filters": { "rarity": ["common", "rare"], "countryCode": ["JP", "FR"], "gender": ["female", "male"] }, "exclude": ["gamma", "alpha", "alpha"] },
       "equivalentRequest": { "seed": "大会🥋 café", "count": 3, "exclude": ["alpha", "gamma"], "filters": { "gender": ["male", "female"], "countryCode": ["FR", "JP"], "rarity": ["rare", "common"] }, "algorithm": "budokon-v1" },
       "expectedIds": ["00000000-0000-4000-8000-000000000002", "00000000-0000-4000-8000-000000000005", "00000000-0000-4000-8000-000000000004"]
-    },
-    {
-      "name": "collection membership and UUID exclusion",
-      "request": { "algorithm": "budokon-v1", "seed": "collection", "count": 1, "collection": "featured", "exclude": ["00000000-0000-4000-8000-000000000004"] },
-      "expectedIds": ["00000000-0000-4000-8000-000000000001"]
     },
     {
       "name": "full pool prevents duplicates",
