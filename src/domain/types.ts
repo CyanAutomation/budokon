@@ -16,12 +16,10 @@ export interface Judoka {
   personType?: string;
   signatureMoveIds: string[];
   isHidden?: boolean;
-  collections?: string[];
   [key: string]: JsonValue | undefined;
 }
 
 export interface Technique { id: string; [key: string]: JsonValue; }
-export interface Collection { id: string; name: string; members: string[]; [key: string]: JsonValue | undefined; }
 export interface Country { code: string; country: string; active: boolean; [key: string]: JsonValue; }
 export interface WeightCategoryGroup { gender: string; categories: JsonValue[]; [key: string]: JsonValue; }
 
@@ -42,7 +40,6 @@ export interface CompiledDataset {
   techniques: Technique[];
   countries: Record<string, Country>;
   weightCategories: WeightCategoryGroup[];
-  collections: Collection[];
   /** Optional deployment metadata; it is deliberately not embedded in budokon.json. */
   manifest?: ReleaseManifest;
 }
@@ -50,7 +47,7 @@ export interface CompiledDataset {
 export type FilterField = "countryCode" | "gender" | "weightClass" | "rarity" | "personType" | "signatureMoveIds";
 export type Filters = Partial<Record<FilterField, string | string[]>>;
 export interface VisibilityOptions { includeHidden?: boolean; authorizedInternal?: boolean; }
-export interface ListJudokaOptions extends VisibilityOptions { filters?: Filters; exclude?: string[]; collection?: string; }
+export interface ListJudokaOptions extends VisibilityOptions { filters?: Filters; exclude?: string[]; }
 export interface SearchJudokaOptions extends ListJudokaOptions { query?: string; q?: string; }
 export interface DrawRequest extends ListJudokaOptions { count?: number; seed?: string; algorithm?: string; }
 export interface RequestContext { authorizedInternal?: boolean; }

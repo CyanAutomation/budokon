@@ -104,45 +104,37 @@ function unique(items, field, label) {
 /** Parse and validate all canonical datasets, including cross-record rules. */
 export async function validateCanonical(root = defaultRoot) {
   const schemaDir = path.join(root, 'schema');
-  const [judokaSchema, techniqueSchema, collectionSchema, countriesSchema, weightsSchema, datasetSchema] = await Promise.all(
-    ['judoka', 'technique', 'collection', 'countries', 'weight-categories', 'dataset'].map((name) => parse(path.join(schemaDir, `${name}.schema.json`))),
+  const [judokaSchema, techniqueSchema, countriesSchema, weightsSchema, datasetSchema] = await Promise.all(
+    ['judoka', 'technique', 'countries', 'weight-categories', 'dataset'].map((name) => parse(path.join(schemaDir, `${name}.schema.json`))),
   );
-  const [judokaFiles, techniqueFiles, collectionFiles, countries, weights, dataset] = await Promise.all([
+  const [judokaFiles, techniqueFiles, countries, weights, dataset] = await Promise.all([
     records(path.join(root, 'data/judoka')), records(path.join(root, 'data/techniques')),
-    records(path.join(root, 'data/collections')),
     parse(path.join(root, 'data/reference/countries.json')), parse(path.join(root, 'data/reference/weight-categories.json')),
     parse(path.join(root, 'data/dataset.json')),
   ]);
   for (const file of judokaFiles) validateSchema(file.value, judokaSchema, `data/judoka/${file.name}`);
   for (const file of techniqueFiles) validateSchema(file.value, techniqueSchema, `data/techniques/${file.name}`);
-  for (const file of collectionFiles) validateSchema(file.value, collectionSchema, `data/collections/${file.name}`);
   validateSchema(countries, countriesSchema, 'data/reference/countries.json');
   validateSchema(weights, weightsSchema, 'data/reference/weight-categories.json');
   validateSchema(dataset, datasetSchema, 'data/dataset.json');
   for (const { name, value } of judokaFiles) rejectGameStateProperties(value, `data/judoka/${name}`);
   for (const { name, value } of techniqueFiles) rejectGameStateProperties(value, `data/techniques/${name}`);
-  for (const { name, value } of collectionFiles) rejectGameStateProperties(value, `data/collections/${name}`);
   rejectGameStateProperties(countries, 'data/reference/countries.json');
   rejectGameStateProperties(weights, 'data/reference/weight-categories.json');
   rejectGameStateProperties(dataset, 'data/dataset.json');
-  const judoka = judokaFiles.map(({ value }) => value), techniques = techniqueFiles.map(({ value }) => value), collections = collectionFiles.map(({ value }) => value);
+  const judoka = judokaFiles.map(({ value }) => value), techniques = techniqueFiles.map(({ value }) => value);
   unique(judoka, 'id', 'judoka UUID'); unique(judoka, 'handles', 'judoka slug or legacy slug');
   const names = new Map();
   for (const record of judoka) for (const name of [`${record.firstname} ${record.surname}`, ...(record.aliases ?? [])]) {
     const normalized = normalizedName(name);
     if (names.has(normalized) && names.get(normalized) !== record.slug) throw new Error(`ambiguous normalized judoka name ${JSON.stringify(normalized)} in ${names.get(normalized)} and ${record.slug}`);
     names.set(normalized, record.slug);
-  } unique(techniques, 'id', 'technique ID'); unique(collections, 'id', 'collection ID');
+  } unique(techniques, 'id', 'technique ID');
   for (const file of judokaFiles) if (path.parse(file.name).name !== file.value.slug) {
     throw new Error(`data/judoka/${file.name}: filename must match canonical slug ${file.value.slug}`);
   }
   for (const file of techniqueFiles) if (path.parse(file.name).name !== file.value.id) {
     throw new Error(`data/techniques/${file.name}: filename must match canonical ID ${file.value.id}`);
-  }
-  const judokaIds = new Set(judoka.map(({ id }) => id));
-  for (const file of collectionFiles) {
-    if (path.parse(file.name).name !== file.value.id) throw new Error(`data/collections/${file.name}: filename must match collection ID ${file.value.id}`);
-    for (const member of file.value.members) if (!judokaIds.has(member)) throw new Error(`collection ${file.value.id} references unknown judoka UUID ${member}`);
   }
   const techniqueIds = new Set(techniques.map(({ id }) => id));
   const weightMap = new Map();
@@ -173,12 +165,11 @@ export async function validateCanonical(root = defaultRoot) {
     meaningfulText(record.japanese, `${record.id}.japanese`);
     meaningfulText(record.description, `${record.id}.description`);
   }
-  for (const record of collections) meaningfulText(record.name, `${record.id}.name`);
   for (const [groupIndex, group] of weights.entries()) {
     meaningfulText(group.description, `weights[${groupIndex}].description`);
     for (const [categoryIndex, category] of group.categories.entries()) meaningfulText(category.descriptor, `weights[${groupIndex}].categories[${categoryIndex}].descriptor`);
   }
-  return { judoka, techniques, collections, countries, weights, dataset };
+  return { judoka, techniques, countries, weights, dataset };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

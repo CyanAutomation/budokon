@@ -76,7 +76,6 @@ The core TypeScript library contains shared application and domain behaviour suc
 * judoka lookup
 * search and filtering
 * exclusions
-* collection membership
 * deterministic drawing
 * dataset metadata
 * technique lookup
@@ -142,10 +141,6 @@ They are not the source of truth.
 │   │   ├── seoi-nage.json
 │   │   └── ...
 │   │
-│   ├── collections/
-│   │   ├── paris-2024.json
-│   │   └── ...
-│   │
 │   └── reference/
 │       ├── countries.json
 │       └── weight-categories.json
@@ -153,7 +148,6 @@ They are not the source of truth.
 ├── schema/
 │   ├── judoka.schema.json
 │   ├── technique.schema.json
-│   ├── collection.schema.json
 │   ├── countries.schema.json
 │   └── weight-categories.schema.json
 │
@@ -186,7 +180,6 @@ dist/
 ├── budokon.json
 ├── judoka.json
 ├── techniques.json
-├── collections.json
 └── manifest.json
 ```
 
@@ -282,7 +275,7 @@ The architecture deliberately keeps the canonical dataset independent of the Typ
 
 ## ✏️ Editing and Building the Data
 
-The individual JSON records under `data/judoka/` and `data/techniques/`, together with the files under `data/reference/` and `data/collections/`, are the canonical editorial sources.
+The individual JSON records under `data/judoka/` and `data/techniques/`, together with the files under `data/reference/`, are the canonical editorial sources.
 
 Do not edit generated files under `dist/` directly.
 
@@ -331,8 +324,8 @@ The validator parses every canonical source file and applies schema, referential
 The compiler then creates deterministic runtime aggregates.
 
 The canonical output order is part of the file format: aggregate keys appear as
-`datasetVersion`, `judoka`, `techniques`, `collections`, `countries`, then
-`weightCategories`; judoka, techniques, and collections are ordered by `id`;
+`datasetVersion`, `judoka`, `techniques`, `countries`, then `weightCategories`;
+judoka and techniques are ordered by `id`;
 country object keys are ordered by country code; weight-category groups are
 ordered by `gender`, and their categories by `weight`. All comparisons use raw
 Unicode code-unit order and never locale-sensitive collation. Manifest record
@@ -366,7 +359,6 @@ For example:
   "datasetVersion": "2026.08.1",
   "judoka": [],
   "techniques": [],
-  "collections": [],
   "countries": {},
   "weightCategories": []
 }
@@ -775,47 +767,6 @@ Technique terminology and classification should normally follow recognised Kodok
 
 ---
 
-## 🗂️ Collections
-
-Collections allow reusable subsets of the catalogue to be maintained centrally.
-
-Examples might include:
-
-```text
-paris-2024
-tokyo-2020
-japanese-legends
-current-world-tour
-fictional
-```
-
-Example:
-
-```json
-{
-  "id": "paris-2024",
-  "name": "Paris 2024 Olympians",
-  "members": [
-    "57a86958-73c3-4dd3-b8b8-f0bbaab58b67"
-  ]
-}
-```
-
-Collections allow games to request meaningful shared pools without independently maintaining athlete lists.
-
-For example:
-
-```json
-{
-  "count": 1,
-  "collection": "paris-2024"
-}
-```
-
-Collections are editorial catalogue metadata and do not contain game progress or player-specific state.
-
----
-
 ## ✍️ Canonical Content Policy
 
 Canonical records must contain intentional, publishable content rather than scaffolding.
@@ -864,7 +815,6 @@ This includes decisions such as:
 * biography wording
 * which athletes should be included
 * whether an athlete is hidden or available to consumers
-* which collections an athlete belongs to
 
 Not every individual field requires formal provenance.
 
@@ -884,7 +834,6 @@ The draw operation should support:
 * filtering
 * exclusions
 * multiple draws without duplicates
-* collections
 * deterministic seeded draws
 * explicit inclusion of hidden content where appropriate
 
@@ -959,7 +908,6 @@ Given:
 * the same draw algorithm version
 * the same filters
 * the same exclusions
-* the same collection
 * the same seed
 
 BU-DO-KON must return the same result.
@@ -989,8 +937,6 @@ GET  /v1/judoka
 GET  /v1/judoka/:id
 GET  /v1/techniques
 GET  /v1/techniques/:id
-GET  /v1/collections
-GET  /v1/collections/:id
 GET  /v1/countries
 GET  /v1/weight-categories
 POST /v1/draw
@@ -1015,7 +961,7 @@ REST list parameters use one convention: a multi-value parameter may be
 repeated, comma-separated, or both (`?countryCode=JP,FR&countryCode=GE`). Empty
 values and unknown parameters are rejected. Values within one filter use OR
 semantics; different filter fields use AND semantics. `exclude` follows the
-same multi-value convention, while `q`, `collection`, and `includeHidden` are
+same multi-value convention, while `q` and `includeHidden` are
 single-value parameters.
 
 `POST /v1/draw` requires an `application/json` content type and a JSON object.
@@ -1036,8 +982,8 @@ AND semantics.
 `GET /v1/judoka?q=shozo` and the MCP `search_judoka` tool (with a `query`
 string) use the same catalogue `searchJudoka` operation. Search covers the
 canonical slug, first name, surname, the `first name + surname` display name,
-and every alias. Structured filters, `exclude`, visibility authorization, and
-an optional `collection` are applied to the same result set. With no `q` /
+and every alias. Structured filters, `exclude`, and visibility authorization
+are applied to the same result set. With no `q` /
 `query` value, both transports retain the existing list and filter semantics.
 
 Search normalization is deterministic: Unicode text is decomposed with
@@ -1100,7 +1046,6 @@ search_judoka
 draw_judoka
 list_techniques
 get_technique
-list_collections
 ```
 
 Example:
@@ -1215,7 +1160,6 @@ Examples:
 ```text
 schema/judoka.schema.json
 schema/technique.schema.json
-schema/collection.schema.json
 schema/countries.schema.json
 ```
 
@@ -1233,17 +1177,7 @@ judoka.signatureMoveIds[]
 techniques.id
 ```
 
-and:
-
-```text
-collection.members[]
-        ↓
-judoka.id
-```
-
 A judoka must not reference a technique that does not exist.
-
-A collection must not reference a judoka that does not exist.
 
 ### Semantic validation
 
@@ -1282,7 +1216,6 @@ The build should create:
 ```text
 dist/judoka.json
 dist/techniques.json
-dist/collections.json
 dist/budokon.json
 dist/manifest.json
 ```
@@ -1409,7 +1342,6 @@ getJudoka(...)
 searchJudoka(...)
 drawJudoka(...)
 getTechnique(...)
-listCollections(...)
 getDatasetMetadata(...)
 ```
 
@@ -1459,7 +1391,7 @@ TypeScript provides the core, API, MCP, validation, and build tooling while rema
 
 ### Shared attributes belong in BU-DO-KON
 
-Reusable ratings, rarity, biographies, signature techniques, aliases, collections, and other catalogue-level metadata may be centrally curated.
+Reusable ratings, rarity, biographies, signature techniques, aliases, and other catalogue-level metadata may be centrally curated.
 
 ### Game state belongs in games
 
@@ -1483,7 +1415,7 @@ A dataset release can be regenerated from its canonical source commit.
 
 ### Draws are reproducible
 
-A dataset version, draw algorithm version, seed, filters, exclusions, and collection are sufficient to reproduce a deterministic selection.
+A dataset version, draw algorithm version, seed, filters, and exclusions are sufficient to reproduce a deterministic selection.
 
 ### Hosting must not affect semantics
 
@@ -1503,7 +1435,6 @@ Future development may include:
 * competition achievements
 * richer aliases and transliterations
 * image metadata
-* curated collections
 * eras or generations
 * expansion sets
 * weighted draw modes

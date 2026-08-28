@@ -8,10 +8,9 @@ const missing = (): ApiResponse<{ error: string }> => ({ status: 404, body: { er
 const queryFilters = (query?: Record<string, unknown> | null) => Object.fromEntries(["countryCode", "gender", "weightClass", "rarity", "personType", "signatureMoveIds"].filter(k => query?.[k] !== undefined).map(k => [k, query![k]]));
 export function createRestHandlers({ catalog, draw }: { catalog: CatalogService; draw: DrawService }) {
   return {
-    listJudoka: ({ query = {}, authorizedInternal = false }: ApiRequest = {}) => ok(catalog.searchJudoka({ query: String(query?.q ?? ""), filters: queryFilters(query) as never, exclude: query?.exclude === undefined ? [] : Array.isArray(query.exclude) ? query.exclude.map(String) : [String(query.exclude)], collection: query?.collection === undefined ? undefined : String(query.collection), includeHidden: query?.includeHidden === true, authorizedInternal })),
+    listJudoka: ({ query = {}, authorizedInternal = false }: ApiRequest = {}) => ok(catalog.searchJudoka({ query: String(query?.q ?? ""), filters: queryFilters(query) as never, exclude: query?.exclude === undefined ? [] : Array.isArray(query.exclude) ? query.exclude.map(String) : [String(query.exclude)], includeHidden: query?.includeHidden === true, authorizedInternal })),
     getJudoka: ({ params = {}, query = {}, authorizedInternal = false }: ApiRequest = {}) => { const value = catalog.getJudoka(params?.id, { includeHidden: query?.includeHidden === true, authorizedInternal }); return value ? ok(value) : missing(); },
     listTechniques: () => ok(catalog.listTechniques()), getTechnique: ({ params = {} }: ApiRequest = {}) => { const value = catalog.getTechnique(params?.id); return value ? ok(value) : missing(); },
-    listCollections: () => ok(catalog.listCollections()), getCollection: ({ params = {} }: ApiRequest = {}) => { const value = catalog.getCollection(params?.id); return value ? ok(value) : missing(); },
     listCountries: () => ok(catalog.listCountries()), listWeightCategories: () => ok(catalog.listWeightCategories()),
     draw: ({ body = {}, authorizedInternal = false }: ApiRequest = {}) => ok(draw.draw(body, { authorizedInternal })),
     version: () => ok(catalog.version()), status: () => ok(catalog.status())

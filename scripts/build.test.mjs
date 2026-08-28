@@ -130,17 +130,15 @@ test('compiler produces a versioned manifest with counts and artifact checksums'
   assert.match(manifest.sourceGitCommit, /^[0-9a-f]{40}$/);
   assert.deepEqual(manifest.drawAlgorithms, algorithmContract.supported);
   assert.equal(manifest.defaultDrawAlgorithm, algorithmContract.default);
-  assert.deepEqual(Object.keys(aggregate), ['datasetVersion', 'judoka', 'techniques', 'collections', 'countries', 'weightCategories']);
+  assert.deepEqual(Object.keys(aggregate), ['datasetVersion', 'judoka', 'techniques', 'countries', 'weightCategories']);
   assert.equal(aggregate.datasetVersion, dataset.datasetVersion);
   assert.deepEqual(aggregate.judoka, JSON.parse(artifacts['judoka.json']));
   assert.deepEqual(aggregate.techniques, JSON.parse(artifacts['techniques.json']));
-  assert.deepEqual(aggregate.collections, JSON.parse(artifacts['collections.json']));
   assert.deepEqual(aggregate.countries, JSON.parse(artifacts['countries.json']));
   assert.deepEqual(aggregate.weightCategories, JSON.parse(artifacts['weight-categories.json']));
   assert.deepEqual(Object.keys(aggregate.countries), [...Object.keys(aggregate.countries)].sort());
   assert.deepEqual(aggregate.judoka.map(({ id }) => id), aggregate.judoka.map(({ id }) => id).sort());
   assert.deepEqual(aggregate.techniques.map(({ id }) => id), aggregate.techniques.map(({ id }) => id).sort());
-  assert.deepEqual(aggregate.collections.map(({ id }) => id), aggregate.collections.map(({ id }) => id).sort());
   assert.deepEqual(aggregate.weightCategories.map(({ gender }) => gender), aggregate.weightCategories.map(({ gender }) => gender).sort());
   for (const group of aggregate.weightCategories) {
     assert.deepEqual(group.categories.map(({ weight }) => weight), group.categories.map(({ weight }) => weight).sort());
@@ -148,7 +146,6 @@ test('compiler produces a versioned manifest with counts and artifact checksums'
   assert.deepEqual(manifest.recordCounts, {
     judoka: aggregate.judoka.length,
     techniques: aggregate.techniques.length,
-    collections: aggregate.collections.length,
     countries: Object.keys(aggregate.countries).length,
     weightCategories: aggregate.weightCategories.reduce((total, group) => total + group.categories.length, 0),
   });
