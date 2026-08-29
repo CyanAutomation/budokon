@@ -40,8 +40,8 @@ test("multi-technique filters match any requested technique across catalog, REST
 test("filters do not coerce missing field values into matches", () => {
   const sparseCatalog = new CatalogService({
     listJudoka: () => [
-      { id: "null-value", slug: "null-value", countryCode: null },
-      { id: "missing-value", slug: "missing-value" }
+      { id: "null-value", slug: "null-value", countryCode: null, signatureMoveIds: [] },
+      { id: "missing-value", slug: "missing-value", signatureMoveIds: [] }
     ]
   });
   assert.deepEqual(sparseCatalog.listJudoka({ filters: { countryCode: "null" } }), []);
@@ -99,8 +99,8 @@ test("search normalizes case, whitespace, punctuation, and diacritics across eve
 test("search constructs full names consistently when either name is null", () => {
   const service = new CatalogService({
     listJudoka: () => [
-      { id: "surname-only", slug: "surname-only", firstname: null, surname: "Test" },
-      { id: "firstname-only", slug: "firstname-only", firstname: "Solo", surname: null }
+      { id: "surname-only", slug: "surname-only", firstname: null, surname: "Test", signatureMoveIds: [] },
+      { id: "firstname-only", slug: "firstname-only", firstname: "Solo", surname: null, signatureMoveIds: [] }
     ]
   });
 
@@ -110,10 +110,10 @@ test("search constructs full names consistently when either name is null", () =>
 
 test("search composes with filters, exclusions, and visibility in UUID order", () => {
   const records = [
-    { id: "b", slug: "second-match", firstname: "Renée", surname: "Test", gender: "female" },
-    { id: "a", slug: "first-match", firstname: "Renee", surname: "Test", gender: "female" },
-    { id: "c", slug: "hidden-match", firstname: "Renee", surname: "Test", gender: "female", isHidden: true },
-    { id: "d", slug: "other-match", firstname: "Renee", surname: "Test", gender: "male" }
+    { id: "b", slug: "second-match", firstname: "Renée", surname: "Test", gender: "female", signatureMoveIds: [] },
+    { id: "a", slug: "first-match", firstname: "Renee", surname: "Test", gender: "female", signatureMoveIds: [] },
+    { id: "c", slug: "hidden-match", firstname: "Renee", surname: "Test", gender: "female", signatureMoveIds: [], isHidden: true },
+    { id: "d", slug: "other-match", firstname: "Renee", surname: "Test", gender: "male", signatureMoveIds: [] }
   ];
   const service = new CatalogService({ listJudoka: () => records });
   assert.deepEqual(service.searchJudoka({ query: "renee", filters: { gender: "female" }, exclude: ["second-match"] }).map(j => j.id), ["a"]);

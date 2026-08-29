@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { CatalogService, DrawService, JsonReadModelRepository, createRestRouter, summarizeCoverage } from "../build/runtime/index.js";
+import {
+  CatalogService, DrawService, JsonReadModelRepository, createRestRouter, summarizeCoverage,
+  type RestCatalogDependency, type RestDrawDependency
+} from "../build/runtime/index.js";
 import compiledModel from "./fixtures/compiled-model.js";
 
 const repository = new JsonReadModelRepository(compiledModel);
@@ -116,7 +119,23 @@ test("missing resources, unsupported input, methods, and unexpected failures are
   assert.equal((await request("/v1/judoka?collection=featured")).status, 400);
   assert.equal((await request("/v1/draw", { method: "POST", headers: { "content-type": "application/json" }, body: '{"collection":"featured"}' })).status, 400);
   assert.equal((await request("/v1/version", { method: "POST" })).status, 405);
-  const broken = createRestRouter({ catalog: { version() { throw new Error("secret database detail"); } }, draw: {} });
+  const failingCatalog: RestCatalogDependency = {
+    searchJudoka() { throw new Error("unexpected catalog call"); },
+    getJudoka() { throw new Error("unexpected catalog call"); },
+    listTechniques() { throw new Error("unexpected catalog call"); },
+    getTechnique() { throw new Error("unexpected catalog call"); },
+    listEvents() { throw new Error("unexpected catalog call"); },
+    getEvent() { throw new Error("unexpected catalog call"); },
+    listCountries() { throw new Error("unexpected catalog call"); },
+    listWeightCategories() { throw new Error("unexpected catalog call"); },
+    version() { throw new Error("secret database detail"); },
+    status() { throw new Error("unexpected catalog call"); },
+    coverage() { throw new Error("unexpected catalog call"); },
+  };
+  const failingDraw: RestDrawDependency = {
+    draw() { throw new Error("unexpected draw call"); },
+  };
+  const broken = createRestRouter({ catalog: failingCatalog, draw: failingDraw });
   const response = await broken(new Request("https://example.test/v1/version"));
   assert.equal(response.status, 500); assert.equal(JSON.stringify(await body(response)).includes("secret"), false);
 });
