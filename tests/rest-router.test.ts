@@ -93,12 +93,13 @@ test("hidden access is explicit and unauthorized access is forbidden", async () 
 });
 
 test("draw validates transport and body before calling the service", async () => {
-  for (const [init, message] of <[RequestInit, string][]>[
+  const drawValidationCases: Array<[RequestInit, string]> = [
     [{ method: "POST", body: "{}" }, "content-type"],
     [{ method: "POST", headers: { "content-type": "application/json" }, body: "{" }, "malformed JSON"],
     [{ method: "POST", headers: { "content-type": "application/json" }, body: "[]" }, "JSON object"],
     [{ method: "POST", headers: { "content-type": "application/json" }, body: '{"filters":{"unknown":"x"}}' }, "unsupported filter"]
-  ]) {
+  ];
+  for (const [init, message] of drawValidationCases) {
     const response = await request("/v1/draw", init); assert.equal(response.status, 400);
     assert.match((await body(response)).error.message, new RegExp(message));
   }
