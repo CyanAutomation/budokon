@@ -29,5 +29,9 @@ for (const scriptName of requiredScripts) {
   if (!entryPoint) {
     throw new Error(`npm script ${scriptName} must run a tracked TypeScript entry point with tsx`);
   }
-  await access(entryPoint);
+  try {
+    await access(entryPoint);
+  } catch {
+    throw new Error(`Entry point file not found: ${entryPoint}`);
+  }
 }
