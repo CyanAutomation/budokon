@@ -32,7 +32,7 @@ const repository = new JsonReadModelRepository({ ...compiledModel, events });
 const catalog = new CatalogService(repository);
 const eventDraw = new EventDrawService(repository);
 const router = createRestRouter({ catalog, draw: new DrawService(catalog), eventDraw });
-const request = (path, init) => router(new Request(`https://example.test${path}`, init));
+const request = (path: string, init?: RequestInit): Promise<Response> => router(new Request(`https://example.test${path}`, init));
 const eventIds = events.map(event => event.id).sort();
 
 test("event draws are ruleset-scoped, deterministic, and support category exclusions", () => {
