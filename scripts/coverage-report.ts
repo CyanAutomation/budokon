@@ -2,12 +2,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateCanonical } from '../src/validation/validate-canonical.js';
 import { coverageViolations, publicRealJudoka } from './coverage-policy.js';
+import type { CountMap } from './coverage-policy.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const orderedCounts = counts => Object.fromEntries(Object.entries(counts).sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0));
+const orderedCounts = (counts: CountMap): CountMap => Object.fromEntries(Object.entries(counts).sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0));
 
 function countBy(records, field) {
-  const counts = {};
+  const counts: CountMap = {};
   for (const record of records) {
     const value = record[field];
     if (typeof value === 'string' && value) counts[value] = (counts[value] ?? 0) + 1;
@@ -30,7 +31,7 @@ export function summarizeCoverage(judoka) {
   };
 }
 
-const formatCounts = (counts, total) => Object.entries(counts).map(([key, count]) => `  ${key}: ${count}${total ? ` (${(count / total * 100).toFixed(1)}%)` : ''}`).join('\n') || '  (none)';
+const formatCounts = (counts: CountMap, total?: number) => Object.entries(counts).map(([key, count]) => `  ${key}: ${count}${total ? ` (${(count / total * 100).toFixed(1)}%)` : ''}`).join('\n') || '  (none)';
 
 export function formatCoverageReport(summary) {
   return [
