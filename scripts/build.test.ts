@@ -20,12 +20,12 @@ test('build validation accepts uppercase UUID hexadecimal digits', () => {
 });
 
 test('schema accepts uppercase UUID hexadecimal digits', async () => {
-  const schema = JSON.parse(await readFile(new URL('../schema/judoka.schema.json', import.meta.url)));
+  const schema = JSON.parse(await readFile(new URL('../schema/judoka.schema.json', import.meta.url), 'utf8'));
   assert.match(uppercaseUuid, new RegExp(schema.properties.id.pattern));
 });
 
 test('judoka schema rejects undeclared game-specific properties', async () => {
-  const schema = JSON.parse(await readFile(new URL('../schema/judoka.schema.json', import.meta.url)));
+  const schema = JSON.parse(await readFile(new URL('../schema/judoka.schema.json', import.meta.url), 'utf8'));
 
   assert.equal(schema.additionalProperties, false);
   for (const property of ['cardCode', 'matchesWon', 'matchesLost', 'matchesDrawn']) {
@@ -36,8 +36,8 @@ test('judoka schema rejects undeclared game-specific properties', async () => {
 test('game-specific judoka values are preserved only in the JU-DO-KON import', async () => {
   const directory = new URL('../data/judoka/', import.meta.url);
   const files = (await readdir(directory)).filter((file) => file.endsWith('.json'));
-  const records = await Promise.all(files.map(async (file) => JSON.parse(await readFile(new URL(file, directory)))));
-  const gameImport = JSON.parse(await readFile(new URL('../migrations/ju-do-kon-judoka-import.json', import.meta.url)));
+  const records = await Promise.all(files.map(async (file) => JSON.parse(await readFile(new URL(file, directory), 'utf8'))));
+  const gameImport = JSON.parse(await readFile(new URL('../migrations/ju-do-kon-judoka-import.json', import.meta.url), 'utf8'));
   const canonicalOnlyRecord = { id: '00000000-0000-4000-8000-000000000000' };
 
   assert.equal(Object.hasOwn(gameImport, canonicalOnlyRecord.id), false);
@@ -71,15 +71,15 @@ test('technique reference validation rejects an unknown signature move', () => {
 });
 
 test('country catalogue keys match uppercase embedded alpha-2 codes', async () => {
-  const countries = JSON.parse(await readFile(new URL('../data/reference/countries.json', import.meta.url)));
+  const countries = JSON.parse(await readFile(new URL('../data/reference/countries.json', import.meta.url), 'utf8'));
   assert.doesNotThrow(() => validateCountries(countries));
   assert.throws(() => validateCountries({ jp: { code: 'jp', country: 'Japan', active: true } }), /Country key/);
   assert.throws(() => validateCountries({ JP: { code: 'US', country: 'Japan', active: true } }), /does not match/);
 });
 
 test('country schemas require uppercase codes and a country on every judoka', async () => {
-  const countrySchema = JSON.parse(await readFile(new URL('../schema/countries.schema.json', import.meta.url)));
-  const judokaSchema = JSON.parse(await readFile(new URL('../schema/judoka.schema.json', import.meta.url)));
+  const countrySchema = JSON.parse(await readFile(new URL('../schema/countries.schema.json', import.meta.url), 'utf8'));
+  const judokaSchema = JSON.parse(await readFile(new URL('../schema/judoka.schema.json', import.meta.url), 'utf8'));
 
   assert.equal(countrySchema.propertyNames.pattern, '^[A-Z]{2}$');
   assert.equal(countrySchema.additionalProperties.properties.code.pattern, '^[A-Z]{2}$');
@@ -89,8 +89,8 @@ test('country schemas require uppercase codes and a country on every judoka', as
 test('every canonical judoka references an active catalogue country', async () => {
   const directory = new URL('../data/judoka/', import.meta.url);
   const files = (await readdir(directory)).filter((file) => file.endsWith('.json'));
-  const records = await Promise.all(files.map(async (file) => JSON.parse(await readFile(new URL(file, directory)))));
-  const countries = JSON.parse(await readFile(new URL('../data/reference/countries.json', import.meta.url)));
+  const records = await Promise.all(files.map(async (file) => JSON.parse(await readFile(new URL(file, directory), 'utf8'))));
+  const countries = JSON.parse(await readFile(new URL('../data/reference/countries.json', import.meta.url), 'utf8'));
 
   assert.doesNotThrow(() => validateCountryReferences(records, countries));
   assert.equal(records.some((record) => Object.hasOwn(record, 'country')), false);
@@ -122,7 +122,7 @@ test('compiler produces a versioned manifest with counts and artifact checksums'
   const commit = '1234567890abcdef1234567890abcdef12345678';
   const artifacts = await compileArtifacts(commit);
   assert.deepEqual(artifacts, await compileArtifacts(commit), 'two builds must be byte-for-byte identical');
-  const dataset = JSON.parse(await readFile(new URL('../data/dataset.json', import.meta.url)));
+  const dataset = JSON.parse(await readFile(new URL('../data/dataset.json', import.meta.url), 'utf8'));
   const manifest = JSON.parse(artifacts['manifest.json']);
   const aggregate = JSON.parse(artifacts['budokon.json']);
   assert.equal(manifest.datasetVersion, dataset.datasetVersion);
