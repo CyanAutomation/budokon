@@ -8,11 +8,11 @@ const catalog = new CatalogService(repository);
 const router = createRestRouter({ catalog, draw: new DrawService(catalog) }, {
   authorizeInternal: request => request.headers.get("authorization") === "Bearer internal"
 });
-const request = (path, init) => router(new Request(`https://example.test${path}`, init));
-const body = response => response.json();
+const request = (path: string, init?: RequestInit): Promise<Response> => router(new Request(`https://example.test${path}`, init));
+const body = (response: Response): Promise<any> => response.json();
 
 test("every documented catalogue and metadata endpoint conforms", async () => {
-  for (const [path, expected] of [
+  for (const [path, expected] of <[string, unknown][]>[
     ["/v1/judoka", catalog.listJudoka()], ["/v1/techniques", catalog.listTechniques()],
     ["/v1/countries", catalog.listCountries()],
     ["/v1/weight-categories", catalog.listWeightCategories()], ["/v1/version", catalog.version()]
@@ -20,7 +20,7 @@ test("every documented catalogue and metadata endpoint conforms", async () => {
     const response = await request(path); assert.equal(response.status, 200, path);
     assert.match(response.headers.get("content-type"), /^application\/json/); assert.deepEqual(await body(response), expected);
   }
-  for (const [path, expected] of [
+  for (const [path, expected] of <[string, unknown][]>[
     ["/v1/judoka/shozo-fujii", catalog.getJudoka("shozo-fujii")],
     [`/v1/techniques/${catalog.listTechniques()[0].id}`, catalog.listTechniques()[0]]
   ]) assert.deepEqual(await body(await request(path)), expected);
@@ -90,7 +90,7 @@ test("hidden access is explicit and unauthorized access is forbidden", async () 
 });
 
 test("draw validates transport and body before calling the service", async () => {
-  for (const [init, message] of [
+  for (const [init, message] of <[RequestInit, string][]>[
     [{ method: "POST", body: "{}" }, "content-type"],
     [{ method: "POST", headers: { "content-type": "application/json" }, body: "{" }, "malformed JSON"],
     [{ method: "POST", headers: { "content-type": "application/json" }, body: "[]" }, "JSON object"],
