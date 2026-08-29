@@ -17,7 +17,10 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run typecheck
+      - name: Compile runtime TypeScript
+        run: npm run build:runtime
+      - name: Type-check tooling and tests
+        run: npm run typecheck:tools
       - run: npm run check:typescript-only
       - name: Validate canonical data
         run: npm run validate

@@ -19,9 +19,11 @@
     "./data": "./dist/budokon.json"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "npm run build:runtime",
+    "build:runtime": "tsc -p tsconfig.json",
     "build:data": "tsx scripts/build.ts",
-    "typecheck": "npm run build && tsc -p tsconfig.tools.json",
+    "typecheck": "npm run build:runtime && npm run typecheck:tools",
+    "typecheck:tools": "tsc -p tsconfig.tools.json",
     "check-artifacts": "tsx scripts/check-artifacts.ts",
     "check:typescript-only": "tsx scripts/check-typescript-only.ts",
     "coverage": "tsx scripts/coverage-report.ts",
