@@ -9,7 +9,15 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const uuidPattern = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/;
 export const countryCodePattern = /^[A-Z]{2}$/;
 
-export function validateCountries(countries) {
+export interface CountryCatalogEntry {
+  code: string;
+  country: string;
+  active: boolean;
+}
+
+export type CountryCatalog = Record<string, CountryCatalogEntry>;
+
+export function validateCountries(countries: CountryCatalog) {
   for (const [key, country] of Object.entries(countries)) {
     if (!countryCodePattern.test(key)) throw new Error(`Country key ${key} is invalid`);
     if (country.code !== key) throw new Error(`Country key ${key} does not match embedded code ${JSON.stringify(country.code)}`);

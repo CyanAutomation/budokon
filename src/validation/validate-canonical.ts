@@ -9,6 +9,21 @@ const prohibitedGameStateProperties = new Set([
   'experiencePoints', 'cardInstanceId', 'gameScore',
 ]);
 const rfc3339 = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?Z$/;
+
+interface ParsedFile<T> { name: string; value: T; }
+interface CanonicalCountry { code: string; country: string; active: boolean; lastUpdated: string; }
+type CanonicalCountries = Record<string, CanonicalCountry>;
+interface CanonicalJudoka {
+  id: string; slug: string; legacySlugs?: string[]; firstname: string; surname: string;
+  aliases?: string[]; personType: string; isHidden?: boolean; countryCode: string;
+  signatureMoveIds: string[]; gender: string; weightClass: string; lastUpdated: string; bio: string;
+}
+interface CanonicalTechnique { id: string; slug?: string; name: string; japanese: string; description: string; }
+interface CanonicalEffect { action: string; target: string; value: unknown; }
+interface CanonicalEvent { id: string; slug?: string; description: string; effects: CanonicalEffect[]; }
+interface CanonicalWeightCategory { weight: string; descriptor: string; }
+interface CanonicalWeightGroup { gender: string; description: string; categories: CanonicalWeightCategory[]; }
+interface CanonicalDataset { datasetVersion: string; }
 function isValidDateTime(value) {
   if (!rfc3339.test(value)) return false;
   const date = new Date(value);
@@ -57,7 +72,7 @@ export function validateSchema(value, schema, location = '$', rootSchema = schem
   if (Array.isArray(value)) {
     if (schema.minItems !== undefined && value.length < schema.minItems) fail(location, `must have at least ${schema.minItems} items`);
     if (schema.maxItems !== undefined && value.length > schema.maxItems) fail(location, `must have at most ${schema.maxItems} items`);
-    if (schema.uniqueItems && new Set(value.map(JSON.stringify)).size !== value.length) fail(location, 'must contain unique items');
+    if (schema.uniqueItems && new Set(value.map(value => JSON.stringify(value))).size !== value.length) fail(location, 'must contain unique items');
     if (schema.items) value.forEach((item, index) => validateSchema(item, schema.items, `${location}[${index}]`, rootSchema));
   } else if (value && typeof value === 'object') {
     for (const required of schema.required ?? []) if (!Object.hasOwn(value, required)) fail(location, `missing required property ${required}`);
@@ -70,7 +85,7 @@ export function validateSchema(value, schema, location = '$', rootSchema = schem
   }
 }
 
-async function parse(file) {
+async function parse(file): Promise<unknown> {
   try { return JSON.parse(await readFile(file, 'utf8')); }
   catch (error) { throw new Error(`${file}: invalid JSON (${error.message})`); }
 }
@@ -110,24 +125,34 @@ export async function validateCanonical(root = defaultRoot) {
   const [judokaSchema, techniqueSchema, eventSchema, countriesSchema, weightsSchema, datasetSchema] = await Promise.all(
     ['judoka', 'technique', 'event', 'countries', 'weight-categories', 'dataset'].map((name) => parse(path.join(schemaDir, `${name}.schema.json`))),
   );
-  const [judokaFiles, techniqueFiles, eventFiles, countries, weights, dataset] = await Promise.all([
+  const [judokaFilesValue, techniqueFilesValue, eventFilesValue, countriesValue, weightsValue, datasetValue] = await Promise.all([
     records(path.join(root, 'data/judoka')), records(path.join(root, 'data/techniques')),
     records(path.join(root, 'data/events')),
     parse(path.join(root, 'data/reference/countries.json')), parse(path.join(root, 'data/reference/weight-categories.json')),
     parse(path.join(root, 'data/dataset.json')),
   ]);
+  const judokaFiles = judokaFilesValue as ParsedFile<unknown>[];
+  const techniqueFiles = techniqueFilesValue as ParsedFile<unknown>[];
+  const eventFiles = eventFilesValue as ParsedFile<unknown>[];
   for (const file of judokaFiles) validateSchema(file.value, judokaSchema, `data/judoka/${file.name}`);
   for (const file of techniqueFiles) validateSchema(file.value, techniqueSchema, `data/techniques/${file.name}`);
   for (const file of eventFiles) validateSchema(file.value, eventSchema, `data/events/${file.name}`);
-  validateSchema(countries, countriesSchema, 'data/reference/countries.json');
-  validateSchema(weights, weightsSchema, 'data/reference/weight-categories.json');
-  validateSchema(dataset, datasetSchema, 'data/dataset.json');
+  validateSchema(countriesValue, countriesSchema, 'data/reference/countries.json');
+  validateSchema(weightsValue, weightsSchema, 'data/reference/weight-categories.json');
+  validateSchema(datasetValue, datasetSchema, 'data/dataset.json');
+  // The schemas above establish these domain shapes before canonical rules access them.
+  const validatedJudokaFiles = judokaFiles as ParsedFile<CanonicalJudoka>[];
+  const validatedTechniqueFiles = techniqueFiles as ParsedFile<CanonicalTechnique>[];
+  const validatedEventFiles = eventFiles as ParsedFile<CanonicalEvent>[];
+  const countries = countriesValue as CanonicalCountries;
+  const weights = weightsValue as CanonicalWeightGroup[];
+  const dataset = datasetValue as CanonicalDataset;
   for (const { name, value } of judokaFiles) rejectGameStateProperties(value, `data/judoka/${name}`);
   for (const { name, value } of techniqueFiles) rejectGameStateProperties(value, `data/techniques/${name}`);
   rejectGameStateProperties(countries, 'data/reference/countries.json');
   rejectGameStateProperties(weights, 'data/reference/weight-categories.json');
   rejectGameStateProperties(dataset, 'data/dataset.json');
-  const judoka = judokaFiles.map(({ value }) => value), techniques = techniqueFiles.map(({ value }) => value), events = eventFiles.map(({ value }) => value);
+  const judoka = validatedJudokaFiles.map(({ value }) => value), techniques = validatedTechniqueFiles.map(({ value }) => value), events = validatedEventFiles.map(({ value }) => value);
   unique(judoka, 'id', 'judoka UUID'); unique(judoka, 'handles', 'judoka slug or legacy slug');
   const names = new Map();
   for (const record of judoka) for (const name of [`${record.firstname} ${record.surname}`, ...(record.aliases ?? [])]) {
@@ -135,13 +160,13 @@ export async function validateCanonical(root = defaultRoot) {
     if (names.has(normalized) && names.get(normalized) !== record.slug) throw new Error(`ambiguous normalized judoka name ${JSON.stringify(normalized)} in ${names.get(normalized)} and ${record.slug}`);
     names.set(normalized, record.slug);
   } unique(techniques, 'id', 'technique ID'); unique(events, 'id', 'event ID');
-  for (const file of judokaFiles) if (path.parse(file.name).name !== file.value.slug) {
+  for (const file of validatedJudokaFiles) if (path.parse(file.name).name !== file.value.slug) {
     throw new Error(`data/judoka/${file.name}: filename must match canonical slug ${file.value.slug}`);
   }
-  for (const file of techniqueFiles) if (path.parse(file.name).name !== file.value.id) {
+  for (const file of validatedTechniqueFiles) if (path.parse(file.name).name !== file.value.id) {
     throw new Error(`data/techniques/${file.name}: filename must match canonical ID ${file.value.id}`);
   }
-  for (const file of eventFiles) if (path.parse(file.name).name !== file.value.id) {
+  for (const file of validatedEventFiles) if (path.parse(file.name).name !== file.value.id) {
     throw new Error(`data/events/${file.name}: filename must match canonical ID ${file.value.id}`);
   }
   const techniqueIds = new Set(techniques.map(({ id }) => id));
@@ -179,7 +204,7 @@ export async function validateCanonical(root = defaultRoot) {
     meaningfulText(event.description, `${event.id}.description`);
     for (const [index, effect] of event.effects.entries()) {
       if (effect.action === 'modify' && (!numericTargets.has(effect.target) || !Number.isInteger(effect.value))) fail(`${event.id}.effects[${index}]`, 'modify effects require a numeric target and integer value');
-      if (effect.action === 'set' && (!stateTargets.has(effect.target) || (effect.target === 'match_result' ? effect.value !== 'forfeit' : !Number.isInteger(effect.value) || effect.value < 0))) fail(`${event.id}.effects[${index}]`, 'set effects require a valid state value');
+      if (effect.action === 'set' && (!stateTargets.has(effect.target) || (effect.target === 'match_result' ? effect.value !== 'forfeit' : typeof effect.value !== 'number' || !Number.isInteger(effect.value) || effect.value < 0))) fail(`${event.id}.effects[${index}]`, 'set effects require a valid state value');
     }
   }
   for (const [groupIndex, group] of weights.entries()) {
