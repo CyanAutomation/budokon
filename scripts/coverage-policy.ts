@@ -1,5 +1,24 @@
 /** Editorial guardrails for the public, real-judoka draw pool. */
-export const coveragePolicy = Object.freeze({
+export type CountMap = Record<string, number>;
+
+export interface CoverageSummary {
+  publicReal: number;
+  byCountry: CountMap;
+  byGender: CountMap;
+  byWeightClass: CountMap;
+  byRarity: CountMap;
+}
+
+export interface CoveragePolicy {
+  minimumPublicReal: number;
+  minimumCountries: number;
+  maximumCountryShare: number;
+  maximumGenderShare: number;
+  requireEveryWeightClass: boolean;
+  rarity: Readonly<Record<string, Readonly<{ min: number; max: number }>>>;
+}
+
+export const coveragePolicy: Readonly<CoveragePolicy> = Object.freeze({
   minimumPublicReal: 20,
   minimumCountries: 10,
   maximumCountryShare: 0.35,
@@ -17,7 +36,7 @@ export function publicRealJudoka(judoka) {
   return judoka.filter(record => record.personType === 'real' && record.isHidden !== true);
 }
 
-export function coverageViolations(summary, weightCategories, policy = coveragePolicy) {
+export function coverageViolations(summary: CoverageSummary, weightCategories, policy: Readonly<CoveragePolicy> = coveragePolicy) {
   const violations = [];
   const { publicReal } = summary;
   if (publicReal < policy.minimumPublicReal) violations.push(`public real catalogue has ${publicReal}; need at least ${policy.minimumPublicReal}`);
