@@ -9,7 +9,7 @@ import {
   createRestRouter,
   DrawService,
 } from "../build/runtime/index.js";
-import compiledModel from "./fixtures/compiled-model.mjs";
+import compiledModel from "./fixtures/compiled-model.js";
 
 const events = [
   {

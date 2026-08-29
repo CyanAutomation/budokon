@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { formatCoverageReport, summarizeCoverage } from '../scripts/coverage-report.mjs';
-import { coverageViolations } from '../scripts/coverage-policy.mjs';
+import { formatCoverageReport, summarizeCoverage } from '../scripts/coverage-report.js';
+import { coverageViolations } from '../scripts/coverage-policy.js';
 
 test('coverage summary reports the visible catalogue and its balance', () => {
   const summary = summarizeCoverage([

@@ -9,8 +9,8 @@ import {
   validateCountries,
   validateCountryReferences,
   validateTechniqueReferences,
-} from './build.mjs';
-import { compileArtifacts } from './build.mjs';
+} from './build.js';
+import { compileArtifacts } from './build.js';
 import algorithmContract from '../src/draw/algorithm-contract.json' with { type: 'json' };
 
 const uppercaseUuid = '84D3B821-0CA8-42DE-B42C-2EB8D42C9C3B';
