@@ -88,7 +88,7 @@ function validateEventDrawBody(value: unknown): EventDrawRequest {
   const allowed = new Set(["ruleset", "category", "seed", "exclude"]);
   for (const key of Object.keys(body)) if (!allowed.has(key)) throw new TypeError(`unsupported body field: ${key}`);
   if (typeof body.ruleset !== "string" || body.ruleset.trim() === "") throw new TypeError("ruleset must be a non-empty string");
-  for (const key of ["category", "seed"] as const) if (body[key] !== undefined && (typeof body[key] !== "string" || body[key].trim() === "")) throw new TypeError(`${key} must be a non-empty string`);
+  for (const key of ["category", "seed"] as const) if (body[key] !== undefined && typeof body[key] !== "string") throw new TypeError(`${key} must be a string`);
   if (body.exclude !== undefined && (!Array.isArray(body.exclude) || body.exclude.some(item => typeof item !== "string"))) throw new TypeError("exclude must be an array of strings");
   return body as unknown as EventDrawRequest;
 }
