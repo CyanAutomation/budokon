@@ -1,6 +1,7 @@
 import type { CatalogService } from "../domain/catalog-service.js";
-import type { DrawRequest, Filters } from "../domain/types.js";
+import type { DrawRequest, EventDrawRequest, Filters } from "../domain/types.js";
 import type { DrawService } from "../draw/draw-service.js";
+import type { EventDrawService } from "../draw/event-draw-service.js";
 
 export interface RestRouterOptions {
   /** Resolve deployment-specific credentials without coupling the router to a platform. */
@@ -68,8 +69,32 @@ function validateDrawBody(value: unknown): DrawRequest {
   return body as DrawRequest;
 }
 
+function parseEventListQuery(params: URLSearchParams) {
+  const allowed = new Set(["ruleset", "category"]);
+  params.forEach((_value, key) => { if (!allowed.has(key)) throw new TypeError(`unsupported query parameter: ${key}`); });
+  const result: Record<string, string | undefined> = {};
+  for (const key of allowed) {
+    const value = values(params, key);
+    if (value.length > 1) throw new TypeError(`${key} must have one value`);
+    if (params.has(key) && value.length === 0) throw new TypeError(`${key} must not be empty`);
+    result[key] = value[0];
+  }
+  return result as { ruleset?: string; category?: string };
+}
+
+function validateEventDrawBody(value: unknown): EventDrawRequest {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new TypeError("request body must be a JSON object");
+  const body = value as Record<string, unknown>;
+  const allowed = new Set(["ruleset", "category", "seed", "exclude"]);
+  for (const key of Object.keys(body)) if (!allowed.has(key)) throw new TypeError(`unsupported body field: ${key}`);
+  if (typeof body.ruleset !== "string" || body.ruleset.trim() === "") throw new TypeError("ruleset must be a non-empty string");
+  for (const key of ["category", "seed"] as const) if (body[key] !== undefined && typeof body[key] !== "string") throw new TypeError(`${key} must be a string`);
+  if (body.exclude !== undefined && (!Array.isArray(body.exclude) || body.exclude.some(item => typeof item !== "string"))) throw new TypeError("exclude must be an array of strings");
+  return body as unknown as EventDrawRequest;
+}
+
 /** Create a runtime-neutral Fetch API handler backed exclusively by application services. */
-export function createRestRouter({ catalog, draw }: { catalog: CatalogService; draw: DrawService }, options: RestRouterOptions = {}) {
+export function createRestRouter({ catalog, draw, eventDraw }: { catalog: CatalogService; draw: DrawService; eventDraw?: EventDrawService }, options: RestRouterOptions = {}) {
   return async function route(request: Request): Promise<Response> {
     try {
       const url = new URL(request.url);
@@ -96,6 +121,24 @@ export function createRestRouter({ catalog, draw }: { catalog: CatalogService; d
         return json(paginateJudoka(catalog.searchJudoka({ ...query, authorizedInternal }), query.limit, query.cursor));
       }
       if (resource === "techniques" && request.method === "GET") return id === undefined ? json(catalog.listTechniques()) : (catalog.getTechnique(id) ? json(catalog.getTechnique(id)) : failure(404, "not_found", "technique not found"));
+      if (resource === "events") {
+        if (id === "draw" && request.method === "POST") {
+          if (!eventDraw) return failure(404, "not_found", "route not found");
+          if (!/^application\/json(?:\s*;|$)/i.test(request.headers.get("content-type") ?? "")) throw new TypeError("content-type must be application/json");
+          let body: EventDrawRequest; try { body = validateEventDrawBody(await request.json()); } catch (error) { if (error instanceof SyntaxError) throw new TypeError("request body contains malformed JSON"); throw error; }
+          try { return json(eventDraw.draw(body)); }
+          catch (error) { if (error instanceof RangeError && /exceeds eligible pool size/.test(error.message)) return failure(409, "conflict", "requested event exceeds the eligible pool"); throw error; }
+        }
+        if (id === "draw") return failure(405, "method_not_allowed", "method not allowed");
+        if (request.method === "GET") {
+          if (id !== undefined) {
+            let hasQuery = false; url.searchParams.forEach(() => { hasQuery = true; });
+            if (hasQuery) throw new TypeError("unsupported query parameter for event lookup");
+            const event = catalog.getEvent(id); return event ? json(event) : failure(404, "not_found", "event not found");
+          }
+          return json(catalog.listEvents(parseEventListQuery(url.searchParams)));
+        }
+      }
       if (resource === "countries" && request.method === "GET" && id === undefined) return json(catalog.listCountries());
       if (resource === "weight-categories" && request.method === "GET" && id === undefined) return json(catalog.listWeightCategories());
       if (resource === "version" && request.method === "GET" && id === undefined) return json(catalog.version());
@@ -108,10 +151,10 @@ export function createRestRouter({ catalog, draw }: { catalog: CatalogService; d
         try { return json(draw.draw(body, { authorizedInternal })); }
         catch (error) { if (error instanceof RangeError && /exceeds eligible pool size/.test(error.message)) return failure(409, "conflict", "requested count exceeds the eligible pool"); throw error; }
       }
-      const known = new Set(["judoka", "techniques", "countries", "weight-categories", "draw", "version", "status", "coverage"]);
+      const known = new Set(["judoka", "techniques", "events", "countries", "weight-categories", "draw", "version", "status", "coverage"]);
       return known.has(resource ?? "") ? failure(405, "method_not_allowed", "method not allowed") : failure(404, "not_found", "route not found");
     } catch (error) {
-      const expectedInputError = error instanceof Error && /^(unsupported (query parameter|body field|filter|draw algorithm)|filter .+ must |includeHidden must |q must |limit must |cursor (must|requires) |content-type must |request body |count must |seed must |algorithm must |exclude must )/.test(error.message);
+      const expectedInputError = error instanceof Error && /^(unsupported (query parameter|body field|filter|draw algorithm)|filter .+ must |includeHidden must |q must |limit must |cursor (must|requires) |content-type must |request body |count must |seed must |algorithm must |ruleset must |category must |exclude must )/.test(error.message);
       if (expectedInputError) return badRequest(error.message);
       return failure(500, "internal_error", "internal server error");
     }

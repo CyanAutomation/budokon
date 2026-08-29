@@ -1,4 +1,4 @@
-import type { CoverageResponse, Filters, Judoka, ListJudokaOptions, SearchJudokaOptions, StatusResponse, VersionResponse } from "./types.js";
+import type { CoverageResponse, Filters, JudoEvent, Judoka, ListJudokaOptions, SearchJudokaOptions, StatusResponse, VersionResponse } from "./types.js";
 import type { ReadModelRepository } from "../repository/read-model-repository.js";
 import { DRAW_ALGORITHM, SUPPORTED_DRAW_ALGORITHMS } from "../draw/algorithm.js";
 import { summarizeCoverage } from "./coverage.js";
@@ -48,5 +48,9 @@ export class CatalogService {
   searchJudoka(options: SearchJudokaOptions = {}) { const query = normalizeSearchText(options.query ?? options.q); return (query ? this.listJudoka(options).filter(j => searchableValues(j).some(value => value.includes(query))) : this.listJudoka(options)).sort(query ? byImmutableId : () => 0); }
   getJudoka(id: string | undefined, options: Pick<ListJudokaOptions, "includeHidden" | "authorizedInternal"> = {}) { const match = this.repository.getJudoka(id); return match && (match.isHidden !== true || (options.includeHidden === true && options.authorizedInternal === true)) ? match : undefined; }
   listTechniques() { return this.repository.listTechniques(); } getTechnique(id: string | undefined) { return this.repository.getTechnique(id); }
+  listEvents(options: { ruleset?: string; category?: string } = {}): JudoEvent[] {
+    return this.repository.listEvents().filter(event => (options.ruleset === undefined || event.ruleset === options.ruleset) && (options.category === undefined || event.category === options.category));
+  }
+  getEvent(id: string | undefined) { return this.repository.getEvent(id); }
   listCountries() { return this.repository.listCountries(); } listWeightCategories() { return this.repository.listWeightCategories(); }
 }

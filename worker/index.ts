@@ -2,6 +2,7 @@ import dataset from "../dist/budokon.json" with { type: "json" };
 import manifest from "../dist/manifest.json" with { type: "json" };
 import { CatalogService } from "../src/domain/catalog-service.js";
 import { DrawService } from "../src/draw/draw-service.js";
+import { EventDrawService } from "../src/draw/event-draw-service.js";
 import { createRestRouter } from "../src/api/router.js";
 import { createMcpTools } from "../src/mcp/tools.js";
 import { JsonReadModelRepository } from "../src/repository/json-read-model-repository.js";
@@ -26,7 +27,8 @@ type RpcRequest = { jsonrpc?: string; id?: string | number | null; method?: stri
 const repository = new JsonReadModelRepository({ ...dataset, manifest });
 const catalog = new CatalogService(repository);
 const draw = new DrawService(catalog);
-const tools = createMcpTools({ catalog, draw });
+const eventDraw = new EventDrawService(repository);
+const tools = createMcpTools({ catalog, draw, eventDraw });
 
 function json(value: unknown, status = 200, headers: HeadersInit = {}) {
   return new Response(JSON.stringify(value), { status, headers: { "content-type": "application/json; charset=utf-8", ...headers } });
@@ -42,6 +44,9 @@ const toolDefinitions = [
   ["draw_judoka", "Draw one or more judoka, optionally deterministically with a seed.", { type: "object", properties: { count: { type: "integer", minimum: 1 }, seed: { type: "string" }, algorithm: { type: "string" }, filters: { type: "object" }, exclude: { type: "array", items: { type: "string" } }, includeHidden: { type: "boolean" } } }],
   ["list_techniques", "List all techniques.", { type: "object", properties: {} }],
   ["get_technique", "Get one technique by ID.", { type: "object", properties: { id: { type: "string" } }, required: ["id"] }],
+  ["list_events", "List ruleset-scoped gameplay events.", { type: "object", properties: { ruleset: { type: "string" }, category: { type: "string" } } }],
+  ["get_event", "Get one gameplay event by ID.", { type: "object", properties: { id: { type: "string" } }, required: ["id"] }],
+  ["draw_event", "Draw one event for a required game ruleset, optionally deterministically with a seed.", { type: "object", properties: { ruleset: { type: "string" }, category: { type: "string" }, seed: { type: "string" }, exclude: { type: "array", items: { type: "string" } } }, required: ["ruleset"] }],
   ["version", "Get dataset and draw-algorithm versions.", { type: "object", properties: {} }]
 ] as const;
 
@@ -80,7 +85,7 @@ export default {
     } else {
       // Catalogue reads and draws are public; hidden records still require INTERNAL_API_KEY.
       response = await rateLimitPublicRequest(request, env) ?? cachePublicGet(
-        await createRestRouter({ catalog, draw }, { authorizeInternal: candidate => authorized(candidate, env.INTERNAL_API_KEY) })(request),
+        await createRestRouter({ catalog, draw, eventDraw }, { authorizeInternal: candidate => authorized(candidate, env.INTERNAL_API_KEY) })(request),
         request,
         catalog.version().datasetVersion
       );

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://budokon.example/schema/event.schema.json",
+  "title": "Ruleset-scoped judo gameplay event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "ruleset", "category", "description", "effects"],
+  "properties": {
+    "id": { "$ref": "#/$defs/slug" },
+    "ruleset": { "$ref": "#/$defs/slug" },
+    "category": { "$ref": "#/$defs/slug" },
+    "description": { "type": "string", "minLength": 20, "pattern": "\\S" },
+    "effects": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/effect" } }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action", "target", "value"],
+      "properties": {
+        "action": { "enum": ["modify", "set"] },
+        "target": { "enum": ["power", "speed", "technique", "kumikata", "newaza", "shido", "waza_ari", "score", "match_result"] },
+        "value": { "type": ["integer", "string"] }
+      }
+    }
+  }
+}

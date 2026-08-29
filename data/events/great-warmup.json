@@ -1,0 +1,13 @@
+{
+  "id": "great-warmup",
+  "ruleset": "ju-do-kon-v1",
+  "category": "shiai",
+  "description": "The judoka completes an effective warm-up and enters the contest exceptionally well prepared. All core attributes are increased by one.",
+  "effects": [
+    { "action": "modify", "target": "power", "value": 1 },
+    { "action": "modify", "target": "speed", "value": 1 },
+    { "action": "modify", "target": "technique", "value": 1 },
+    { "action": "modify", "target": "kumikata", "value": 1 },
+    { "action": "modify", "target": "newaza", "value": 1 }
+  ]
+}
