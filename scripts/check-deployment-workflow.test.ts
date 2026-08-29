@@ -17,7 +17,7 @@ test('deployment workflow check identifies a missing entry point', async (t) => 
   await mkdir(path.join(directory, '.github/workflows'), { recursive: true });
   await writeFile(
     path.join(directory, '.github/workflows/deploy-cloudflare.yml'),
-    'run: npm run validate:deployment-target\nrun: npm run smoke:deployment\n',
+    'jobs:\n  deploy:\n    steps:\n      - run: npm run validate:deployment-target\n      - run: npm run smoke:deployment\n',
   );
   await writeFile(
     path.join(directory, 'package.json'),
