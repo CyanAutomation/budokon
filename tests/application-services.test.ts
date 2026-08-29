@@ -5,7 +5,7 @@ import { DrawService } from "../build/runtime/draw/draw-service.js";
 import { JsonReadModelRepository } from "../build/runtime/repository/json-read-model-repository.js";
 import { createRestHandlers } from "../build/runtime/api/handlers.js";
 import { createMcpTools } from "../build/runtime/mcp/tools.js";
-import compiledModel from "./fixtures/compiled-model.mjs";
+import compiledModel from "./fixtures/compiled-model.js";
 
 const repository = new JsonReadModelRepository(compiledModel);
 const catalog = new CatalogService(repository); const draw = new DrawService(catalog);

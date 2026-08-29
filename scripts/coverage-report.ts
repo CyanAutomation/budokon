@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { validateCanonical } from '../src/validation/validate-canonical.mjs';
-import { coverageViolations, publicRealJudoka } from './coverage-policy.mjs';
+import { validateCanonical } from '../src/validation/validate-canonical.js';
+import { coverageViolations, publicRealJudoka } from './coverage-policy.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const orderedCounts = counts => Object.fromEntries(Object.entries(counts).sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0));

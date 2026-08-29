@@ -1,5 +1,7 @@
 /** Apply Cloudflare's optional best-effort limiter to the public catalogue. */
-export async function rateLimitPublicRequest(request, env) {
+type RateLimitEnv = { PUBLIC_RATE_LIMITER?: { limit(options: { key: string }): Promise<{ success: boolean }> } };
+
+export async function rateLimitPublicRequest(request: Request, env: RateLimitEnv): Promise<Response | undefined> {
   if (!env.PUBLIC_RATE_LIMITER) return undefined;
   const url = new URL(request.url);
   const client = request.headers.get("cf-connecting-ip") ?? "anonymous";

@@ -38,8 +38,11 @@ jobs:
       - name: Run tests
         run: npm run test
 
-      - name: Check deployment target validator syntax
-        run: node --check scripts/validate-cloudflare-deployment-target.mjs
+      - name: Type-check all TypeScript sources
+        run: npm run typecheck
+
+      - name: Enforce TypeScript-only source files
+        run: npm run check:typescript-only
 
       - name: Deploy Worker
         run: npm run deploy
