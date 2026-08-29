@@ -5,9 +5,25 @@ import { DrawService } from "../build/runtime/draw/draw-service.js";
 import { JsonReadModelRepository } from "../build/runtime/repository/json-read-model-repository.js";
 import { createRestHandlers } from "../build/runtime/api/handlers.js";
 import { createMcpTools } from "../build/runtime/mcp/tools.js";
+import type { Judoka } from "../build/runtime/domain/types.js";
+import type { ReadModelRepository } from "../build/runtime/repository/read-model-repository.js";
 import compiledModel from "./fixtures/compiled-model.js";
 
 const repository = new JsonReadModelRepository(compiledModel);
+const repositoryWithJudoka = (records: Judoka[]): ReadModelRepository => ({
+  get datasetVersion() { return repository.datasetVersion; },
+  get serviceVersion() { return repository.serviceVersion; },
+  get sourceGitCommit() { return repository.sourceGitCommit; },
+  get datasetChecksum() { return repository.datasetChecksum; },
+  listJudoka: (): Judoka[] => records,
+  getJudoka: id => repository.getJudoka(id),
+  listTechniques: () => repository.listTechniques(),
+  getTechnique: id => repository.getTechnique(id),
+  listEvents: () => repository.listEvents(),
+  getEvent: id => repository.getEvent(id),
+  listCountries: () => repository.listCountries(),
+  listWeightCategories: () => repository.listWeightCategories()
+});
 const catalog = new CatalogService(repository); const draw = new DrawService(catalog);
 const rest = createRestHandlers({ catalog, draw }); const mcp = createMcpTools({ catalog, draw });
 
@@ -38,12 +54,11 @@ test("multi-technique filters match any requested technique across catalog, REST
   assert.equal(draw.draw({ count: 1, filters, seed: "multi-technique" }).poolSize, expected.length);
 });
 test("filters do not coerce missing field values into matches", () => {
-  const sparseCatalog = new CatalogService({
-    listJudoka: () => [
-      { id: "null-value", slug: "null-value", countryCode: null, signatureMoveIds: [] },
-      { id: "missing-value", slug: "missing-value", signatureMoveIds: [] }
-    ]
-  });
+  const records: Judoka[] = [
+    { id: "null-value", slug: "null-value", countryCode: null, signatureMoveIds: [] },
+    { id: "missing-value", slug: "missing-value", signatureMoveIds: [] }
+  ];
+  const sparseCatalog = new CatalogService(repositoryWithJudoka(records));
   assert.deepEqual(sparseCatalog.listJudoka({ filters: { countryCode: "null" } }), []);
   assert.deepEqual(sparseCatalog.listJudoka({ filters: { countryCode: "undefined" } }), []);
 });
@@ -97,25 +112,24 @@ test("search normalizes case, whitespace, punctuation, and diacritics across eve
 });
 
 test("search constructs full names consistently when either name is null", () => {
-  const service = new CatalogService({
-    listJudoka: () => [
-      { id: "surname-only", slug: "surname-only", firstname: null, surname: "Test", signatureMoveIds: [] },
-      { id: "firstname-only", slug: "firstname-only", firstname: "Solo", surname: null, signatureMoveIds: [] }
-    ]
-  });
+  const records: Judoka[] = [
+    { id: "surname-only", slug: "surname-only", firstname: null, surname: "Test", signatureMoveIds: [] },
+    { id: "firstname-only", slug: "firstname-only", firstname: "Solo", surname: null, signatureMoveIds: [] }
+  ];
+  const service = new CatalogService(repositoryWithJudoka(records));
 
   assert.deepEqual(service.searchJudoka({ query: "test" }).map(j => j.id), ["surname-only"]);
   assert.deepEqual(service.searchJudoka({ query: "solo" }).map(j => j.id), ["firstname-only"]);
 });
 
 test("search composes with filters, exclusions, and visibility in UUID order", () => {
-  const records = [
+  const records: Judoka[] = [
     { id: "b", slug: "second-match", firstname: "Renée", surname: "Test", gender: "female", signatureMoveIds: [] },
     { id: "a", slug: "first-match", firstname: "Renee", surname: "Test", gender: "female", signatureMoveIds: [] },
     { id: "c", slug: "hidden-match", firstname: "Renee", surname: "Test", gender: "female", signatureMoveIds: [], isHidden: true },
     { id: "d", slug: "other-match", firstname: "Renee", surname: "Test", gender: "male", signatureMoveIds: [] }
   ];
-  const service = new CatalogService({ listJudoka: () => records });
+  const service = new CatalogService(repositoryWithJudoka(records));
   assert.deepEqual(service.searchJudoka({ query: "renee", filters: { gender: "female" }, exclude: ["second-match"] }).map(j => j.id), ["a"]);
   assert.deepEqual(service.searchJudoka({ query: "renee", includeHidden: true, authorizedInternal: true }).map(j => j.id), ["a", "b", "c", "d"]);
 });
