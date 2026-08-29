@@ -85,6 +85,15 @@ test("optional event draw adapters fail explicitly when the service is unavailab
   );
 });
 
+test("event REST handler defaults an omitted request body", () => {
+  const rest = createRestHandlers({ catalog, draw: new DrawService(catalog), eventDraw });
+
+  assert.throws(
+    () => rest.drawEvent(),
+    /ruleset must be a non-empty string/
+  );
+});
+
 test("compiled models from before event support expose an empty event collection", () => {
   const { events: _events, ...legacyCompiledModel } = compiledModel;
   const legacyRepository = new JsonReadModelRepository(legacyCompiledModel);
