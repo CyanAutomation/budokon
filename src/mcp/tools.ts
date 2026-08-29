@@ -12,6 +12,6 @@ export function createMcpTools({ catalog, draw, eventDraw }: { catalog: CatalogS
     get_technique: ({ id }: { id: string }) => versioned({ technique: catalog.getTechnique(id) ?? null }),
     list_events: ({ ruleset, category }: { ruleset?: string; category?: string } = {}) => versioned({ events: catalog.listEvents({ ruleset, category }) }),
     get_event: ({ id }: { id: string }) => versioned({ event: catalog.getEvent(id) ?? null }),
-    draw_event: (input: import("../domain/types.js").EventDrawRequest) => eventDraw!.draw(input), version: () => catalog.version(),
+    draw_event: (input: import("../domain/types.js").EventDrawRequest) => { if (!eventDraw) throw new Error("eventDraw service not configured"); return eventDraw.draw(input); }, version: () => catalog.version(),
   };
 }
