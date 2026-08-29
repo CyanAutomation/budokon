@@ -1,22 +1,24 @@
 {
-  "datasetVersion": "2026.08.6",
+  "datasetVersion": "2026.08.7",
   "serviceVersion": "0.1.0",
   "drawAlgorithms": [
     "budokon-v1"
   ],
   "defaultDrawAlgorithm": "budokon-v1",
-  "sourceGitCommit": "6507d5e2c92b3d4216784d72fbaa1bb27bca335e",
+  "sourceGitCommit": "3a808d5c7d732d1f4e9ea41e97aa77f0522abc05",
   "recordCounts": {
     "judoka": 74,
     "techniques": 100,
+    "events": 4,
     "countries": 37,
     "weightCategories": 14
   },
   "checksums": {
     "judoka.json": "sha256:76ce132e14118e4c35ef4debd23854c1348ebf73868bfe45202526d8ac2144e6",
     "techniques.json": "sha256:aa61c47a94f6c4a7d3b8974f1ba5df7508ff982f80a4a8a2f9a23b7d99af6c55",
+    "events.json": "sha256:285cf4b5af2a1c483f3a236b1a85aa1789b7fa51fd7243c13f59525e56ceab33",
     "countries.json": "sha256:5b578ecd0561721bb79612d888126348ea8bd3f0bdc74ce6da3ba71923732e88",
     "weight-categories.json": "sha256:21e75a6a896cd94fd4473c1cb2cfac00b29aea0e9ec0ee5a063a6a7dadc4600d",
-    "budokon.json": "sha256:37bb2376488cb7001accebba276e88df07a861725a7ea57242a18c5969fd5403"
+    "budokon.json": "sha256:870328b35375aaeede9b95df969325b8641105890d82dfc5a8b3996c90f6e8da"
   }
 }

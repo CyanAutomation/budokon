@@ -1,5 +1,5 @@
 {
-  "datasetVersion": "2026.08.6",
+  "datasetVersion": "2026.08.7",
   "judoka": [
     {
       "id": "0036f7e0-2759-42f3-830f-a4403ea14bc9",
@@ -3130,6 +3130,105 @@
       "subCategory": "Yoko-sutemi-waza",
       "description": "Side separation",
       "link": "https://en.wikipedia.org/wiki/Yoko_wakare"
+    }
+  ],
+  "events": [
+    {
+      "id": "failed-judogi-control",
+      "ruleset": "ju-do-kon-v1",
+      "category": "shiai",
+      "description": "The judoka fails judogi control and forfeits the contest.",
+      "effects": [
+        {
+          "action": "set",
+          "target": "match_result",
+          "value": "forfeit"
+        }
+      ]
+    },
+    {
+      "id": "great-warmup",
+      "ruleset": "ju-do-kon-v1",
+      "category": "shiai",
+      "description": "The judoka completes an effective warm-up and enters the contest exceptionally well prepared. All core attributes are increased by one.",
+      "effects": [
+        {
+          "action": "modify",
+          "target": "power",
+          "value": 1
+        },
+        {
+          "action": "modify",
+          "target": "speed",
+          "value": 1
+        },
+        {
+          "action": "modify",
+          "target": "technique",
+          "value": 1
+        },
+        {
+          "action": "modify",
+          "target": "kumikata",
+          "value": 1
+        },
+        {
+          "action": "modify",
+          "target": "newaza",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "poor-sleep",
+      "ruleset": "ju-do-kon-v1",
+      "category": "shiai",
+      "description": "The judoka has slept poorly and enters the contest inadequately recovered. All core attributes are decreased by one.",
+      "effects": [
+        {
+          "action": "modify",
+          "target": "power",
+          "value": -1
+        },
+        {
+          "action": "modify",
+          "target": "speed",
+          "value": -1
+        },
+        {
+          "action": "modify",
+          "target": "technique",
+          "value": -1
+        },
+        {
+          "action": "modify",
+          "target": "kumikata",
+          "value": -1
+        },
+        {
+          "action": "modify",
+          "target": "newaza",
+          "value": -1
+        }
+      ]
+    },
+    {
+      "id": "shido-false-attack",
+      "ruleset": "ju-do-kon-v1",
+      "category": "shiai",
+      "description": "The judoka receives a shido for making an attack without genuine intent to throw. They become more cautious in their kumi-kata.",
+      "effects": [
+        {
+          "action": "modify",
+          "target": "kumikata",
+          "value": -1
+        },
+        {
+          "action": "modify",
+          "target": "shido",
+          "value": 1
+        }
+      ]
     }
   ],
   "countries": {
