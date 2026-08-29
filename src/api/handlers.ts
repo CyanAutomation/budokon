@@ -14,7 +14,7 @@ export function createRestHandlers({ catalog, draw, eventDraw }: { catalog: Cata
     listTechniques: () => ok(catalog.listTechniques()), getTechnique: ({ params = {} }: ApiRequest = {}) => { const value = catalog.getTechnique(params?.id); return value ? ok(value) : missing(); },
     listEvents: ({ query = {} }: ApiRequest = {}) => ok(catalog.listEvents({ ruleset: typeof query?.ruleset === "string" ? query.ruleset : undefined, category: typeof query?.category === "string" ? query.category : undefined })),
     getEvent: ({ params = {} }: ApiRequest = {}) => { const value = catalog.getEvent(params?.id); return value ? ok(value) : missing(); },
-    drawEvent: ({ body }: ApiRequest = {}) => ok(eventDraw!.draw(body as EventDrawRequest)),
+    drawEvent: ({ body }: ApiRequest = {}) => { if (!eventDraw) throw new Error("eventDraw service not configured"); return ok(eventDraw.draw(body as EventDrawRequest)); },
     listCountries: () => ok(catalog.listCountries()), listWeightCategories: () => ok(catalog.listWeightCategories()),
     draw: ({ body = {}, authorizedInternal = false }: ApiRequest = {}) => ok(draw.draw(body, { authorizedInternal })),
     version: () => ok(catalog.version()), status: () => ok(catalog.status())
