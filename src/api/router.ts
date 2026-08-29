@@ -1,7 +1,30 @@
-import type { CatalogService } from "../domain/catalog-service.js";
-import type { DrawRequest, EventDrawRequest, Filters } from "../domain/types.js";
-import type { DrawService } from "../draw/draw-service.js";
-import type { EventDrawService } from "../draw/event-draw-service.js";
+import type {
+  Country, CoverageResponse, DrawRequest, DrawResponse, EventDrawRequest, EventDrawResponse,
+  Filters, JudoEvent, Judoka, ListJudokaOptions, RequestContext, SearchJudokaOptions,
+  StatusResponse, Technique, VersionResponse, WeightCategoryGroup
+} from "../domain/types.js";
+
+export interface RestCatalogDependency {
+  searchJudoka(options?: SearchJudokaOptions): Judoka[];
+  getJudoka(id: string | undefined, options?: Pick<ListJudokaOptions, "includeHidden" | "authorizedInternal">): Judoka | undefined;
+  listTechniques(): Technique[];
+  getTechnique(id: string | undefined): Technique | undefined;
+  listEvents(options?: { ruleset?: string; category?: string }): JudoEvent[];
+  getEvent(id: string | undefined): JudoEvent | undefined;
+  listCountries(): Country[];
+  listWeightCategories(): WeightCategoryGroup[];
+  version(): VersionResponse;
+  status(): StatusResponse;
+  coverage(): CoverageResponse;
+}
+
+export interface RestDrawDependency {
+  draw(input?: DrawRequest, context?: RequestContext): DrawResponse;
+}
+
+export interface RestEventDrawDependency {
+  draw(input: EventDrawRequest): EventDrawResponse;
+}
 
 export interface RestRouterOptions {
   /** Resolve deployment-specific credentials without coupling the router to a platform. */
@@ -94,7 +117,7 @@ function validateEventDrawBody(value: unknown): EventDrawRequest {
 }
 
 /** Create a runtime-neutral Fetch API handler backed exclusively by application services. */
-export function createRestRouter({ catalog, draw, eventDraw }: { catalog: CatalogService; draw: DrawService; eventDraw?: EventDrawService }, options: RestRouterOptions = {}) {
+export function createRestRouter({ catalog, draw, eventDraw }: { catalog: RestCatalogDependency; draw: RestDrawDependency; eventDraw?: RestEventDrawDependency }, options: RestRouterOptions = {}) {
   return async function route(request: Request): Promise<Response> {
     try {
       const url = new URL(request.url);
