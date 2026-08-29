@@ -41,8 +41,8 @@ export class JsonReadModelRepository extends ReadModelRepository {
   }
   listTechniques() { return this.model.techniques.slice(); }
   getTechnique(id: string | undefined) { return id === undefined ? undefined : this.model.techniques.find(t => t.id === id); }
-  listEvents() { return this.model.events!.slice(); }
-  getEvent(id: string | undefined) { return id === undefined ? undefined : this.model.events!.find(event => event.id === id); }
+  listEvents() { if (!this.model.events) throw new Error("Events not available in dataset"); return this.model.events.slice(); }
+  getEvent(id: string | undefined) { if (!this.model.events) throw new Error("Events not available in dataset"); return id === undefined ? undefined : this.model.events.find(event => event.id === id); }
   listCountries() { return structuredClone(this.model.countries); }
   listWeightCategories() { return structuredClone(this.model.weightCategories); }
 }
