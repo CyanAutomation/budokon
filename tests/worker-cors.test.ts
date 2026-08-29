@@ -3,7 +3,7 @@ import test from "node:test";
 import { cachePublicGet, corsHeaders, preflightResponse, withCors } from "../worker/cors.js";
 
 const env = { PUBLIC_ALLOWED_ORIGINS: "https://game.example, http://localhost:5173" };
-const request = (origin, init = {}) => new Request("https://api.example/v1/judoka", {
+const request = (origin?: string, init: RequestInit = {}): Request => new Request("https://api.example/v1/judoka", {
   ...init, headers: { ...(origin ? { origin } : {}), ...(init.headers ?? {}) }
 });
 

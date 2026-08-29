@@ -1,7 +1,19 @@
 const base = (process.env.DEPLOYMENT_URL ?? "").replace(/\/$/, "");
 if (!/^https:\/\//.test(base)) throw new Error("DEPLOYMENT_URL must be an HTTPS URL");
 
-async function request(path, init, expectedStatus) {
+interface StatusBody {
+  status: string;
+  sourceGitCommit: string;
+  datasetChecksum: string;
+  datasetVersion: string;
+}
+
+interface LandingBody {
+  openapi: string;
+  status: string;
+}
+
+async function request(path: string, init?: RequestInit, expectedStatus?: number): Promise<Response> {
   try {
     const response = await fetch(`${base}${path}`, init);
     if (expectedStatus === undefined ? !response.ok : response.status !== expectedStatus) {
@@ -16,11 +28,11 @@ async function request(path, init, expectedStatus) {
   }
 }
 
-const status = await request("/v1/status").then(response => response.json());
+const status = await request("/v1/status").then(response => response.json() as Promise<StatusBody>);
 if (status.status !== "ok" || !/^[0-9a-f]{40}$/.test(status.sourceGitCommit) || !/^sha256:[0-9a-f]{64}$/.test(status.datasetChecksum)) {
   throw new Error("status did not expose a valid immutable release identity");
 }
-const landing = await request("/").then(response => response.json());
+const landing = await request("/").then(response => response.json() as Promise<LandingBody>);
 if (landing.openapi !== `${base}/openapi/v1.yaml` || landing.status !== `${base}/v1/status`) throw new Error("landing document is incomplete");
 const contract = await request("/openapi/v1.yaml");
 if (!(await contract.text()).includes("/v1/status:")) throw new Error("OpenAPI contract does not document status");
