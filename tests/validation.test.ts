@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { validateCanonical, validateSchema } from '../src/validation/validate-canonical.mjs';
+import { validateCanonical, validateSchema } from '../src/validation/validate-canonical.js';
 
 const repository = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const cases = JSON.parse(await readFile(new URL('./fixtures/semantic-cases.json', import.meta.url)));

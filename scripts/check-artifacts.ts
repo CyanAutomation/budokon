@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { compileArtifacts } from './build.mjs';
+import { compileArtifacts } from './build.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const sha256 = (bytes) => `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
