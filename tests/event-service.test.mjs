@@ -5,6 +5,7 @@ import {
   EventDrawService,
   JsonReadModelRepository,
   createMcpTools,
+  createRestHandlers,
   createRestRouter,
   DrawService,
 } from "../build/runtime/index.js";
@@ -67,4 +68,38 @@ test("MCP event tools share event-draw semantics", () => {
   assert.deepEqual(mcp.list_events({ ruleset: "ju-do-kon-v1" }).events.map(event => event.id), eventIds);
   assert.equal(mcp.get_event({ id: "failed-judogi-control" }).event.effects[0].value, "forfeit");
   assert.equal(mcp.draw_event({ ruleset: "ju-do-kon-v1", seed: "mcp" }).event.ruleset, "ju-do-kon-v1");
+});
+
+test("optional event draw adapters fail explicitly when the service is unavailable", () => {
+  const draw = new DrawService(catalog);
+  const rest = createRestHandlers({ catalog, draw });
+  const mcp = createMcpTools({ catalog, draw });
+
+  assert.throws(
+    () => rest.drawEvent({ body: { ruleset: "ju-do-kon-v1" } }),
+    /eventDraw service not configured/
+  );
+  assert.throws(
+    () => mcp.draw_event({ ruleset: "ju-do-kon-v1" }),
+    /eventDraw service not configured/
+  );
+});
+
+test("compiled models from before event support expose an empty event collection", () => {
+  const { events: _events, ...legacyCompiledModel } = compiledModel;
+  const legacyRepository = new JsonReadModelRepository(legacyCompiledModel);
+
+  assert.deepEqual(legacyRepository.listEvents(), []);
+  assert.equal(legacyRepository.getEvent("great-warmup"), undefined);
+});
+
+test("event draw rejects an empty optional category as a bad request", async () => {
+  const response = await request("/v1/events/draw", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: '{"ruleset":"ju-do-kon-v1","category":""}'
+  });
+
+  assert.equal(response.status, 400);
+  assert.equal((await response.json()).error.message, "category must be a non-empty string");
 });
