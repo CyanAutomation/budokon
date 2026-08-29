@@ -3,9 +3,11 @@ import test from "node:test";
 import { cachePublicGet, corsHeaders, preflightResponse, withCors } from "../worker/cors.js";
 
 const env = { PUBLIC_ALLOWED_ORIGINS: "https://game.example, http://localhost:5173" };
-const request = (origin?: string, init: RequestInit = {}): Request => new Request("https://api.example/v1/judoka", {
-  ...init, headers: { ...(origin ? { origin } : {}), ...(init.headers ?? {}) }
-});
+const request = (origin?: string, init: RequestInit = {}): Request => {
+  const headers = new Headers(init.headers);
+  if (origin) headers.set("origin", origin);
+  return new Request("https://api.example/v1/judoka", { ...init, headers });
+};
 
 test("CORS returns headers only for exact configured origins", () => {
   const headers = corsHeaders(request("https://game.example"), env);
