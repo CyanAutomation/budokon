@@ -6,6 +6,7 @@
     "types": ["node"],
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "strict": false,
+    // Override the base config so tooling also checks dependency declarations.
     "skipLibCheck": false
   },
   "include": [
