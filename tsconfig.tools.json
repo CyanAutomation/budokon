@@ -6,7 +6,7 @@
     "types": ["node"],
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "strict": false,
-    "noCheck": true
+    "skipLibCheck": true
   },
   "include": [
     "src/**/*.ts",
