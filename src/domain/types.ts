@@ -20,6 +20,11 @@ export interface Judoka {
 }
 
 export interface Technique { id: string; [key: string]: JsonValue; }
+export type EventAction = "modify" | "set";
+export type EventTarget = "power" | "speed" | "technique" | "kumikata" | "newaza" | "shido" | "waza_ari" | "score" | "match_result";
+export interface EventEffect { action: EventAction; target: EventTarget; value: number | string; }
+/** A ruleset-scoped gameplay prompt. Consumers apply effects to their own match state. */
+export interface JudoEvent { id: string; ruleset: string; category: string; description: string; effects: EventEffect[]; }
 export interface Country { code: string; country: string; active: boolean; [key: string]: JsonValue; }
 export interface WeightCategoryGroup { gender: string; categories: JsonValue[]; [key: string]: JsonValue; }
 
@@ -38,6 +43,7 @@ export interface CompiledDataset {
   datasetVersion: string;
   judoka: Judoka[];
   techniques: Technique[];
+  events?: JudoEvent[];
   countries: Record<string, Country>;
   weightCategories: WeightCategoryGroup[];
   /** Optional deployment metadata; it is deliberately not embedded in budokon.json. */
@@ -52,6 +58,8 @@ export interface SearchJudokaOptions extends ListJudokaOptions { query?: string;
 export interface DrawRequest extends ListJudokaOptions { count?: number; seed?: string; algorithm?: string; }
 export interface RequestContext { authorizedInternal?: boolean; }
 export interface DrawResponse { datasetVersion: string; algorithm: string; seed?: string; poolSize: number; judoka: Judoka[]; }
+export interface EventDrawRequest { ruleset: string; category?: string; seed?: string; exclude?: string[]; }
+export interface EventDrawResponse { datasetVersion: string; algorithm: string; seed?: string; poolSize: number; event: JudoEvent; }
 export interface VersionResponse {
   datasetVersion: string;
   serviceVersion: string;

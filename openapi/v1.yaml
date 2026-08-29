@@ -35,6 +35,38 @@ paths:
       summary: Get a technique
       parameters: [ { $ref: '#/components/parameters/Id' } ]
       responses: { '200': { description: Technique }, '404': { $ref: '#/components/responses/NotFound' } }
+  /v1/events:
+    get:
+      summary: List ruleset-scoped gameplay events
+      parameters:
+        - $ref: '#/components/parameters/Ruleset'
+        - $ref: '#/components/parameters/EventCategory'
+      responses: { '200': { description: Event array }, '400': { $ref: '#/components/responses/BadRequest' } }
+  /v1/events/{id}:
+    get:
+      summary: Get a gameplay event by ID
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses: { '200': { description: Event }, '404': { $ref: '#/components/responses/NotFound' } }
+  /v1/events/draw:
+    post:
+      summary: Draw one random or deterministic gameplay event for a ruleset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ruleset]
+              additionalProperties: false
+              properties:
+                ruleset: { type: string, example: ju-do-kon-v1 }
+                category: { type: string, example: shiai }
+                seed: { type: string }
+                exclude: { type: array, items: { type: string } }
+      responses:
+        '200': { description: Event draw result }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { description: No event is eligible for the requested ruleset and filters }
   /v1/countries:
     get: { summary: List supported countries, responses: { '200': { description: Country map } } }
   /v1/weight-categories:
@@ -78,6 +110,8 @@ components:
     Exclude: { name: exclude, in: query, schema: { type: string } }
     Limit: { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
     Cursor: { name: cursor, in: query, schema: { type: string, description: id returned as nextCursor } }
+    Ruleset: { name: ruleset, in: query, schema: { type: string, example: ju-do-kon-v1 } }
+    EventCategory: { name: category, in: query, schema: { type: string, example: shiai } }
   schemas:
     Filters:
       type: object

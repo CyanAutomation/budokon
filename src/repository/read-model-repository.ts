@@ -1,4 +1,4 @@
-import type { Country, Judoka, Technique, WeightCategoryGroup } from "../domain/types.js";
+import type { Country, JudoEvent, Judoka, Technique, WeightCategoryGroup } from "../domain/types.js";
 
 /** Runtime-neutral interface for application access to an immutable read model. */
 export abstract class ReadModelRepository {
@@ -10,6 +10,8 @@ export abstract class ReadModelRepository {
   abstract getJudoka(id: string | undefined): Judoka | undefined;
   abstract listTechniques(): Technique[];
   abstract getTechnique(id: string | undefined): Technique | undefined;
+  abstract listEvents(): JudoEvent[];
+  abstract getEvent(id: string | undefined): JudoEvent | undefined;
   abstract listCountries(): Record<string, Country>;
   abstract listWeightCategories(): WeightCategoryGroup[];
 }
