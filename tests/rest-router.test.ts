@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   CatalogService, DrawService, JsonReadModelRepository, createRestRouter, summarizeCoverage,
-  type RestCatalogDependency, type RestDrawDependency
+  type CoverageResponse, type Judoka, type RestCatalogDependency, type RestDrawDependency
 } from "../build/runtime/index.js";
 import compiledModel from "./fixtures/compiled-model.js";
 
@@ -31,9 +31,9 @@ test("every documented catalogue and metadata endpoint conforms", async () => {
 
 test("coverage returns empty rarity percentages when no public real judoka exist", () => {
   const coverage = summarizeCoverage([
-    { personType: "real", isHidden: true, rarity: "Rare" },
-    { personType: "fictional", isHidden: false, rarity: "Common" },
-  ]);
+    { id: "hidden-real", slug: "hidden-real", personType: "real", isHidden: true, rarity: "Rare", signatureMoveIds: [] },
+    { id: "public-fictional", slug: "public-fictional", personType: "fictional", isHidden: false, rarity: "Common", signatureMoveIds: [] },
+  ] satisfies Judoka[]);
 
   assert.equal(coverage.publicReal, 0);
   assert.deepEqual(coverage.byRarity, {});
@@ -43,7 +43,7 @@ test("coverage returns empty rarity percentages when no public real judoka exist
 test("coverage exposes public real-judoka counts and stable rarity percentages", async () => {
   const response = await request("/v1/coverage");
   assert.equal(response.status, 200);
-  const coverage = await body(response);
+  const coverage = await body(response) as CoverageResponse;
   assert.equal(coverage.publicReal, catalog.listJudoka().filter(record => record.personType === "real").length);
   assert.deepEqual(Object.keys(coverage.byRarity), ["Common", "Epic", "Legendary", "Rare"]);
   assert.ok(Math.abs(Object.values(coverage.rarityPercentages).reduce((sum, value) => sum + value, 0) - 100) <= 0.1);
