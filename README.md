@@ -937,6 +937,9 @@ GET  /v1/judoka
 GET  /v1/judoka/:id
 GET  /v1/techniques
 GET  /v1/techniques/:id
+GET  /v1/events
+GET  /v1/events/:id
+POST /v1/events/draw
 GET  /v1/countries
 GET  /v1/weight-categories
 POST /v1/draw
@@ -1372,6 +1375,32 @@ BU-DO-KON follows these principles.
 ### One shared judoka catalogue
 
 Games should not maintain duplicate canonical judoka records.
+
+### Ruleset-scoped gameplay events
+
+`data/events/` contains immutable, curated gameplay prompts for a named consumer
+ruleset. They are not factual judoka records and BU-DO-KON never applies their
+effects: the consuming game owns match state and interprets the returned effect
+list. Each event has a stable `id`, a `ruleset`, a category, a description, and
+one or more effects. The initial `ju-do-kon-v1` ruleset supports `modify` for
+the numeric targets `power`, `speed`, `technique`, `kumikata`, `newaza`,
+`shido`, `waza_ari`, and `score`; `set` supports those numeric state targets
+with non-negative integers and `match_result` with the value `forfeit`.
+
+Browser games should draw an event with `POST /v1/events/draw`, rather than a
+random GET, so HTTP caches cannot accidentally turn a random draw into a shared
+cached response:
+
+    POST /v1/events/draw
+    Content-Type: application/json
+
+    { "ruleset": "ju-do-kon-v1", "category": "shiai", "seed": "match-472" }
+
+The response includes the dataset version, `budokon-event-v1` algorithm,
+eligible-pool size, optional seed, and one `event`. A matching seed and dataset
+version reproduce the same draw. `GET /v1/events` lists records and supports
+optional `ruleset` and `category` filters; `GET /v1/events/:id` returns a record
+by its stable ID.
 
 ### Git is the editorial authority
 

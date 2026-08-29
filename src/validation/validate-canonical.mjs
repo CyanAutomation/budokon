@@ -39,7 +39,10 @@ export function validateSchema(value, schema, location = '$', rootSchema = schem
   if (schema.const !== undefined && !equal(value, schema.const)) fail(location, `must equal ${JSON.stringify(schema.const)}`);
   if (schema.enum && !schema.enum.some((item) => equal(item, value))) fail(location, `must be one of ${schema.enum.join(', ')}`);
   const actual = Array.isArray(value) ? 'array' : value === null ? 'null' : Number.isInteger(value) ? 'integer' : typeof value;
-  if (schema.type && actual !== schema.type && !(schema.type === 'number' && typeof value === 'number')) fail(location, `must be ${schema.type}`);
+  if (schema.type) {
+    const expected = Array.isArray(schema.type) ? schema.type : [schema.type];
+    if (!expected.some(type => actual === type || (type === 'number' && typeof value === 'number'))) fail(location, `must be ${expected.join(' or ')}`);
+  }
   if (typeof value === 'string') {
     if (schema.minLength !== undefined && value.length < schema.minLength) fail(location, `must contain at least ${schema.minLength} characters`);
     if (schema.pattern && !new RegExp(schema.pattern, 'u').test(value)) fail(location, `must match ${schema.pattern}`);
@@ -104,16 +107,18 @@ function unique(items, field, label) {
 /** Parse and validate all canonical datasets, including cross-record rules. */
 export async function validateCanonical(root = defaultRoot) {
   const schemaDir = path.join(root, 'schema');
-  const [judokaSchema, techniqueSchema, countriesSchema, weightsSchema, datasetSchema] = await Promise.all(
-    ['judoka', 'technique', 'countries', 'weight-categories', 'dataset'].map((name) => parse(path.join(schemaDir, `${name}.schema.json`))),
+  const [judokaSchema, techniqueSchema, eventSchema, countriesSchema, weightsSchema, datasetSchema] = await Promise.all(
+    ['judoka', 'technique', 'event', 'countries', 'weight-categories', 'dataset'].map((name) => parse(path.join(schemaDir, `${name}.schema.json`))),
   );
-  const [judokaFiles, techniqueFiles, countries, weights, dataset] = await Promise.all([
+  const [judokaFiles, techniqueFiles, eventFiles, countries, weights, dataset] = await Promise.all([
     records(path.join(root, 'data/judoka')), records(path.join(root, 'data/techniques')),
+    records(path.join(root, 'data/events')),
     parse(path.join(root, 'data/reference/countries.json')), parse(path.join(root, 'data/reference/weight-categories.json')),
     parse(path.join(root, 'data/dataset.json')),
   ]);
   for (const file of judokaFiles) validateSchema(file.value, judokaSchema, `data/judoka/${file.name}`);
   for (const file of techniqueFiles) validateSchema(file.value, techniqueSchema, `data/techniques/${file.name}`);
+  for (const file of eventFiles) validateSchema(file.value, eventSchema, `data/events/${file.name}`);
   validateSchema(countries, countriesSchema, 'data/reference/countries.json');
   validateSchema(weights, weightsSchema, 'data/reference/weight-categories.json');
   validateSchema(dataset, datasetSchema, 'data/dataset.json');
@@ -122,19 +127,22 @@ export async function validateCanonical(root = defaultRoot) {
   rejectGameStateProperties(countries, 'data/reference/countries.json');
   rejectGameStateProperties(weights, 'data/reference/weight-categories.json');
   rejectGameStateProperties(dataset, 'data/dataset.json');
-  const judoka = judokaFiles.map(({ value }) => value), techniques = techniqueFiles.map(({ value }) => value);
+  const judoka = judokaFiles.map(({ value }) => value), techniques = techniqueFiles.map(({ value }) => value), events = eventFiles.map(({ value }) => value);
   unique(judoka, 'id', 'judoka UUID'); unique(judoka, 'handles', 'judoka slug or legacy slug');
   const names = new Map();
   for (const record of judoka) for (const name of [`${record.firstname} ${record.surname}`, ...(record.aliases ?? [])]) {
     const normalized = normalizedName(name);
     if (names.has(normalized) && names.get(normalized) !== record.slug) throw new Error(`ambiguous normalized judoka name ${JSON.stringify(normalized)} in ${names.get(normalized)} and ${record.slug}`);
     names.set(normalized, record.slug);
-  } unique(techniques, 'id', 'technique ID');
+  } unique(techniques, 'id', 'technique ID'); unique(events, 'id', 'event ID');
   for (const file of judokaFiles) if (path.parse(file.name).name !== file.value.slug) {
     throw new Error(`data/judoka/${file.name}: filename must match canonical slug ${file.value.slug}`);
   }
   for (const file of techniqueFiles) if (path.parse(file.name).name !== file.value.id) {
     throw new Error(`data/techniques/${file.name}: filename must match canonical ID ${file.value.id}`);
+  }
+  for (const file of eventFiles) if (path.parse(file.name).name !== file.value.id) {
+    throw new Error(`data/events/${file.name}: filename must match canonical ID ${file.value.id}`);
   }
   const techniqueIds = new Set(techniques.map(({ id }) => id));
   const weightMap = new Map();
@@ -165,11 +173,20 @@ export async function validateCanonical(root = defaultRoot) {
     meaningfulText(record.japanese, `${record.id}.japanese`);
     meaningfulText(record.description, `${record.id}.description`);
   }
+  const numericTargets = new Set(['power', 'speed', 'technique', 'kumikata', 'newaza', 'shido', 'waza_ari', 'score']);
+  const stateTargets = new Set(['shido', 'waza_ari', 'score', 'match_result']);
+  for (const event of events) {
+    meaningfulText(event.description, `${event.id}.description`);
+    for (const [index, effect] of event.effects.entries()) {
+      if (effect.action === 'modify' && (!numericTargets.has(effect.target) || !Number.isInteger(effect.value))) fail(`${event.id}.effects[${index}]`, 'modify effects require a numeric target and integer value');
+      if (effect.action === 'set' && (!stateTargets.has(effect.target) || (effect.target === 'match_result' ? effect.value !== 'forfeit' : !Number.isInteger(effect.value) || effect.value < 0))) fail(`${event.id}.effects[${index}]`, 'set effects require a valid state value');
+    }
+  }
   for (const [groupIndex, group] of weights.entries()) {
     meaningfulText(group.description, `weights[${groupIndex}].description`);
     for (const [categoryIndex, category] of group.categories.entries()) meaningfulText(category.descriptor, `weights[${groupIndex}].categories[${categoryIndex}].descriptor`);
   }
-  return { judoka, techniques, countries, weights, dataset };
+  return { judoka, techniques, events, countries, weights, dataset };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

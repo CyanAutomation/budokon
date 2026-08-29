@@ -1,0 +1,13 @@
+{
+  "id": "poor-sleep",
+  "ruleset": "ju-do-kon-v1",
+  "category": "shiai",
+  "description": "The judoka has slept poorly and enters the contest inadequately recovered. All core attributes are decreased by one.",
+  "effects": [
+    { "action": "modify", "target": "power", "value": -1 },
+    { "action": "modify", "target": "speed", "value": -1 },
+    { "action": "modify", "target": "technique", "value": -1 },
+    { "action": "modify", "target": "kumikata", "value": -1 },
+    { "action": "modify", "target": "newaza", "value": -1 }
+  ]
+}
