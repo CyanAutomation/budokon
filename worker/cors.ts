@@ -1,12 +1,13 @@
 const METHODS = "GET, POST, OPTIONS";
 const HEADERS = "content-type";
+type PublicEnv = { PUBLIC_ALLOWED_ORIGINS?: string };
 
-function allowedOrigins(env) {
+function allowedOrigins(env: PublicEnv): Set<string> {
   return new Set((env.PUBLIC_ALLOWED_ORIGINS ?? "").split(",").map(origin => origin.trim()).filter(Boolean));
 }
 
 /** Return CORS headers only when the request Origin is explicitly allowlisted. */
-export function corsHeaders(request, env) {
+export function corsHeaders(request: Request, env: PublicEnv): Headers {
   const origin = request.headers.get("origin");
   const allowed = allowedOrigins(env);
   if (!origin || (!allowed.has("*") && !allowed.has(origin))) return new Headers();
@@ -20,7 +21,7 @@ export function corsHeaders(request, env) {
 }
 
 /** Handle browser preflight without ever accepting a browser-held API key. */
-export function preflightResponse(request, env) {
+export function preflightResponse(request: Request, env: PublicEnv): Response {
   const headers = corsHeaders(request, env);
   const requestedMethod = request.headers.get("access-control-request-method");
   const method = requestedMethod?.toUpperCase();
@@ -30,13 +31,13 @@ export function preflightResponse(request, env) {
 }
 
 /** Apply CORS to every visible response, including validation and authorization errors. */
-export function withCors(response, request, env) {
+export function withCors(response: Response, request: Request, env: PublicEnv): Response {
   const headers = new Headers(response.headers);
   for (const [name, value] of corsHeaders(request, env)) headers.set(name, value);
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
-function weaklyMatchesEtag(ifNoneMatch, etag) {
+function weaklyMatchesEtag(ifNoneMatch: string | null, etag: string): boolean {
   if (ifNoneMatch === null) return false;
 
   const validators = [];
@@ -60,7 +61,7 @@ function weaklyMatchesEtag(ifNoneMatch, etag) {
 }
 
 /** Cache immutable catalogue GET representations at the edge and validate them cheaply in browsers. */
-export function cachePublicGet(response, request, datasetVersion) {
+export function cachePublicGet(response: Response, request: Request, datasetVersion: string): Response {
   if (request.method !== "GET" || response.status !== 200) return response;
   const url = new URL(request.url);
   const etag = `"budokon-${datasetVersion}-${encodeURIComponent(`${url.pathname}${url.search}`)}"`;

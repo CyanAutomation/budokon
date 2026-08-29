@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { CatalogService, DrawService, JsonReadModelRepository, createRestRouter, summarizeCoverage } from "../build/runtime/index.js";
-import compiledModel from "./fixtures/compiled-model.mjs";
+import compiledModel from "./fixtures/compiled-model.js";
 
 const repository = new JsonReadModelRepository(compiledModel);
 const catalog = new CatalogService(repository);

@@ -17,6 +17,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run typecheck
+      - run: npm run check:typescript-only
       - name: Validate canonical data
         run: npm run validate
       - name: Associate dataset version, tag, and commit

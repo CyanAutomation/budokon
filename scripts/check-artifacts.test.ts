@@ -4,7 +4,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { verifyArtifactConsistency } from './check-artifacts.mjs';
+import { verifyArtifactConsistency } from './check-artifacts.js';
 
 const commit = '1234567890abcdef1234567890abcdef12345678';
 const checksum = (value) => `sha256:${createHash('sha256').update(value).digest('hex')}`;

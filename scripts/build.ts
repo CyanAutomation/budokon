@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { validateCanonical } from '../src/validation/validate-canonical.mjs';
+import { validateCanonical } from '../src/validation/validate-canonical.js';
 import algorithmContract from '../src/draw/algorithm-contract.json' with { type: 'json' };
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');

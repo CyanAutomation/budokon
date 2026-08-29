@@ -12,6 +12,8 @@ jobs:
         with:
           node-version: 22
       - run: npm ci --cache .npm
+      - run: npm run typecheck
+      - run: npm run check:typescript-only
       - run: npm test
       - run: npm run validate
       - name: Compile expected output and verify tracked artifacts

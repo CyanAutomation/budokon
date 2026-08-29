@@ -3,7 +3,7 @@
  *
  * @param {Request} request
  */
-export function credential(request) {
+export function credential(request: Request): string {
   return request.headers.get("x-api-key") ?? request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
 }
 
@@ -13,7 +13,7 @@ export function credential(request) {
  * @param {Request} request
  * @param {string | undefined} expected
  */
-export function authorized(request, expected) {
+export function authorized(request: Request, expected: string | undefined): boolean {
   // Secrets are mandatory. A missing secret must never accidentally allow access.
   const credValue = credential(request);
   if (!expected) return false;
