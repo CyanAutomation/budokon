@@ -9,8 +9,8 @@ const sha256 = (bytes) => `sha256:${createHash('sha256').update(bytes).digest('h
 
 try {
   const dist = path.join(root, 'dist');
-  const manifest = JSON.parse(await readFile(path.join(dist, 'manifest.json')));
-  const aggregate = JSON.parse(await readFile(path.join(dist, 'budokon.json')));
+  const manifest = JSON.parse(await readFile(path.join(dist, 'manifest.json'), 'utf8'));
+  const aggregate = JSON.parse(await readFile(path.join(dist, 'budokon.json'), 'utf8'));
   const tag = process.env.RELEASE_TAG ?? process.env.GITHUB_REF_NAME;
 
   if (!tag) throw new Error('Set RELEASE_TAG (or GITHUB_REF_NAME) to the release tag');

@@ -7,15 +7,15 @@ import { fileURLToPath } from 'node:url';
 import { validateCanonical, validateSchema } from '../src/validation/validate-canonical.js';
 
 const repository = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const cases = JSON.parse(await readFile(new URL('./fixtures/semantic-cases.json', import.meta.url)));
-const textCases = JSON.parse(await readFile(new URL('./fixtures/semantic-text-cases.json', import.meta.url)));
+const cases = JSON.parse(await readFile(new URL('./fixtures/semantic-cases.json', import.meta.url), 'utf8'));
+const textCases = JSON.parse(await readFile(new URL('./fixtures/semantic-text-cases.json', import.meta.url), 'utf8'));
 async function sandbox() {
   const root = await mkdtemp(path.join(os.tmpdir(), 'budokon-validation-'));
   for (const directory of ['schema', 'data']) await cp(path.join(repository, directory), path.join(root, directory), { recursive: true });
   return root;
 }
 async function change(file, mutate) {
-  const value = JSON.parse(await readFile(file)); mutate(value); await writeFile(file, `${JSON.stringify(value, null, 2)}\n`);
+  const value = JSON.parse(await readFile(file, 'utf8')); mutate(value); await writeFile(file, `${JSON.stringify(value, null, 2)}\n`);
 }
 
 test('schema references fail clearly for unsupported or missing targets', () => {
@@ -100,15 +100,15 @@ for (const fixture of cases) test(`rejects ${fixture.name}`, async () => {
   if (fixture.kind === 'judoka') await change(firstJudoka, (record) => { record[fixture.field] = fixture.value; });
   if (fixture.kind === 'alias') await change(firstJudoka, (record) => { record.aliases = ['Ilia Sulamanidze']; });
   if (fixture.kind === 'judoka-copy') {
-    const original = JSON.parse(await readFile(firstJudoka));
-    const other = JSON.parse(await readFile(path.join(judokaDir, 'ilia-sulamanidze.json')));
+    const original = JSON.parse(await readFile(firstJudoka, 'utf8'));
+    const other = JSON.parse(await readFile(path.join(judokaDir, 'ilia-sulamanidze.json'), 'utf8'));
     other[fixture.field] = original[fixture.field];
     await writeFile(path.join(judokaDir, 'ilia-sulamanidze.json'), JSON.stringify(other));
   }
   if (fixture.kind === 'technique-copy') {
-    const original = JSON.parse(await readFile(path.join(techniqueDir, 'ashi-garami.json')));
+    const original = JSON.parse(await readFile(path.join(techniqueDir, 'ashi-garami.json'), 'utf8'));
     const otherFile = path.join(techniqueDir, 'ashi-guruma.json');
-    const other = JSON.parse(await readFile(otherFile)); other.id = original.id; await writeFile(otherFile, JSON.stringify(other));
+    const other = JSON.parse(await readFile(otherFile, 'utf8')); other.id = original.id; await writeFile(otherFile, JSON.stringify(other));
   }
   await assert.rejects(validateCanonical(root), new RegExp(fixture.message));
 });
