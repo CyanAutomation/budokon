@@ -1,0 +1,10 @@
+{
+  "id": "shido-false-attack",
+  "ruleset": "ju-do-kon-v1",
+  "category": "shiai",
+  "description": "The judoka receives a shido for making an attack without genuine intent to throw. They become more cautious in their kumi-kata.",
+  "effects": [
+    { "action": "modify", "target": "kumikata", "value": -1 },
+    { "action": "modify", "target": "shido", "value": 1 }
+  ]
+}

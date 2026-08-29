@@ -39,7 +39,7 @@ const sortWeights = (weights) => weights.map((group) => ({
 export async function compileArtifacts(sourceGitCommit, sourceRoot = root) {
   if (!sourceGitCommit) throw new Error('SOURCE_GIT_COMMIT is required; generated artifacts must identify an explicit source commit');
   if (!/^[0-9a-f]{40}$/i.test(sourceGitCommit)) throw new Error('SOURCE_GIT_COMMIT must be a full Git commit hash');
-  const { judoka, techniques, countries, weights, dataset } = await validateCanonical(sourceRoot);
+  const { judoka, techniques, events, countries, weights, dataset } = await validateCanonical(sourceRoot);
   const service = JSON.parse(await readFile(path.join(sourceRoot, 'package.json'), 'utf8'));
   if (typeof dataset?.datasetVersion !== 'string' || dataset.datasetVersion.trim() === '') {
     throw new Error('Invalid dataset: missing datasetVersion');
@@ -51,12 +51,14 @@ export async function compileArtifacts(sourceGitCommit, sourceRoot = root) {
     datasetVersion: dataset.datasetVersion,
     judoka: expandJudokaCountries(judoka, countries).sort(byId),
     techniques: [...techniques].sort(byId),
+    events: [...events].sort(byId),
     countries: sortCountries(countries),
     weightCategories: sortWeights(weights),
   };
   const artifacts = {
     'judoka.json': `${JSON.stringify(compiled.judoka, null, 2)}\n`,
     'techniques.json': `${JSON.stringify(compiled.techniques, null, 2)}\n`,
+    'events.json': `${JSON.stringify(compiled.events, null, 2)}\n`,
     'countries.json': `${JSON.stringify(compiled.countries, null, 2)}\n`,
     'weight-categories.json': `${JSON.stringify(compiled.weightCategories, null, 2)}\n`,
     'budokon.json': `${JSON.stringify(compiled, null, 2)}\n`,
@@ -70,6 +72,7 @@ export async function compileArtifacts(sourceGitCommit, sourceRoot = root) {
     recordCounts: {
       judoka: judoka.length,
       techniques: techniques.length,
+      events: events.length,
       countries: Object.keys(countries).length,
       weightCategories: weights.reduce((total, group) => total + group.categories.length, 0),
     },

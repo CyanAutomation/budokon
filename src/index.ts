@@ -1,6 +1,7 @@
 export * from "./domain/types.js";
 export * from "./domain/catalog-service.js";
 export * from "./draw/draw-service.js";
+export * from "./draw/event-draw-service.js";
 export * from "./repository/read-model-repository.js";
 export * from "./repository/json-read-model-repository.js";
 export * from "./api/handlers.js";

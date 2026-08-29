@@ -1,0 +1,9 @@
+{
+  "id": "failed-judogi-control",
+  "ruleset": "ju-do-kon-v1",
+  "category": "shiai",
+  "description": "The judoka fails judogi control and forfeits the contest.",
+  "effects": [
+    { "action": "set", "target": "match_result", "value": "forfeit" }
+  ]
+}
