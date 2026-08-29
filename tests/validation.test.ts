@@ -118,7 +118,7 @@ test('schemas reject stat bounds, malformed timestamps, and extra properties', a
     [(record) => { record.stats.power = 11; }, 'must be <= 10'],
     [(record) => { record.lastUpdated = '2025-01-01'; }, 'RFC 3339'],
     [(record) => { record.unexpected = true; }, 'additional property'],
-  ]) {
+  ] as Array<[(record: any) => void, string]>) {
     const root = await sandbox();
     await change(path.join(root, 'data/judoka/ashley-mckenzie.json'), mutate);
     await assert.rejects(validateCanonical(root), new RegExp(message));
