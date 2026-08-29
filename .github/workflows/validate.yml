@@ -17,6 +17,8 @@ jobs:
       - name: Type-check tooling and tests
         run: npm run typecheck:tools
       - run: npm run check:typescript-only
+      - name: Check deployment workflow executable paths
+        run: npm run check:deployment-workflow
       - run: npm test
       - run: npm run validate
       - name: Compile expected output and verify tracked artifacts
