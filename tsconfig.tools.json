@@ -5,8 +5,7 @@
     "rootDir": ".",
     "types": ["node"],
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "strict": false,
-    "skipLibCheck": true
+    "strict": false
   },
   "include": [
     "src/**/*.ts",
