@@ -11,7 +11,7 @@ export interface RestCatalogDependency {
   getTechnique(id: string | undefined): Technique | undefined;
   listEvents(options?: { ruleset?: string; category?: string }): JudoEvent[];
   getEvent(id: string | undefined): JudoEvent | undefined;
-  listCountries(): Country[];
+  listCountries(): Record<string, Country>;
   listWeightCategories(): WeightCategoryGroup[];
   version(): VersionResponse;
   status(): StatusResponse;
