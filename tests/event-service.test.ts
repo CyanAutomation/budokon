@@ -85,12 +85,12 @@ test("optional event draw adapters fail explicitly when the service is unavailab
   );
 });
 
-test("event REST handler defaults an omitted request body", () => {
+test("event REST handler validates an omitted body as empty input", () => {
   const rest = createRestHandlers({ catalog, draw: new DrawService(catalog), eventDraw });
 
   assert.throws(
     () => rest.drawEvent(),
-    /ruleset must be a non-empty string/
+    { name: "RangeError", message: "ruleset must be a non-empty string" }
   );
 });
 
