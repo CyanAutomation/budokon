@@ -113,9 +113,17 @@ test("draw succeeds and impossible counts have the documented conflict response"
 });
 
 test("missing resources, unsupported input, methods, and unexpected failures are stable", async () => {
-  assert.equal((await request("/v1/judoka/missing")).status, 404);
-  assert.equal((await request("/v1/collections")).status, 404);
-  assert.equal((await request("/v1/unknown")).status, 404);
+  for (const [path, message] of [
+    ["/v1/judoka/missing", "judoka not found"],
+    ["/v1/techniques/missing", "technique not found"],
+    ["/v1/collections", "route not found"],
+    ["/v1/unknown", "route not found"],
+  ]) {
+    const response = await request(path);
+    assert.equal(response.status, 404, path);
+    assert.equal(response.headers.get("content-type"), "application/json; charset=utf-8", path);
+    assert.deepEqual(await body(response), { error: { code: "not_found", message } }, path);
+  }
   assert.equal((await request("/v1/judoka?unknown=x")).status, 400);
   assert.equal((await request("/v1/judoka?collection=featured")).status, 400);
   assert.equal((await request("/v1/draw", { method: "POST", headers: { "content-type": "application/json" }, body: '{"collection":"featured"}' })).status, 400);
