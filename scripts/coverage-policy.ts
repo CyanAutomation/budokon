@@ -18,6 +18,9 @@ export interface CoveragePolicy {
   rarity: Readonly<Record<string, Readonly<{ min: number; max: number }>>>;
 }
 
+/** Stable reference to the human-readable policy enforced by this module. */
+export const coveragePolicyId = 'README.md#editorial-coverage-and-rarity-policy';
+
 export const coveragePolicy: Readonly<CoveragePolicy> = Object.freeze({
   minimumPublicReal: 20,
   minimumCountries: 10,
@@ -49,4 +52,16 @@ export function coverageViolations(summary: CoverageSummary, weightCategories, p
     if (share < target.min || share > target.max) violations.push(`${rarity} is ${(share * 100).toFixed(1)}%; target is ${target.min * 100}-${target.max * 100}%`);
   }
   return violations;
+}
+
+/** Fail a gate with every policy violation included in one actionable diagnostic. */
+export function assertCoveragePolicySatisfied(
+  summary: CoverageSummary,
+  weightCategories,
+  policy: Readonly<CoveragePolicy> = coveragePolicy,
+) {
+  const violations = coverageViolations(summary, weightCategories, policy);
+  if (violations.length) {
+    throw new Error(`Coverage policy violations (${coveragePolicyId}):\n${violations.map(message => `  - ${message}`).join('\n')}`);
+  }
 }
