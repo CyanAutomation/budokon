@@ -53,21 +53,27 @@ test('game-specific judoka values are preserved only in the JU-DO-KON import', a
   }
 });
 
-test('technique reference validation checks every signature move', () => {
-  assert.doesNotThrow(() => validateTechniqueReferences(
-    [{ slug: 'test-judoka', signatureMoveIds: ['uchi-mata', 'seoi-nage'] }],
-    new Set(['uchi-mata', 'seoi-nage']),
-  ));
-});
+test('technique reference validation enforces README.md#referential-validation for every signature move', () => {
+  const cases = [
+    {
+      name: 'multiple known techniques',
+      record: { slug: 'valid-judoka', signatureMoveIds: ['uchi-mata', 'seoi-nage'] },
+      techniqueIds: new Set(['uchi-mata', 'seoi-nage']),
+      error: undefined,
+    },
+    {
+      name: 'a later unknown technique',
+      record: { slug: 'invalid-judoka', signatureMoveIds: ['uchi-mata', 'unknown-move'] },
+      techniqueIds: new Set(['uchi-mata']),
+      error: /Judoka invalid-judoka references unknown technique "unknown-move"/,
+    },
+  ];
 
-test('technique reference validation rejects an unknown signature move', () => {
-  assert.throws(
-    () => validateTechniqueReferences(
-      [{ slug: 'test-judoka', signatureMoveIds: ['uchi-mata', 'unknown-move'] }],
-      new Set(['uchi-mata']),
-    ),
-    /Judoka test-judoka references unknown technique "unknown-move"/,
-  );
+  for (const { name, record, techniqueIds, error } of cases) {
+    const validate = () => validateTechniqueReferences([record], techniqueIds);
+    if (error) assert.throws(validate, error, name);
+    else assert.doesNotThrow(validate, name);
+  }
 });
 
 test('country catalogue keys match uppercase embedded alpha-2 codes', async () => {
