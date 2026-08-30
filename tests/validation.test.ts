@@ -79,12 +79,6 @@ test('semantic text validation rejects non-string values without crashing', asyn
   await assert.rejects(validateCanonical(root), /ashley-mckenzie\.firstname must contain meaningful text/);
 });
 
-test('future country timestamps are rejected', async () => {
-  const root = await sandbox();
-  await change(path.join(root, 'data/reference/countries.json'), countries => { countries.JP.lastUpdated = '2999-01-01T00:00:00Z'; });
-  await assert.rejects(validateCanonical(root), /countries\.JP\.lastUpdated must not be in the future/);
-});
-
 test('prohibited game-state property names remain rejected if schemas expand', async () => {
   for (const property of ['matchesWon', 'matchesLost', 'matchesDrawn', 'playerOwnership', 'experiencePoints', 'cardInstanceId', 'gameScore']) {
     const root = await sandbox();
@@ -155,8 +149,17 @@ test('date-time validation accepts supported fractions and rejects calendar over
   }
 });
 
-test('rejects future timestamps', async () => {
-  const root = await sandbox();
-  await change(path.join(root, 'data/judoka/ashley-mckenzie.json'), (record) => { record.lastUpdated = '2999-01-01T00:00:00Z'; });
-  await assert.rejects(validateCanonical(root), /must not be in the future/);
+test('future timestamps are rejected', async () => {
+  for (const fixture of [
+    { name: 'country lastUpdated', file: 'data/reference/countries.json', path: ['JP', 'lastUpdated'] },
+    { name: 'judoka lastUpdated', file: 'data/judoka/ashley-mckenzie.json', path: ['lastUpdated'] },
+  ]) {
+    const root = await sandbox();
+    await change(path.join(root, fixture.file), (record) => {
+      let target = record;
+      for (const segment of fixture.path.slice(0, -1)) target = target[segment];
+      target[fixture.path.at(-1)] = '2999-01-01T00:00:00Z';
+    });
+    await assert.rejects(validateCanonical(root), /must not be in the future/, fixture.name);
+  }
 });
