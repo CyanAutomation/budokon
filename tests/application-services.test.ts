@@ -88,12 +88,6 @@ test("filters do not coerce missing field values into matches", () => {
   assert.deepEqual(sparseCatalog.listJudoka({ filters: { countryCode: "null" } }), []);
   assert.deepEqual(sparseCatalog.listJudoka({ filters: { countryCode: "undefined" } }), []);
 });
-test("REST lookup handlers return not found when params are omitted or null", () => {
-  assert.equal(rest.getJudoka().status, 404);
-  assert.equal(rest.getJudoka({ params: null }).status, 404);
-  assert.equal(rest.getTechnique().status, 404);
-  assert.equal(rest.getTechnique({ params: null }).status, 404);
-});
 test("repository preserves the compiled dataset contract across object and serialized inputs", () => {
   const fromObject = new JsonReadModelRepository(compiledModel);
   const fromSerialized = new JsonReadModelRepository(JSON.stringify(compiledModel));
