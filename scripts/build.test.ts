@@ -14,6 +14,12 @@ import { compileArtifacts } from './build.js';
 import algorithmContract from '../src/draw/algorithm-contract.json' with { type: 'json' };
 import { validateSchema } from '../src/validation/validate-canonical.js';
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
 test('build and schema UUID patterns have matching compatibility', async () => {
   const schema = JSON.parse(await readFile(new URL('../schema/judoka.schema.json', import.meta.url), 'utf8'));
   const schemaUuidPattern = new RegExp(schema.properties.id.pattern);
@@ -58,8 +64,7 @@ test('JU-DO-KON importer preserves game state (migrations/README.md#ju-do-kon-ju
   const migration = JSON.parse(await readFile(new URL('../migrations/ju-do-kon-judoka-import.json', import.meta.url), 'utf8'));
   const migrationEntry = migration[judoka.id];
   assert.ok(migrationEntry, `Migration entry not found for judoka ID: ${judoka.id}`);
-  assert.equal(typeof migrationEntry, 'object', `Migration entry must be an object for judoka ID: ${judoka.id}`);
-  assert.equal(migrationEntry !== null && !Array.isArray(migrationEntry), true, `Migration entry must not be null or an array for judoka ID: ${judoka.id}`);
+  assert.equal(isPlainObject(migrationEntry), true, `Migration entry must be a plain object for judoka ID: ${judoka.id}`);
 
   // Model the consumer conversion: enrich the canonical record from the import keyed by immutable ID.
   const importedJudoka = { ...judoka, ...migrationEntry };
@@ -73,6 +78,15 @@ test('JU-DO-KON importer preserves game state (migrations/README.md#ju-do-kon-ju
     },
     migrationEntry,
   );
+});
+
+test('JU-DO-KON migration entries reject non-plain object values', () => {
+  for (const value of [null, [], 'entry', 1, new Date()]) {
+    assert.equal(isPlainObject(value), false);
+  }
+
+  assert.equal(isPlainObject({}), true);
+  assert.equal(isPlainObject(Object.create(null)), true);
 });
 
 test('technique reference validation enforces README.md#referential-validation for every signature move', () => {
