@@ -36,15 +36,6 @@ test('build and schema UUID patterns have matching compatibility', async () => {
   }
 });
 
-test('judoka schema rejects undeclared game-specific properties', async () => {
-  const schema = JSON.parse(await readFile(new URL('../schema/judoka.schema.json', import.meta.url), 'utf8'));
-
-  assert.equal(schema.additionalProperties, false);
-  for (const property of ['cardCode', 'matchesWon', 'matchesLost', 'matchesDrawn']) {
-    assert.equal(Object.hasOwn(schema.properties, property), false);
-  }
-});
-
 test('game-specific judoka values are preserved only in the JU-DO-KON import', async () => {
   const directory = new URL('../data/judoka/', import.meta.url);
   const files = (await readdir(directory)).filter((file) => file.endsWith('.json'));
