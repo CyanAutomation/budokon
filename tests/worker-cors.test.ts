@@ -40,10 +40,31 @@ test("CORS preflight allows the public REST methods without accepting API-key he
 });
 
 test("CORS headers wrap successful and error responses", async () => {
-  const response = withCors(new Response("denied", { status: 403 }), request("https://game.example"), env);
-  assert.equal(response.status, 403);
-  assert.equal(response.headers.get("access-control-allow-origin"), "https://game.example");
-  assert.equal(await response.text(), "denied");
+  const cases = [
+    { name: "successful", status: 200, body: "ok", applicationHeader: "success" },
+    { name: "error", status: 403, body: "denied", applicationHeader: "forbidden" }
+  ];
+
+  for (const { name, status, body, applicationHeader } of cases) {
+    await test(name, async () => {
+      const response = withCors(
+        new Response(body, { status, headers: { "x-application-header": applicationHeader } }),
+        request("https://game.example"),
+        env
+      );
+
+      assert.equal(response.status, status);
+      assert.equal(await response.text(), body);
+      assert.equal(response.headers.get("x-application-header"), applicationHeader);
+      assert.equal(response.headers.get("access-control-allow-origin"), "https://game.example");
+      assert.equal(response.headers.get("vary"), "Origin");
+    });
+  }
+
+  await test("disallowed origin", () => {
+    const response = withCors(new Response("ok"), request("https://evil.example"), env);
+    assert.equal(response.headers.get("access-control-allow-origin"), null);
+  });
 });
 
 test("public GET responses receive a versioned cache validator and honour If-None-Match", async () => {
