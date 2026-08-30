@@ -80,6 +80,15 @@ test('semantic text validation rejects non-string values without crashing', asyn
 });
 
 test('prohibited game-state property names remain rejected if schemas expand', async () => {
+  for (const property of ['cardCode', 'matchesWon', 'matchesLost', 'matchesDrawn']) {
+    const root = await sandbox();
+    await change(path.join(root, 'data/judoka/ashley-mckenzie.json'), (record) => { record[property] = true; });
+    await assert.rejects(
+      validateCanonical(root),
+      new RegExp(`(?:additional property ${property}|ashley-mckenzie\\.json\\.${property} is a prohibited game-state property)`),
+    );
+  }
+
   for (const property of ['matchesWon', 'matchesLost', 'matchesDrawn', 'playerOwnership', 'experiencePoints', 'cardInstanceId', 'gameScore']) {
     const root = await sandbox();
     await change(path.join(root, 'schema/dataset.schema.json'), schema => { schema.additionalProperties = true; });
