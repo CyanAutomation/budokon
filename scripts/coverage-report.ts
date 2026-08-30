@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateCanonical } from '../src/validation/validate-canonical.js';
-import { coverageViolations, publicRealJudoka } from './coverage-policy.js';
+import { assertCoveragePolicySatisfied, publicRealJudoka } from './coverage-policy.js';
 import type { CountMap } from './coverage-policy.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -51,9 +51,5 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const { judoka, weights } = await validateCanonical(root);
   const summary = summarizeCoverage(judoka);
   console.log(formatCoverageReport(summary));
-  const violations = coverageViolations(summary, weights);
-  if (violations.length) {
-    console.error(`\nCoverage policy violations:\n${violations.map(message => `  - ${message}`).join('\n')}`);
-    process.exitCode = 1;
-  }
+  assertCoveragePolicySatisfied(summary, weights);
 }
