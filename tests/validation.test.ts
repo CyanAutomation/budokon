@@ -29,7 +29,25 @@ test('arrays without an items constraint are valid', () => {
 
 test('all canonical files pass schema and semantic validation', async () => {
   const result = await validateCanonical(repository);
-  assert.ok(result.judoka.length > 0); assert.ok(result.techniques.length > 0);
+  assert.deepEqual(Object.keys(result).sort(), ['countries', 'dataset', 'events', 'judoka', 'techniques', 'weights']);
+  assert.ok(result.judoka.length > 0);
+  assert.ok(result.techniques.length > 0);
+  assert.ok(result.events.length > 0);
+  assert.ok(Object.keys(result.countries).length > 0);
+  assert.ok(result.weights.length > 0);
+  assert.ok(result.weights.every((group) => group.categories.length > 0));
+  assert.ok(typeof result.dataset.datasetVersion === 'string' && result.dataset.datasetVersion.length > 0);
+
+  const techniqueIds = new Set(result.techniques.map((technique) => technique.id));
+  const weightClasses = new Map(result.weights.map((group) => [
+    group.gender,
+    new Set(group.categories.map((category) => category.weight)),
+  ]));
+  for (const judoka of result.judoka) {
+    assert.equal(result.countries[judoka.countryCode]?.active, true);
+    assert.ok(judoka.signatureMoveIds.every((id) => techniqueIds.has(id)));
+    assert.ok(weightClasses.get(judoka.gender)?.has(judoka.weightClass));
+  }
 });
 
 test('filenames match canonical slugs', async () => {
