@@ -32,11 +32,35 @@ test("hidden judoka require an explicit authorized internal option", () => {
   assert.equal(catalog.listJudoka({ includeHidden: true }).some(j => j.isHidden), false);
   assert.equal(catalog.listJudoka({ includeHidden: true, authorizedInternal: true }).some(j => j.isHidden), true);
 });
-test("combined filters, exclusions, lookup, and count validation", () => {
-  const records = catalog.listJudoka({ filters: { gender: "male", countryCode: ["JP"] }, exclude: ["shozo-fujii"] });
-  assert(records.every(j => j.gender === "male" && j.countryCode === "JP" && j.slug !== "shozo-fujii"));
+test("gender and country filters compose with AND semantics", () => {
+  const records = catalog.listJudoka({ filters: { gender: "male", countryCode: ["JP"] } });
+  assert.deepEqual(records.map(j => j.slug), [
+    "aaron-wolf",
+    "shozo-fujii",
+    "hifumi-abe",
+    "naohisa-takato",
+    "takanori-nagase",
+    "shohei-ono"
+  ]);
+});
+
+test("exclusions remove an otherwise eligible record", () => {
+  const filters = { gender: "male", countryCode: ["JP"] };
+  assert.ok(catalog.listJudoka({ filters }).some(j => j.slug === "shozo-fujii"));
+  assert.equal(catalog.listJudoka({ filters, exclude: ["shozo-fujii"] }).some(j => j.slug === "shozo-fujii"), false);
+});
+
+test("direct lookup resolves a known canonical slug", () => {
   assert.equal(catalog.getJudoka("shozo-fujii").slug, "shozo-fujii");
-  assert.throws(() => draw.draw({ count: 999 }), /exceeds eligible pool/);
+});
+
+test("draw count validation rejects a count larger than the eligible pool", () => {
+  const poolSize = catalog.listJudoka().length;
+  assert.throws(
+    () => draw.draw({ count: poolSize + 1 }),
+    error => (error instanceof RangeError
+      && error.message === `count ${poolSize + 1} exceeds eligible pool size ${poolSize}`)
+  );
 });
 test("display aliases, diacritic-free names, and legacy slugs resolve consistently", () => {
   assert.equal(catalog.getJudoka("Shozo Fujii")?.slug, "shozo-fujii");
