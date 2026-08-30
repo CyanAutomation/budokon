@@ -12,6 +12,7 @@ import {
 } from './build.js';
 import { compileArtifacts } from './build.js';
 import algorithmContract from '../src/draw/algorithm-contract.json' with { type: 'json' };
+import { validateSchema } from '../src/validation/validate-canonical.js';
 
 test('build and schema UUID patterns have matching compatibility', async () => {
   const schema = JSON.parse(await readFile(new URL('../schema/judoka.schema.json', import.meta.url), 'utf8'));
@@ -97,10 +98,28 @@ test('country catalogue keys match uppercase embedded alpha-2 codes', async () =
 test('country schemas require uppercase codes and a country on every judoka', async () => {
   const countrySchema = JSON.parse(await readFile(new URL('../schema/countries.schema.json', import.meta.url), 'utf8'));
   const judokaSchema = JSON.parse(await readFile(new URL('../schema/judoka.schema.json', import.meta.url), 'utf8'));
+  const judoka = JSON.parse(await readFile(new URL('../data/judoka/ashley-mckenzie.json', import.meta.url), 'utf8'));
+  const country = {
+    JP: { code: 'JP', country: 'Japan', lastUpdated: '2025-01-01T00:00:00Z', active: true },
+  };
 
-  assert.equal(countrySchema.propertyNames.pattern, '^[A-Z]{2}$');
-  assert.equal(countrySchema.additionalProperties.properties.code.pattern, '^[A-Z]{2}$');
-  assert.ok(judokaSchema.required.includes('countryCode'));
+  assert.doesNotThrow(() => validateSchema(country, countrySchema, 'countries'));
+  assert.doesNotThrow(() => validateSchema(judoka, judokaSchema, 'judoka'));
+
+  assert.throws(
+    () => validateSchema({ jp: country.JP }, countrySchema, 'countries'),
+    /countries property jp: must match/,
+  );
+  assert.throws(
+    () => validateSchema({ JP: { ...country.JP, code: 'jp' } }, countrySchema, 'countries'),
+    /countries\.JP\.code: must match/,
+  );
+  const judokaWithoutCountry = { ...judoka };
+  delete judokaWithoutCountry.countryCode;
+  assert.throws(
+    () => validateSchema(judokaWithoutCountry, judokaSchema, 'judoka'),
+    /judoka: missing required property countryCode/,
+  );
 });
 
 test('every canonical judoka references an active catalogue country', async () => {
