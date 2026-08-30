@@ -13,15 +13,26 @@ import {
 import { compileArtifacts } from './build.js';
 import algorithmContract from '../src/draw/algorithm-contract.json' with { type: 'json' };
 
-const uppercaseUuid = '84D3B821-0CA8-42DE-B42C-2EB8D42C9C3B';
-
-test('build validation accepts uppercase UUID hexadecimal digits', () => {
-  assert.match(uppercaseUuid, uuidPattern);
-});
-
-test('schema accepts uppercase UUID hexadecimal digits', async () => {
+test('build and schema UUID patterns have matching compatibility', async () => {
   const schema = JSON.parse(await readFile(new URL('../schema/judoka.schema.json', import.meta.url), 'utf8'));
-  assert.match(uppercaseUuid, new RegExp(schema.properties.id.pattern));
+  const schemaUuidPattern = new RegExp(schema.properties.id.pattern);
+  const cases = [
+    { name: 'lowercase', value: '84d3b821-0ca8-42de-b42c-2eb8d42c9c3b', valid: true },
+    { name: 'uppercase', value: '84D3B821-0CA8-42DE-B42C-2EB8D42C9C3B', valid: true },
+    { name: 'invalid version digit', value: '84d3b821-0ca8-62de-b42c-2eb8d42c9c3b', valid: false },
+    { name: 'invalid variant digit', value: '84d3b821-0ca8-42de-742c-2eb8d42c9c3b', valid: false },
+    { name: 'missing hyphens', value: '84d3b8210ca842deb42c2eb8d42c9c3b', valid: false },
+    { name: 'too short', value: '84d3b821-0ca8-42de-b42c-2eb8d42c9c3', valid: false },
+    { name: 'too long', value: '84d3b821-0ca8-42de-b42c-2eb8d42c9c3b0', valid: false },
+    { name: 'non-hexadecimal character', value: '84d3b821-0ca8-42de-b42c-2eb8d42c9c3g', valid: false },
+  ];
+
+  for (const { name, value, valid } of cases) {
+    const buildResult = uuidPattern.test(value);
+    const schemaResult = schemaUuidPattern.test(value);
+    assert.equal(buildResult, schemaResult, `${name}: build and schema patterns differ`);
+    assert.equal(buildResult, valid, name);
+  }
 });
 
 test('judoka schema rejects undeclared game-specific properties', async () => {
