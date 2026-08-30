@@ -44,7 +44,8 @@ test('all canonical files pass schema and semantic validation', async () => {
     new Set(group.categories.map((category) => category.weight)),
   ]));
   for (const judoka of result.judoka) {
-    assert.equal(result.countries[judoka.countryCode]?.active, true);
+    assert.ok(result.countries[judoka.countryCode], `Country code ${judoka.countryCode} not found`);
+    assert.equal(result.countries[judoka.countryCode].active, true);
     assert.ok(judoka.signatureMoveIds.every((id) => techniqueIds.has(id)));
     assert.ok(weightClasses.get(judoka.gender)?.has(judoka.weightClass));
   }
