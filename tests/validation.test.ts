@@ -9,6 +9,8 @@ import { validateCanonical, validateSchema } from '../src/validation/validate-ca
 const repository = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const cases = JSON.parse(await readFile(new URL('./fixtures/semantic-cases.json', import.meta.url), 'utf8'));
 const textCases = JSON.parse(await readFile(new URL('./fixtures/semantic-text-cases.json', import.meta.url), 'utf8'));
+const judokaSchema = JSON.parse(await readFile(new URL('../schema/judoka.schema.json', import.meta.url), 'utf8'));
+const publicProfileFixture = JSON.parse(await readFile(new URL('../data/judoka/ashley-mckenzie.json', import.meta.url), 'utf8'));
 async function sandbox() {
   const root = await mkdtemp(path.join(os.tmpdir(), 'budokon-validation-'));
   for (const directory of ['schema', 'data']) await cp(path.join(repository, directory), path.join(root, directory), { recursive: true });
@@ -89,12 +91,26 @@ test('fictional judoka are hidden by default', async () => {
   await assert.rejects(validateCanonical(root), /fictional judoka must be hidden/);
 });
 
-test('every judoka has a complete game-ready profile', async () => {
-  for (const field of ['stats', 'signatureMoveIds', 'rarity', 'bio', 'profileUrl']) {
-    const root = await sandbox();
-    await change(path.join(root, 'data/judoka/ashley-mckenzie.json'), (record) => { delete record[field]; });
-    await assert.rejects(validateCanonical(root), new RegExp(`missing required property ${field}`));
-  }
+test('required public profile fields are rejected when absent', async (t) => {
+  const profilePath = 'data/judoka/ashley-mckenzie.json';
+  const fields = [
+    { name: 'stats', field: 'stats' },
+    { name: 'signature moves', field: 'signatureMoveIds' },
+    { name: 'rarity', field: 'rarity' },
+    { name: 'biography', field: 'bio' },
+    { name: 'profile URL', field: 'profileUrl' },
+  ];
+
+  for (const { name, field } of fields) await t.test(name, () => {
+    const record = structuredClone(publicProfileFixture);
+    delete record[field];
+
+    assert.throws(() => validateSchema(record, judokaSchema, profilePath), (error: Error) => {
+      assert.match(error.message, new RegExp(`missing required property ${field}`));
+      assert.match(error.message, new RegExp(profilePath.replaceAll('.', '\\.')));
+      return true;
+    });
+  });
 });
 
 for (const fixture of cases) test(`rejects ${fixture.name}`, async () => {
