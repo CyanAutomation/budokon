@@ -1,5 +1,3 @@
-const html = (value: string): string => String(value).replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character] ?? character);
-
 /** Public entry points intentionally reveal only documentation and release metadata routes. */
 export function landingResponse(origin: string): Response {
   return new Response(JSON.stringify({
@@ -11,10 +9,25 @@ export function landingResponse(origin: string): Response {
   }), { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=300" } });
 }
 
-export function documentationResponse(origin: string): Response {
-  const base = html(origin);
-const body = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>BU-DO-KON API</title><style>body{font:16px system-ui,sans-serif;line-height:1.5;max-width:46rem;margin:4rem auto;padding:0 1.5rem;color:#18212b}code{background:#f1f3f5;padding:.15rem .3rem;border-radius:.2rem}a{color:#075ab5}</style></head><body><h1>🥋 BU-DO-KON API</h1><p>A public, versioned judoka catalogue for games and applications.</p><ul><li><a href="${base}/openapi/v1.yaml">OpenAPI v1 contract</a></li><li><a href="${base}/v1/status">Live service status and release identity</a></li><li><a href="${base}/v1/version">Dataset and service versions</a></li><li><a href="${base}/v1/coverage">Catalogue coverage metrics</a></li><li><a href="${base}/v1/judoka">Browse public judoka</a></li></ul><h2>Quick start</h2><pre><code>GET ${base}/v1/judoka?q=shozo\nPOST ${base}/v1/draw\nContent-Type: application/json\n\n{"count": 1, "seed": "round-42"}</code></pre><p>The MCP endpoint is intentionally API-key protected. Browser games should use the public REST endpoints.</p></body></html>`;
-  return new Response(body, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=300" } });
+const swaggerUiDocument = `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BU-DO-KON API reference</title><link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui.css"></head>
+<body><main id="swagger-ui" aria-label="BU-DO-KON API reference"></main>
+<script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-bundle.js"></script>
+<script>window.ui = SwaggerUIBundle({url:"/openapi/v1.yaml",dom_id:"#swagger-ui",deepLinking:true,presets:[SwaggerUIBundle.presets.apis],layout:"BaseLayout"});</script>
+</body></html>`;
+
+/** Interactive API reference backed by the canonical OpenAPI document. */
+export function documentationResponse(): Response {
+  return new Response(swaggerUiDocument, {
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+      "cache-control": "no-store",
+      "content-security-policy": "default-src 'none'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: https:; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'",
+      "referrer-policy": "no-referrer",
+      "x-content-type-options": "nosniff",
+    },
+  });
 }
 
 export function openApiResponse(specification: string): Response {

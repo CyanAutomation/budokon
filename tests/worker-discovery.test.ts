@@ -11,10 +11,13 @@ test("public discovery responses link only to the service's own documented entry
     documentation: `${origin}/docs`, openapi: `${origin}/openapi/v1.yaml`,
     status: `${origin}/v1/status`, version: `${origin}/v1/version`
   });
-  const docs = await documentationResponse(origin).text();
-  assert.match(docs, /BU-DO-KON API/);
+  const documentation = documentationResponse();
+  assert.equal(documentation.headers.get("content-security-policy")?.includes("connect-src 'self'"), true);
+  assert.equal(documentation.headers.get("x-content-type-options"), "nosniff");
+  const docs = await documentation.text();
+  assert.match(docs, /BU-DO-KON API reference/);
+  assert.match(docs, /swagger-ui-bundle\.js/);
   assert.match(docs, /openapi\/v1\.yaml/);
-  assert.match(docs, /v1\/status/);
   const contract = openApiResponse("openapi: 3.1.0\n");
   assert.equal(contract.headers.get("content-type"), "application/yaml; charset=utf-8");
   assert.equal(await contract.text(), "openapi: 3.1.0\n");
