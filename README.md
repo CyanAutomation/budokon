@@ -1031,7 +1031,7 @@ Use `limit` (1–100) to opt into cursor pagination; the response becomes
 `{ judoka, nextCursor }`, and the returned `nextCursor` is supplied as `cursor`
 on the following request. Pagination is applied after every filter and search.
 
-The deployed service has a JSON discovery document at `/`, human-readable docs
+The deployed service has a JSON discovery document at `/`, an interactive Swagger UI
 at `/docs`, and the machine-readable contract at `/openapi/v1.yaml` (the source
 contract remains [openapi/v1.yaml](openapi/v1.yaml)).
 
