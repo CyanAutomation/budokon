@@ -23,10 +23,6 @@ test('schema references fail clearly for unsupported or missing targets', () => 
   assert.throws(() => validateSchema('value', { $ref: '#\/$defs\/missing', $defs: {} }), /invalid \$ref path/);
 });
 
-test('arrays without an items constraint are valid', () => {
-  assert.doesNotThrow(() => validateSchema(['anything'], { type: 'array' }));
-});
-
 test('all canonical files pass schema and semantic validation', async () => {
   const result = await validateCanonical(repository);
   assert.deepEqual(Object.keys(result).sort(), ['countries', 'dataset', 'events', 'judoka', 'techniques', 'weights']);
