@@ -26,43 +26,91 @@ test('coverage summary reports the visible catalogue and its balance', () => {
   assert.doesNotMatch(formatCoverageReport(summary), /Game-ready records/);
 });
 
-test('coverage policy reports unsupported rarity and representation imbalance', () => {
-  const summary = summarizeCoverage(Array.from({ length: 20 }, (_, index) => ({
-    personType: 'real', isHidden: false, gender: 'male', countryCode: 'JP', weightClass: '-60', rarity: 'Legendary', slug: `judoka-${index}`,
-  })));
-  const violations = coverageViolations(summary, [{ gender: 'male', categories: [{ weight: '-60' }] }]);
-  assert.ok(violations.some(message => message.includes('countries')));
-  assert.ok(violations.some(message => message.includes('male has')));
-  assert.ok(violations.some(message => message.includes('Common is')));
-  assert.ok(violations.some(message => message.includes('Legendary is')));
-});
+test('coverage policy reports every violation when the catalogue is too small', async (t) => {
+  const records = [
+    { personType: 'real', isHidden: false, gender: 'male', countryCode: 'JP', weightClass: '-60', rarity: 'Legendary', slug: 'first-judoka' },
+    { personType: 'real', isHidden: false, gender: 'male', countryCode: 'JP', weightClass: '-60', rarity: 'Legendary', slug: 'second-judoka' },
+  ];
+  const weightCategories = [{ gender: 'male', categories: [{ weight: '-60' }] }];
 
-test('coverage policy reports every violation when the catalogue is too small', () => {
-  const summary = summarizeCoverage([
-    { personType: 'real', isHidden: false, gender: 'male', countryCode: 'JP', weightClass: '-60', rarity: 'Legendary', slug: 'only-judoka' },
-  ]);
-  const violations = coverageViolations(summary, [{
-    gender: 'male',
-    categories: [{ weight: '-60' }, { weight: '-66' }],
-  }], {
-    minimumPublicReal: 2,
-    minimumCountries: 2,
-    maximumCountryShare: 0.5,
-    maximumGenderShare: 0.5,
-    requireEveryWeightClass: true,
-    rarity: {
-      Common: { min: 0.5, max: 1 },
-      Legendary: { min: 0, max: 0.5 },
-    },
+  await t.test('catalogue size, country share, and weight-class completeness', () => {
+    const violations = coverageViolations(summarizeCoverage([records[0]]), [{
+      gender: 'male',
+      categories: [{ weight: '-60' }, { weight: '-66' }],
+    }], {
+      minimumPublicReal: 2,
+      minimumCountries: 1,
+      maximumCountryShare: 0.5,
+      maximumGenderShare: 1,
+      requireEveryWeightClass: true,
+      rarity: { Legendary: { min: 0, max: 1 } },
+    });
+
+    assert.deepEqual([...violations].sort(), [
+      'JP has 100.0% of the catalogue; maximum is 50%',
+      'public real catalogue has 1; need at least 2',
+      'weight class -66 has no public real judoka',
+    ].sort());
   });
 
-  assert.deepEqual(violations, [
-    'public real catalogue has 1; need at least 2',
-    'catalogue covers 1 countries; need at least 2',
-    'JP has 100.0% of the catalogue; maximum is 50%',
-    'male has 100.0% of the catalogue; maximum is 50%',
-    'weight class -66 has no public real judoka',
-    'Common is 0.0%; target is 50-100%',
-    'Legendary is 100.0%; target is 0-50%',
-  ]);
+  const cases = [
+    {
+      name: 'minimum country representation',
+      policy: {
+        minimumPublicReal: 0,
+        minimumCountries: 2,
+        maximumCountryShare: 1,
+        maximumGenderShare: 1,
+        requireEveryWeightClass: false,
+        rarity: { Legendary: { min: 0, max: 1 } },
+      },
+      expected: ['catalogue covers 1 countries; need at least 2'],
+    },
+    {
+      name: 'gender-share limits',
+      policy: {
+        minimumPublicReal: 0,
+        minimumCountries: 1,
+        maximumCountryShare: 1,
+        maximumGenderShare: 0.5,
+        requireEveryWeightClass: false,
+        rarity: { Legendary: { min: 0, max: 1 } },
+      },
+      expected: ['male has 100.0% of the catalogue; maximum is 50%'],
+    },
+    {
+      name: 'missing required rarity bands',
+      policy: {
+        minimumPublicReal: 0,
+        minimumCountries: 1,
+        maximumCountryShare: 1,
+        maximumGenderShare: 1,
+        requireEveryWeightClass: false,
+        rarity: {
+          Common: { min: 0.5, max: 1 },
+          Legendary: { min: 0, max: 1 },
+        },
+      },
+      expected: ['Common is 0.0%; target is 50-100%'],
+    },
+    {
+      name: 'excessive rarity share',
+      policy: {
+        minimumPublicReal: 0,
+        minimumCountries: 1,
+        maximumCountryShare: 1,
+        maximumGenderShare: 1,
+        requireEveryWeightClass: false,
+        rarity: { Legendary: { min: 0, max: 0.5 } },
+      },
+      expected: ['Legendary is 100.0%; target is 0-50%'],
+    },
+  ];
+
+  for (const { name, policy, expected } of cases) {
+    await t.test(name, () => {
+      const violations = coverageViolations(summarizeCoverage(records), weightCategories, policy);
+      assert.deepEqual([...violations].sort(), [...expected].sort());
+    });
+  }
 });
