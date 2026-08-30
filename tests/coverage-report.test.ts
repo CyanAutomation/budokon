@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { formatCoverageReport, summarizeCoverage } from '../scripts/coverage-report.js';
-import { coverageViolations } from '../scripts/coverage-policy.js';
+import { assertCoveragePolicySatisfied, coverageViolations } from '../scripts/coverage-policy.js';
 
 test('coverage summary reports the visible catalogue and its balance', () => {
   const summary = summarizeCoverage([
@@ -51,6 +51,21 @@ test('coverage policy reports every violation when the catalogue is too small', 
       'public real catalogue has 1; need at least 2',
       'weight class -66 has no public real judoka',
     ].sort());
+
+    assert.throws(
+      () => assertCoveragePolicySatisfied(summarizeCoverage([records[0]]), [{
+        gender: 'male',
+        categories: [{ weight: '-60' }, { weight: '-66' }],
+      }], {
+        minimumPublicReal: 2,
+        minimumCountries: 1,
+        maximumCountryShare: 0.5,
+        maximumGenderShare: 1,
+        requireEveryWeightClass: true,
+        rarity: { Legendary: { min: 0, max: 1 } },
+      }),
+      (error: Error) => violations.every(violation => error.message.includes(violation)),
+    );
   });
 
   const cases = [
