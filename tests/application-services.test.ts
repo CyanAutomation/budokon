@@ -58,8 +58,10 @@ test("draw count validation rejects a count larger than the eligible pool", () =
   const poolSize = catalog.listJudoka().length;
   assert.throws(
     () => draw.draw({ count: poolSize + 1 }),
-    error => (error instanceof RangeError
-      && error.message === `count ${poolSize + 1} exceeds eligible pool size ${poolSize}`)
+    error => {
+      return error instanceof RangeError
+        && error.message === `count ${poolSize + 1} exceeds eligible pool size ${poolSize}`;
+    }
   );
 });
 test("display aliases, diacritic-free names, and legacy slugs resolve consistently", () => {
