@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { formatCoverageReport, summarizeCoverage } from '../scripts/coverage-report.js';
+import { formatCoverageReport, printCoverageReport, summarizeCoverage } from '../scripts/coverage-report.js';
 import { assertCoveragePolicySatisfied, coverageViolations } from '../scripts/coverage-policy.js';
 
 test('coverage summary reports the visible catalogue and its balance', () => {
@@ -24,6 +24,18 @@ test('coverage summary reports the visible catalogue and its balance', () => {
   assert.match(formatCoverageReport(summary), /By rarity/);
   assert.match(formatCoverageReport(summary), /Epic: 1 \(50\.0%\)/);
   assert.doesNotMatch(formatCoverageReport(summary), /Game-ready records/);
+});
+
+test('coverage report is printed before policy violations without throwing', () => {
+  const output: string[] = [];
+  const satisfied = printCoverageReport(summarizeCoverage([]), [], {
+    log: message => output.push(`log:${message}`),
+    error: message => output.push(`error:${message}`),
+  });
+
+  assert.equal(satisfied, false);
+  assert.match(output[0], /^log:BU-DO-KON editorial coverage/);
+  assert.match(output[1], /^error:\nCoverage policy violations/);
 });
 
 test('coverage policy reports every violation when the catalogue is too small', async (t) => {
