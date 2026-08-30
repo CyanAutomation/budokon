@@ -1,0 +1,12 @@
+{
+  "runtimeNeutralRoots": [
+    "src/api",
+    "src/domain",
+    "src/draw",
+    "src/mcp",
+    "src/platform",
+    "src/repository"
+  ],
+  "runtimeNeutralFiles": ["src/index.ts"],
+  "runtimeSpecificRoots": ["src/node", "src/validation"]
+}
