@@ -51,5 +51,10 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const { judoka, weights } = await validateCanonical(root);
   const summary = summarizeCoverage(judoka);
   console.log(formatCoverageReport(summary));
-  assertCoveragePolicySatisfied(summary, weights);
+  try {
+    assertCoveragePolicySatisfied(summary, weights);
+  } catch (error) {
+    console.error(`\n${error.message}`);
+    process.exitCode = 1;
+  }
 }
