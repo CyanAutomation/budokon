@@ -36,24 +36,41 @@ test('build and schema UUID patterns have matching compatibility', async () => {
   }
 });
 
-test('game-specific judoka values are preserved only in the JU-DO-KON import', async () => {
+test('canonical judoka omit prohibited game-state keys', async () => {
   const directory = new URL('../data/judoka/', import.meta.url);
   const files = (await readdir(directory)).filter((file) => file.endsWith('.json'));
   const records = await Promise.all(files.map(async (file) => JSON.parse(await readFile(new URL(file, directory), 'utf8'))));
-  const gameImport = JSON.parse(await readFile(new URL('../migrations/ju-do-kon-judoka-import.json', import.meta.url), 'utf8'));
-  const canonicalOnlyRecord = { id: '00000000-0000-4000-8000-000000000000' };
+  const prohibitedGameStateKeys = new Set([
+    'cardCode', 'matchesWon', 'matchesLost', 'matchesDrawn', 'playerOwnership',
+    'experiencePoints', 'cardInstanceId', 'gameScore',
+  ]);
 
-  assert.equal(Object.hasOwn(gameImport, canonicalOnlyRecord.id), false);
-
-  for (const record of [...records, canonicalOnlyRecord]) {
-    assert.deepEqual(
-      ['cardCode', 'matchesWon', 'matchesLost', 'matchesDrawn'].filter((property) => Object.hasOwn(record, property)),
-      [],
+  for (const record of records) {
+    const canonicalGameStateKeys = new Set(
+      Object.keys(record).filter((property) => prohibitedGameStateKeys.has(property)),
     );
-    if (gameImport[record.id]) {
-      assert.deepEqual(Object.keys(gameImport[record.id]), ['cardCode', 'matchesWon', 'matchesLost', 'matchesDrawn']);
-    }
+    assert.deepEqual([...canonicalGameStateKeys].sort(), [], record.id);
   }
+});
+
+test('JU-DO-KON importer preserves game state (migrations/README.md#ju-do-kon-judoka-import-contract)', async () => {
+  const judoka = JSON.parse(await readFile(new URL('../data/judoka/tatsuuma-ushiyama.json', import.meta.url), 'utf8'));
+  const migration = JSON.parse(await readFile(new URL('../migrations/ju-do-kon-judoka-import.json', import.meta.url), 'utf8'));
+  const migrationEntry = migration[judoka.id];
+  assert.ok(migrationEntry, `Migration entry not found for judoka ID: ${judoka.id}`);
+
+  // Model the consumer conversion: enrich the canonical record from the import keyed by immutable ID.
+  const importedJudoka = { ...judoka, ...migrationEntry };
+
+  assert.deepEqual(
+    {
+      cardCode: importedJudoka.cardCode,
+      matchesWon: importedJudoka.matchesWon,
+      matchesLost: importedJudoka.matchesLost,
+      matchesDrawn: importedJudoka.matchesDrawn,
+    },
+    migrationEntry,
+  );
 });
 
 test('technique reference validation enforces README.md#referential-validation for every signature move', () => {
