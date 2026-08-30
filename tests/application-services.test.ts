@@ -94,9 +94,32 @@ test("REST lookup handlers return not found when params are omitted or null", ()
   assert.equal(rest.getTechnique().status, 404);
   assert.equal(rest.getTechnique({ params: null }).status, 404);
 });
-test("repository accepts serialized compiled data without a loader", () => {
-  const copy = new JsonReadModelRepository(JSON.stringify(compiledModel));
-  assert.equal(copy.datasetVersion, repository.datasetVersion);
+test("repository preserves the compiled dataset contract across object and serialized inputs", () => {
+  const fromObject = new JsonReadModelRepository(compiledModel);
+  const fromSerialized = new JsonReadModelRepository(JSON.stringify(compiledModel));
+
+  assert.deepEqual(
+    {
+      datasetVersion: fromSerialized.datasetVersion,
+      serviceVersion: fromSerialized.serviceVersion,
+      sourceGitCommit: fromSerialized.sourceGitCommit,
+      datasetChecksum: fromSerialized.datasetChecksum
+    },
+    {
+      datasetVersion: fromObject.datasetVersion,
+      serviceVersion: fromObject.serviceVersion,
+      sourceGitCommit: fromObject.sourceGitCommit,
+      datasetChecksum: fromObject.datasetChecksum
+    }
+  );
+  assert.deepEqual(fromSerialized.getJudoka("shozo-fujii"), fromObject.getJudoka("shozo-fujii"));
+  assert.deepEqual(fromSerialized.getTechnique("seoi-nage"), fromObject.getTechnique("seoi-nage"));
+  assert.deepEqual(fromSerialized.listJudoka(), fromObject.listJudoka());
+  assert.deepEqual(fromSerialized.listTechniques(), fromObject.listTechniques());
+  assert.deepEqual(fromSerialized.listEvents(), fromObject.listEvents());
+  assert.deepEqual(fromSerialized.getEvent("failed-judogi-control"), fromObject.getEvent("failed-judogi-control"));
+  assert.deepEqual(fromSerialized.listCountries(), fromObject.listCountries());
+  assert.deepEqual(fromSerialized.listWeightCategories(), fromObject.listWeightCategories());
 });
 test("repository reports malformed serialized data with parse context", () => {
   assert.throws(
