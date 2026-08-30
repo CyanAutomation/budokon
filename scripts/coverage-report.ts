@@ -47,14 +47,22 @@ export function formatCoverageReport(summary) {
   ].join('\n');
 }
 
+/** Print the report before reporting policy failures, so failed gates remain actionable. */
+export function printCoverageReport(summary, weights, output: Pick<Console, 'log' | 'error'> = console) {
+  output.log(formatCoverageReport(summary));
+  try {
+    assertCoveragePolicySatisfied(summary, weights);
+    return true;
+  } catch (error) {
+    output.error(`\n${error instanceof Error ? error.message : String(error)}`);
+    return false;
+  }
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const { judoka, weights } = await validateCanonical(root);
   const summary = summarizeCoverage(judoka);
-  console.log(formatCoverageReport(summary));
-  try {
-    assertCoveragePolicySatisfied(summary, weights);
-  } catch (error) {
-    console.error(`\n${error.message}`);
+  if (!printCoverageReport(summary, weights)) {
     process.exitCode = 1;
   }
 }
