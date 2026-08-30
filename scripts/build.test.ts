@@ -58,6 +58,7 @@ test('JU-DO-KON importer preserves game state (migrations/README.md#ju-do-kon-ju
   const migration = JSON.parse(await readFile(new URL('../migrations/ju-do-kon-judoka-import.json', import.meta.url), 'utf8'));
   const migrationEntry = migration[judoka.id];
   assert.ok(migrationEntry, `Migration entry not found for judoka ID: ${judoka.id}`);
+  assert.equal(typeof migrationEntry, 'object', `Migration entry must be an object for judoka ID: ${judoka.id}`);
 
   // Model the consumer conversion: enrich the canonical record from the import keyed by immutable ID.
   const importedJudoka = { ...judoka, ...migrationEntry };
