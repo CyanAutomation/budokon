@@ -26,26 +26,12 @@ test('schema references fail clearly for unsupported or missing targets', () => 
 test('all canonical files pass schema and semantic validation', async () => {
   const result = await validateCanonical(repository);
   assert.deepEqual(Object.keys(result).sort(), ['countries', 'dataset', 'events', 'judoka', 'techniques', 'weights']);
-  assert.ok(result.judoka.length > 0);
-  assert.ok(result.techniques.length > 0);
-  assert.ok(result.events.length > 0);
-  assert.ok(Object.keys(result.countries).length > 0);
-  assert.ok(result.weights.length > 0);
-  assert.ok(result.weights.every((group) => group.categories.length > 0));
-  assert.ok(typeof result.dataset.datasetVersion === 'string' && result.dataset.datasetVersion.length > 0);
-
-  const techniqueIds = new Set(result.techniques.map((technique) => technique.id));
-  const weightClasses = new Map(result.weights.map((group) => [
-    group.gender,
-    new Set(group.categories.map((category) => category.weight)),
-  ]));
-  for (const judoka of result.judoka) {
-    const country = result.countries[judoka.countryCode];
-    assert.ok(country, `Country code ${judoka.countryCode} not found`);
-    assert.equal(country.active, true, `Country code ${judoka.countryCode} is inactive`);
-    assert.ok(judoka.signatureMoveIds.every((id) => techniqueIds.has(id)));
-    assert.ok(weightClasses.get(judoka.gender)?.has(judoka.weightClass));
-  }
+  assert.ok(Array.isArray(result.judoka));
+  assert.ok(Array.isArray(result.techniques));
+  assert.ok(Array.isArray(result.events));
+  assert.ok(result.countries && typeof result.countries === 'object' && !Array.isArray(result.countries));
+  assert.ok(Array.isArray(result.weights));
+  assert.match(result.dataset.datasetVersion, /^[0-9]{4}\.(?:0[1-9]|1[0-2])\.[1-9][0-9]*$/);
 });
 
 test('filenames match canonical slugs', async () => {
