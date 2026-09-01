@@ -217,6 +217,17 @@ use REST only; never embed `API_KEY` or `INTERNAL_API_KEY` in browser code.
 Supply the MCP key using either `X-API-Key: <key>` or `Authorization: Bearer
 <key>`.
 
+#### Worker documentation security requirements
+
+The `/docs` response must be served as `text/html; charset=utf-8` with
+`X-Content-Type-Options: nosniff`. Its Content Security Policy must contain
+exactly these directives and source sets: `default-src 'none'`;
+`script-src 'self' 'unsafe-inline' https://unpkg.com`; `style-src 'self'
+'unsafe-inline' https://unpkg.com`; `img-src 'self' data: https:`;
+`connect-src 'self'`; `base-uri 'none'`; and `frame-ancestors 'none'`. Changes
+to the documentation renderer or its external assets must update this policy
+and its discovery test together.
+
 Cloudflare configuration (once per account):
 
 ```sh
