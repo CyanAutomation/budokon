@@ -13,14 +13,30 @@ test("landing document derives all links from the supplied origin", async () => 
   });
 });
 
-test("documentation response sets security headers", () => {
-  const documentation = documentationResponse();
-  assert.equal(documentation.headers.get("content-security-policy")?.includes("connect-src 'self'"), true);
-  assert.equal(documentation.headers.get("x-content-type-options"), "nosniff");
-});
-
 test("documentation is user-visible and links to the OpenAPI contract", async () => {
   const documentation = documentationResponse();
+
+  // Keep this in sync with README.md#worker-documentation-security-requirements.
+  assert.equal(documentation.headers.get("content-type"), "text/html; charset=utf-8");
+  assert.equal(documentation.headers.get("x-content-type-options"), "nosniff");
+
+  const directives = new Map(
+    documentation.headers.get("content-security-policy")
+      ?.split(";")
+      .map((directive) => directive.trim().split(/\s+/))
+      .filter(([name]) => name)
+      .map(([name, ...sources]) => [name, new Set(sources)]),
+  );
+  assert.deepEqual(directives, new Map([
+    ["default-src", new Set(["'none'"])],
+    ["script-src", new Set(["'self'", "'unsafe-inline'", "https://unpkg.com"])],
+    ["style-src", new Set(["'self'", "'unsafe-inline'", "https://unpkg.com"])],
+    ["img-src", new Set(["'self'", "data:", "https:"])],
+    ["connect-src", new Set(["'self'"])],
+    ["base-uri", new Set(["'none'"])],
+    ["frame-ancestors", new Set(["'none'"])],
+  ]));
+
   const docs = await documentation.text();
   assert.match(docs, /aria-label="BU-DO-KON API reference"/);
   assert.match(docs, /openapi\/v1\.yaml/);
