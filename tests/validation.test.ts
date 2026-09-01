@@ -16,6 +16,12 @@ async function sandbox() {
   for (const directory of ['schema', 'data']) await cp(path.join(repository, directory), path.join(root, directory), { recursive: true });
   return root;
 }
+async function fixtureSandbox() {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'budokon-validation-fixture-'));
+  await cp(path.join(repository, 'schema'), path.join(root, 'schema'), { recursive: true });
+  await cp(new URL('./fixtures/canonical-minimal/data', import.meta.url), path.join(root, 'data'), { recursive: true });
+  return root;
+}
 async function change(file, mutate) {
   const value = JSON.parse(await readFile(file, 'utf8')); mutate(value); await writeFile(file, `${JSON.stringify(value, null, 2)}\n`);
 }
@@ -25,15 +31,33 @@ test('schema references fail clearly for unsupported or missing targets', () => 
   assert.throws(() => validateSchema('value', { $ref: '#\/$defs\/missing', $defs: {} }), /invalid \$ref path/);
 });
 
-test('all canonical files pass schema and semantic validation', async () => {
-  const result = await validateCanonical(repository);
-  assert.deepEqual(Object.keys(result).sort(), ['countries', 'dataset', 'events', 'judoka', 'techniques', 'weights']);
-  assert.ok(Array.isArray(result.judoka));
-  assert.ok(Array.isArray(result.techniques));
-  assert.ok(Array.isArray(result.events));
-  assert.ok(result.countries && typeof result.countries === 'object' && !Array.isArray(result.countries));
-  assert.ok(Array.isArray(result.weights));
-  assert.match(result.dataset.datasetVersion, /^[0-9]{4}\.(?:0[1-9]|1[0-2])\.[1-9][0-9]*$/);
+test('.github/workflows/release.yml “Validate canonical data” release gate accepts the canonical repository', async () => {
+  await assert.doesNotReject(validateCanonical(repository));
+});
+
+test('validateCanonical loads a minimal canonical fixture with stable identifiers and normalized values', async () => {
+  const root = await fixtureSandbox();
+  const result = await validateCanonical(root);
+  assert.deepEqual(result.judoka.map(({ id, slug, countryCode, weightClass, signatureMoveIds }) => (
+    { id, slug, countryCode, weightClass, signatureMoveIds }
+  )), [{
+    id: '00000000-0000-4000-8000-000000000001',
+    slug: 'fixture-judoka',
+    countryCode: 'GB',
+    weightClass: '-73',
+    signatureMoveIds: ['fixture-throw'],
+  }]);
+  assert.deepEqual(result.techniques.map(({ id, name }) => ({ id, name })), [{ id: 'fixture-throw', name: 'Fixture Throw' }]);
+  assert.deepEqual(result.events.map(({ id, effects }) => ({ id, effects })), [{
+    id: 'fixture-event', effects: [{ action: 'modify', target: 'score', value: 1 }],
+  }]);
+  assert.deepEqual(result.countries.GB, {
+    country: 'United Kingdom', code: 'GB', lastUpdated: '2025-01-01T00:00:00Z', active: true,
+  });
+  assert.deepEqual(result.weights.map(({ gender, categories }) => ({
+    gender, weights: categories.map(({ weight }) => weight),
+  })), [{ gender: 'male', weights: ['-73'] }, { gender: 'female', weights: ['-63'] }]);
+  assert.deepEqual(result.dataset, { datasetVersion: '2025.01.1' });
 });
 
 test('filenames match canonical slugs', async () => {
