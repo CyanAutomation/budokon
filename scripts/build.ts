@@ -23,7 +23,7 @@ export function validateJuDoKonJudokaImport(migration: unknown): asserts migrati
   }
 
   for (const [judokaId, entry] of Object.entries(migration)) {
-    if (entry === null || typeof entry !== 'object' || Array.isArray(entry) || Object.getPrototypeOf(entry) !== Object.prototype) {
+    if (entry === null || typeof entry !== 'object' || Array.isArray(entry) || (Object.getPrototypeOf(entry) !== Object.prototype && Object.getPrototypeOf(entry) !== null)) {
       throw new Error(`Invalid JU-DO-KON migration entry for immutable judoka ID ${JSON.stringify(judokaId)}: expected a plain object`);
     }
   }
