@@ -1,0 +1,10 @@
+{
+  "id": "fixture-throw",
+  "name": "Fixture Throw",
+  "japanese": "Fixture-nage",
+  "style": "Judo",
+  "category": "Nage-waza",
+  "subCategory": "Te-waza",
+  "description": "A representative fixture throwing technique.",
+  "link": "https://example.com/fixture-throw"
+}
