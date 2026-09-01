@@ -18,7 +18,7 @@ export interface CountryCatalogEntry {
 export type CountryCatalog = Record<string, CountryCatalogEntry>;
 
 export function validateJuDoKonJudokaImport(migration: unknown): asserts migration is Record<string, Record<string, unknown>> {
-  if (migration === null || typeof migration !== 'object' || Array.isArray(migration)) {
+  if (migration === null || typeof migration !== 'object' || Array.isArray(migration) || (Object.getPrototypeOf(migration) !== Object.prototype && Object.getPrototypeOf(migration) !== null)) {
     throw new Error('Invalid JU-DO-KON judoka import: expected an object keyed by immutable judoka ID');
   }
 
