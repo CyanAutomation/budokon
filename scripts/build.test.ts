@@ -8,17 +8,12 @@ import {
   uuidPattern,
   validateCountries,
   validateCountryReferences,
+  validateJuDoKonJudokaImport,
   validateTechniqueReferences,
 } from './build.js';
 import { compileArtifacts } from './build.js';
 import algorithmContract from '../src/draw/algorithm-contract.json' with { type: 'json' };
 import { validateSchema } from '../src/validation/validate-canonical.js';
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
-}
 
 test('build and schema UUID patterns have matching compatibility', async () => {
   const schema = JSON.parse(await readFile(new URL('../schema/judoka.schema.json', import.meta.url), 'utf8'));
@@ -64,7 +59,7 @@ test('JU-DO-KON importer preserves game state (migrations/README.md#ju-do-kon-ju
   const migration = JSON.parse(await readFile(new URL('../migrations/ju-do-kon-judoka-import.json', import.meta.url), 'utf8'));
   const migrationEntry = migration[judoka.id];
   assert.ok(migrationEntry, `Migration entry not found for judoka ID: ${judoka.id}`);
-  assert.equal(isPlainObject(migrationEntry), true, `Migration entry must be a plain object for judoka ID: ${judoka.id}`);
+  assert.doesNotThrow(() => validateJuDoKonJudokaImport(migration));
 
   // Model the consumer conversion: enrich the canonical record from the import keyed by immutable ID.
   const importedJudoka = { ...judoka, ...migrationEntry };
@@ -80,13 +75,31 @@ test('JU-DO-KON importer preserves game state (migrations/README.md#ju-do-kon-ju
   );
 });
 
-test('JU-DO-KON migration entries reject non-plain object values', () => {
-  for (const value of [null, [], 'entry', 1, new Date()]) {
-    assert.equal(isPlainObject(value), false);
+test('JU-DO-KON migration validation enforces migrations/README.md#ju-do-kon-judoka-import-contract', () => {
+  const immutableJudokaId = '84d3b821-0ca8-42de-b42c-2eb8d42c9c3b';
+  const invalidEntries = [
+    { name: 'null', value: null },
+    { name: 'array', value: [] },
+    { name: 'string', value: 'entry' },
+    { name: 'number', value: 1 },
+    { name: 'date', value: new Date('2026-01-01T00:00:00Z') },
+    { name: 'map', value: new Map() },
+    { name: 'set', value: new Set() },
+    { name: 'regular expression', value: /entry/ },
+  ];
+
+  for (const { name, value } of invalidEntries) {
+    assert.throws(
+      () => validateJuDoKonJudokaImport({ [immutableJudokaId]: value }),
+      (error: Error) => error.message.includes('Invalid JU-DO-KON migration entry')
+        && error.message.includes(`immutable judoka ID "${immutableJudokaId}"`),
+      name,
+    );
   }
 
-  assert.equal(isPlainObject({}), true);
-  assert.equal(isPlainObject(Object.create(null)), true);
+  assert.doesNotThrow(() => validateJuDoKonJudokaImport({
+    [immutableJudokaId]: { cardCode: '01', matchesWon: 1, matchesLost: 2, matchesDrawn: 3 },
+  }));
 });
 
 test('technique reference validation enforces README.md#referential-validation for every signature move', () => {
