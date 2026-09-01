@@ -17,6 +17,18 @@ export interface CountryCatalogEntry {
 
 export type CountryCatalog = Record<string, CountryCatalogEntry>;
 
+export function validateJuDoKonJudokaImport(migration: unknown): asserts migration is Record<string, Record<string, unknown>> {
+  if (migration === null || typeof migration !== 'object' || Array.isArray(migration) || (Object.getPrototypeOf(migration) !== Object.prototype && Object.getPrototypeOf(migration) !== null)) {
+    throw new Error('Invalid JU-DO-KON judoka import: expected an object keyed by immutable judoka ID');
+  }
+
+  for (const [judokaId, entry] of Object.entries(migration)) {
+    if (entry === null || typeof entry !== 'object' || Array.isArray(entry) || (Object.getPrototypeOf(entry) !== Object.prototype && Object.getPrototypeOf(entry) !== null)) {
+      throw new Error(`Invalid JU-DO-KON migration entry for immutable judoka ID ${JSON.stringify(judokaId)}: expected a plain object`);
+    }
+  }
+}
+
 export function validateCountries(countries: CountryCatalog) {
   for (const [key, country] of Object.entries(countries)) {
     if (!countryCodePattern.test(key)) throw new Error(`Country key ${key} is invalid`);
@@ -48,6 +60,8 @@ export async function compileArtifacts(sourceGitCommit, sourceRoot = root) {
   if (!sourceGitCommit) throw new Error('SOURCE_GIT_COMMIT is required; generated artifacts must identify an explicit source commit');
   if (!/^[0-9a-f]{40}$/i.test(sourceGitCommit)) throw new Error('SOURCE_GIT_COMMIT must be a full Git commit hash');
   const { judoka, techniques, events, countries, weights, dataset } = await validateCanonical(sourceRoot);
+  const juDoKonJudokaImport = JSON.parse(await readFile(path.join(sourceRoot, 'migrations/ju-do-kon-judoka-import.json'), 'utf8'));
+  validateJuDoKonJudokaImport(juDoKonJudokaImport);
   const service = JSON.parse(await readFile(path.join(sourceRoot, 'package.json'), 'utf8'));
   if (typeof dataset?.datasetVersion !== 'string' || dataset.datasetVersion.trim() === '') {
     throw new Error('Invalid dataset: missing datasetVersion');
