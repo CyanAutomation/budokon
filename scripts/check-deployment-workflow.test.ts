@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import test from "node:test";
+import test, { type TestContext } from "node:test";
 import {
   checkDeploymentWorkflow,
   DeploymentWorkflowValidationError,
@@ -23,6 +23,7 @@ const validScripts = {
 
 interface Fixture {
   name: string;
+  requirementReference?: string;
   workflow?: string;
   scripts?: Record<string, string>;
   omittedEntryPoints?: string[];
@@ -33,7 +34,10 @@ interface Fixture {
 }
 
 const fixtures: Fixture[] = [
-  { name: "valid workflow" },
+  {
+    name: "accepts a deployment workflow that runs target validation and smoke checks",
+    requirementReference: ".github/workflows/validate.yml CI deployment workflow check",
+  },
   {
     name: "missing validator entry point",
     omittedEntryPoints: ["scripts/validate-cloudflare-deployment-target.ts"],
@@ -51,34 +55,50 @@ const fixtures: Fixture[] = [
   },
 ];
 
+async function createTemporaryRepositoryFixture(
+  t: TestContext,
+  fixture: Fixture,
+): Promise<string> {
+  const repositoryRoot = await mkdtemp(path.join(os.tmpdir(), "budokon-deployment-workflow-"));
+  t.after(() => rm(repositoryRoot, { recursive: true, force: true }));
+
+  await mkdir(path.join(repositoryRoot, ".github/workflows"), { recursive: true });
+  await mkdir(path.join(repositoryRoot, "scripts"));
+  await writeFile(
+    path.join(repositoryRoot, ".github/workflows/deploy-cloudflare.yml"),
+    fixture.workflow ?? validWorkflow,
+  );
+  await writeFile(
+    path.join(repositoryRoot, "package.json"),
+    JSON.stringify({ scripts: fixture.scripts ?? validScripts }),
+  );
+  for (const entryPoint of Object.values(validScripts).map(command => command.replace("tsx ", ""))) {
+    if (!fixture.omittedEntryPoints?.includes(entryPoint)) {
+      await writeFile(path.join(repositoryRoot, entryPoint), "");
+    }
+  }
+
+  return repositoryRoot;
+}
+
 for (const fixture of fixtures) {
   test(fixture.name, async t => {
-    const repositoryRoot = await mkdtemp(path.join(os.tmpdir(), "budokon-deployment-workflow-"));
-    t.after(() => rm(repositoryRoot, { recursive: true, force: true }));
-
-    await mkdir(path.join(repositoryRoot, ".github/workflows"), { recursive: true });
-    await mkdir(path.join(repositoryRoot, "scripts"));
-    await writeFile(
-      path.join(repositoryRoot, ".github/workflows/deploy-cloudflare.yml"),
-      fixture.workflow ?? validWorkflow,
-    );
-    await writeFile(
-      path.join(repositoryRoot, "package.json"),
-      JSON.stringify({ scripts: fixture.scripts ?? validScripts }),
-    );
-    for (const entryPoint of Object.values(validScripts).map(command => command.replace("tsx ", ""))) {
-      if (!fixture.omittedEntryPoints?.includes(entryPoint)) {
-        await writeFile(path.join(repositoryRoot, entryPoint), "");
-      }
-    }
+    const repositoryRoot = await createTemporaryRepositoryFixture(t, fixture);
 
     if (!fixture.expectedError) {
       const result = await checkDeploymentWorkflow(repositoryRoot);
-      assert.equal(result.repositoryRoot, repositoryRoot);
-      assert.deepEqual(
-        result.scripts.map(script => script.name),
-        ["validate:deployment-target", "smoke:deployment"],
-      );
+      assert.deepEqual(result.scripts, [
+        {
+          name: "validate:deployment-target",
+          command: "tsx scripts/validate-cloudflare-deployment-target.ts",
+          entryPoint: "scripts/validate-cloudflare-deployment-target.ts",
+        },
+        {
+          name: "smoke:deployment",
+          command: "tsx scripts/smoke-deployment.ts",
+          entryPoint: "scripts/smoke-deployment.ts",
+        },
+      ]);
       return;
     }
 
