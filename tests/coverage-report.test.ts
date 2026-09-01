@@ -26,16 +26,25 @@ test('coverage summary reports the visible catalogue and its balance', () => {
   assert.doesNotMatch(formatCoverageReport(summary), /Game-ready records/);
 });
 
-test('coverage report is printed before policy violations without throwing', () => {
-  const output: string[] = [];
-  const satisfied = printCoverageReport(summarizeCoverage([]), [], {
-    log: message => output.push(`log:${message}`),
-    error: message => output.push(`error:${message}`),
+test('coverage report and policy violations use their respective channels without throwing', () => {
+  const summary = summarizeCoverage([]);
+  const weights = [{ gender: 'female', categories: [{ weight: '-48' }, { weight: '-52' }] }];
+  const reports: string[] = [];
+  const errors: string[] = [];
+  const satisfied = printCoverageReport(summary, weights, {
+    log: message => reports.push(message),
+    error: message => errors.push(message),
   });
 
   assert.equal(satisfied, false);
-  assert.match(output[0], /^log:BU-DO-KON editorial coverage/);
-  assert.match(output[1], /^error:\nCoverage policy violations/);
+  assert.deepEqual(reports, [formatCoverageReport(summary)]);
+  assert.deepEqual(errors, [
+    '\nCoverage policy violations (README.md#editorial-coverage-and-rarity-policy):\n'
+      + '  - public real catalogue has 0; need at least 20\n'
+      + '  - catalogue covers 0 countries; need at least 10\n'
+      + '  - weight class -48 has no public real judoka\n'
+      + '  - weight class -52 has no public real judoka',
+  ]);
 });
 
 test('coverage policy reports every violation when the catalogue is too small', async (t) => {
