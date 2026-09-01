@@ -77,6 +77,13 @@ test('JU-DO-KON importer preserves game state (migrations/README.md#ju-do-kon-ju
 
 test('JU-DO-KON migration validation enforces migrations/README.md#ju-do-kon-judoka-import-contract', () => {
   const immutableJudokaId = '84d3b821-0ca8-42de-b42c-2eb8d42c9c3b';
+  const invalidMigrations = [
+    { name: 'null', value: null },
+    { name: 'array', value: [] },
+    { name: 'map', value: new Map() },
+    { name: 'set', value: new Set() },
+    { name: 'class instance', value: new (class Migration {})() },
+  ];
   const invalidEntries = [
     { name: 'null', value: null },
     { name: 'array', value: [] },
@@ -87,6 +94,14 @@ test('JU-DO-KON migration validation enforces migrations/README.md#ju-do-kon-jud
     { name: 'set', value: new Set() },
     { name: 'regular expression', value: /entry/ },
   ];
+
+  for (const { name, value } of invalidMigrations) {
+    assert.throws(
+      () => validateJuDoKonJudokaImport(value),
+      /Invalid JU-DO-KON judoka import: expected an object keyed by immutable judoka ID/,
+      `top-level ${name}`,
+    );
+  }
 
   for (const { name, value } of invalidEntries) {
     assert.throws(
@@ -100,6 +115,12 @@ test('JU-DO-KON migration validation enforces migrations/README.md#ju-do-kon-jud
   assert.doesNotThrow(() => validateJuDoKonJudokaImport({
     [immutableJudokaId]: { cardCode: '01', matchesWon: 1, matchesLost: 2, matchesDrawn: 3 },
   }));
+
+  const nullPrototypeEntry = Object.create(null);
+  nullPrototypeEntry.cardCode = '01';
+  const nullPrototypeMigration = Object.create(null);
+  nullPrototypeMigration[immutableJudokaId] = nullPrototypeEntry;
+  assert.doesNotThrow(() => validateJuDoKonJudokaImport(nullPrototypeMigration));
 });
 
 test('technique reference validation enforces README.md#referential-validation for every signature move', () => {
