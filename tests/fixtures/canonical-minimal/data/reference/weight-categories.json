@@ -1,0 +1,4 @@
+[
+  { "gender": "male", "description": "Men", "categories": [{ "weight": "-73", "descriptor": "73 kg and under" }] },
+  { "gender": "female", "description": "Women", "categories": [{ "weight": "-63", "descriptor": "63 kg and under" }] }
+]

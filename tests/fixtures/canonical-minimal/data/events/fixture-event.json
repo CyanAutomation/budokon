@@ -1,0 +1,7 @@
+{
+  "id": "fixture-event",
+  "ruleset": "fixture-rules",
+  "category": "scoring",
+  "description": "A representative fixture scoring event.",
+  "effects": [{ "action": "modify", "target": "score", "value": 1 }]
+}
