@@ -4,7 +4,13 @@
  * @param {Request} request
  */
 export function credential(request: Request): string {
-  return request.headers.get("x-api-key") ?? request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  const apiKey = request.headers.get("x-api-key");
+  const authorization = request.headers.get("authorization");
+  // A request must select exactly one authentication scheme. Treating either
+  // credential as authoritative would make conflicting dual-header requests
+  // ambiguous to clients and intermediaries.
+  if (apiKey !== null && authorization !== null) return "";
+  return apiKey ?? authorization?.replace(/^Bearer\s+/i, "") ?? "";
 }
 
 /**
