@@ -8,6 +8,32 @@ BU-DO-KON is a structured, version-controlled library of judoka and related judo
 
 Games should normally consume BU-DO-KON through its REST API or MCP interface rather than maintaining separate judoka datasets.
 
+## Start here: use the public API
+
+The public API needs no credential. Use the deployed origin below, or replace it
+with your own Worker origin.
+
+```js
+const baseUrl = "https://budokon.scheimann.workers.dev";
+
+// Search is diacritic-insensitive and accepts structured filters.
+const judoka = await fetch(`${baseUrl}/v1/judoka?q=shozo&countryCode=JP`).then(r => r.json());
+
+// Seeded draws are reproducible for a dataset version and algorithm.
+const draw = await fetch(`${baseUrl}/v1/draw`, {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({ count: 1, seed: "round-42", filters: { personType: "real" } }),
+}).then(r => r.json());
+```
+
+Use `limit` and `nextCursor` for pagination; store `ETag` and send it as
+`If-None-Match` for efficient cache revalidation. Full interactive and
+machine-readable documentation is available at `/docs` and `/openapi/v1.yaml`.
+On `429`, honour `Retry-After` before retrying. The response also exposes the
+configured `RateLimit-Limit` and `RateLimit-Policy`; the Cloudflare limiter
+cannot accurately expose a distributed per-client remaining count.
+
 BU-DO-KON deliberately includes both factual attributes and a curated set of editorial/game-friendly attributes such as ratings, rarity, signature techniques, and biography text. These values form the shared BU-DO-KON representation of each judoka and can be reused consistently across different games.
 
 The canonical dataset is intentionally independent of any particular runtime, database, cloud provider, or consuming game.
@@ -180,6 +206,9 @@ dist/
 ├── budokon.json
 ├── judoka.json
 ├── techniques.json
+├── events.json
+├── countries.json
+├── weight-categories.json
 └── manifest.json
 ```
 
@@ -191,6 +220,9 @@ dist/
 ```
 
 Generated files are runtime artefacts rather than primary editorial sources.
+Tagged dataset releases publish the complete `dist/*.json` set. The manifest
+checksums every payload and identifies the exact canonical source commit used
+to compile that release.
 
 ### Reusing the runtime core
 
@@ -493,12 +525,33 @@ Example:
   "rarity": "Epic",
   "bio": "Biography text...",
   "profileUrl": "https://example.com",
+  "sources": [
+    {
+      "url": "https://example.com/profile",
+      "publisher": "Example publisher",
+      "claims": ["identity", "biography"],
+      "checkedAt": "2026-08-26T00:00:00Z"
+    }
+  ],
   "isHidden": false,
   "lastUpdated": "2026-08-13T00:00:00Z"
 }
 ```
 
 The canonical model contains shared judoka attributes only.
+
+### Factual provenance
+
+`sources` is an optional structured provenance list for factual claims. Every
+source has an HTTPS URL, the factual fields it supports (`identity`,
+`nationality`, `weightClass`, `biography`, or `competitionHistory`), and the
+timestamp at which the curator checked it. `publisher` is optional where it
+would merely restate a domain name. `sourceUrls` remains supported for older
+records, but new editorial work should use `sources`.
+
+Ratings, rarity, and signature-move selection are editorial game attributes,
+not externally asserted facts; they should not be presented as sourced
+rankings.
 
 Game-specific properties such as:
 
@@ -986,6 +1039,12 @@ records receive `404`; and a draw count larger than its eligible pool receives
 `409 Conflict`. Error bodies have the stable shape
 `{"error":{"code":"...","message":"..."}}`. Unexpected errors receive a
 generic `500` response and never expose implementation details.
+
+The public limiter allows 120 requests per minute per client IP and route.
+When it rejects a request it returns `429`, `Retry-After: 60`,
+`RateLimit-Limit: 120`, and `RateLimit-Policy: 120;w=60`. Clients should use
+exponential backoff and honour `Retry-After`; a distributed Cloudflare limiter
+does not provide a reliable remaining-request value.
 
 `signatureMoveIds` is also a supported structured filter for REST, MCP search,
 and draws. It accepts one technique ID or an array; an array matches a judoka

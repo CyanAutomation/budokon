@@ -10,6 +10,8 @@ test("public rate limits use an IP-and-route key and reject only when the bindin
   assert.equal(key, "203.0.113.7:/v1/judoka");
   assert.equal(response.status, 429);
   assert.equal(response.headers.get("retry-after"), "60");
+  assert.equal(response.headers.get("ratelimit-limit"), "120");
+  assert.equal(response.headers.get("ratelimit-policy"), "120;w=60");
 });
 
 test("an absent or temporarily failing limiter does not make the read-only catalogue unavailable", async () => {

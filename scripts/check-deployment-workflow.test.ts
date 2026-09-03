@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, rm, writeFile, readFile as readRepositoryFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test, { type TestContext } from "node:test";
+import { fileURLToPath } from "node:url";
 import {
   checkDeploymentWorkflow,
   DeploymentWorkflowValidationError,
@@ -110,3 +111,11 @@ for (const fixture of fixtures) {
     });
   });
 }
+
+test("production workflows verify generated artifacts and release every JSON artifact", async () => {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+  const deployment = await readRepositoryFile(path.join(root, ".github/workflows/deploy-cloudflare.yml"), "utf8");
+  const release = await readRepositoryFile(path.join(root, ".github/workflows/release.yml"), "utf8");
+  assert.match(deployment, /npm run check-artifacts/);
+  assert.match(release, /dist\/\*\.json/);
+});

@@ -35,6 +35,11 @@ jobs:
         env:
           SOURCE_GIT_COMMIT: ${{ github.sha }}
 
+      - name: Verify deployment artifact consistency
+        run: npm run check-artifacts
+        env:
+          SOURCE_GIT_COMMIT: ${{ github.sha }}
+
       - name: Run tests
         run: npm run test
 
