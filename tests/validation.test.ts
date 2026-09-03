@@ -164,6 +164,16 @@ test('schemas reject stat bounds, malformed timestamps, and extra properties', a
   }
 });
 
+test('judoka provenance sources require an HTTPS URL, claim scope, and a checked timestamp', () => {
+  const record = structuredClone(publicProfileFixture);
+  record.sources = [{ url: 'http://example.test/profile', claims: ['biography'], checkedAt: '2026-01-01T00:00:00Z' }];
+  assert.throws(() => validateSchema(record, judokaSchema, 'data/judoka/ashley-mckenzie.json'), /sources\[0\]\.url.*https/);
+  record.sources = [{ url: 'https://example.test/profile', claims: [], checkedAt: '2026-01-01T00:00:00Z' }];
+  assert.throws(() => validateSchema(record, judokaSchema, 'data/judoka/ashley-mckenzie.json'), /sources\[0\]\.claims.*at least 1/);
+  record.sources = [{ url: 'https://example.test/profile', claims: ['biography'], checkedAt: '2999-01-01T00:00:00Z' }];
+  assert.doesNotThrow(() => validateSchema(record, judokaSchema, 'data/judoka/ashley-mckenzie.json'));
+});
+
 test('date-time validation accepts supported fractions and rejects calendar overflow', async () => {
   for (const timestamp of ['2025-02-28T12:34:56Z', '2025-02-28T12:34:56.1Z', '2025-02-28T12:34:56.12Z', '2025-02-28T12:34:56.123Z']) {
     const root = await sandbox();
