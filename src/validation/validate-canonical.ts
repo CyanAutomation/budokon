@@ -14,6 +14,7 @@ interface CanonicalJudoka {
   id: string; slug: string; legacySlugs?: string[]; firstname: string; surname: string;
   aliases?: string[]; personType: string; isHidden?: boolean; countryCode: string;
   signatureMoveIds: string[]; gender: string; weightClass: string; lastUpdated: string; bio: string;
+  sources?: Array<{ checkedAt: string }>;
 }
 interface CanonicalTechnique { id: string; slug?: string; name: string; japanese: string; description: string; }
 interface CanonicalEffect { action: string; target: string; value: unknown; }
@@ -185,6 +186,9 @@ export async function validateCanonical(root = defaultRoot) {
     for (const techniqueId of record.signatureMoveIds) if (!techniqueIds.has(techniqueId)) throw new Error(`${record.slug} references unknown technique ${techniqueId}`);
     if (!weightMap.get(record.gender)?.has(record.weightClass)) throw new Error(`${record.slug} has invalid ${record.gender} weight class ${record.weightClass}`);
     if (Date.parse(record.lastUpdated) > Date.now()) throw new Error(`${record.slug} lastUpdated must not be in the future`);
+    for (const [index, source] of (record.sources ?? []).entries()) {
+      if (Date.parse(source.checkedAt) > Date.now()) throw new Error(`${record.slug}.sources[${index}].checkedAt must not be in the future`);
+    }
     meaningfulText(record.firstname, `${record.slug}.firstname`);
     meaningfulText(record.surname, `${record.slug}.surname`);
     for (const [index, alias] of (record.aliases ?? []).entries()) meaningfulText(alias, `${record.slug}.aliases[${index}]`);
