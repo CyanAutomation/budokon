@@ -40,4 +40,16 @@ const first = await request("/v1/judoka");
 const etag = first.headers.get("etag");
 if (!etag) throw new Error("public catalogue response is missing ETag");
 await request("/v1/judoka", { headers: { "if-none-match": etag } }, 304);
+const search = await request("/v1/judoka?q=shozo&limit=1").then(response => response.json() as Promise<{ judoka?: unknown[] }>);
+if (!Array.isArray(search.judoka) || search.judoka.length === 0) throw new Error("catalogue search did not return the expected public record");
+const drawRequest: RequestInit = {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({ count: 1, seed: "deployment-smoke", filters: { personType: "real" } }),
+};
+const [firstDraw, secondDraw] = await Promise.all([
+  request("/v1/draw", drawRequest).then(response => response.text()),
+  request("/v1/draw", drawRequest).then(response => response.text()),
+]);
+if (firstDraw !== secondDraw) throw new Error("seeded draw is not deterministic");
 console.log(`Smoke check passed for ${base} (${status.datasetVersion}, ${status.sourceGitCommit})`);

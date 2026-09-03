@@ -34,6 +34,26 @@
       "minItems": 1,
       "uniqueItems": true
     },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["url", "claims", "checkedAt"],
+        "properties": {
+          "url": { "type": "string", "format": "uri", "pattern": "^https://" },
+          "publisher": { "$ref": "#/$defs/text" },
+          "claims": {
+            "type": "array",
+            "items": { "enum": ["identity", "nationality", "weightClass", "biography", "competitionHistory"] },
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "checkedAt": { "type": "string", "format": "date-time" }
+        },
+        "additionalProperties": false
+      },
+      "uniqueItems": true
+    },
     "bio": { "type": "string", "minLength": 20 },
     "gender": { "enum": ["male", "female"] },
     "isHidden": { "type": "boolean" },

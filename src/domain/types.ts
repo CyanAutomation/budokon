@@ -13,6 +13,8 @@ export interface Judoka {
   weightClass?: string;
   rarity?: string;
   sourceUrls?: string[];
+  /** Verifiable references for factual profile claims; ratings and rarity remain editorial. */
+  sources?: Array<{ url: string; publisher?: string; claims: string[]; checkedAt: string }>;
   personType?: string;
   signatureMoveIds: string[];
   isHidden?: boolean;
