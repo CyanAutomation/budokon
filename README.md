@@ -215,7 +215,8 @@ The included Worker exposes the public catalogue REST service at `/v1/*` and a
 separately API-key-protected remote MCP server at `/mcp`. Browser games must
 use REST only; never embed `API_KEY` or `INTERNAL_API_KEY` in browser code.
 Supply the MCP key using either `X-API-Key: <key>` or `Authorization: Bearer
-<key>`.
+<key>`. Send exactly one of these credential headers: requests containing both
+are rejected, even when the two values are identical.
 
 #### Worker documentation security requirements
 

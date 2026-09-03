@@ -6,14 +6,17 @@ function request(headers = {}) {
   return new Request("https://example.test/v1/judoka", { headers });
 }
 
-test("credential accepts the API key header before a bearer token", () => {
-  const input = request({ "x-api-key": "header-secret", authorization: "Bearer bearer-secret" });
-
-  assert.equal(credential(input), "header-secret");
-});
-
 test("credential accepts bearer tokens case-insensitively", () => {
   assert.equal(credential(request({ authorization: "bEaReR bearer-secret" })), "bearer-secret");
+});
+
+test("authorized rejects both credential headers as required by the worker/API security documentation", () => {
+  const expected = "correct-secret";
+
+  assert.equal(authorized(request({ "x-api-key": "api-secret", authorization: "Bearer bearer-secret" }), expected), false);
+  assert.equal(authorized(request({ "x-api-key": expected, authorization: `Bearer ${expected}` }), expected), false);
+  assert.equal(authorized(request({ "x-api-key": expected, authorization: "Bearer wrong-secret" }), expected), false);
+  assert.equal(authorized(request({ "x-api-key": "wrong-secret", authorization: `Bearer ${expected}` }), expected), false);
 });
 
 test("authorized accepts only an exact credential match", () => {
