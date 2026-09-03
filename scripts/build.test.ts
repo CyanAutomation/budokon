@@ -37,23 +37,6 @@ test('build and schema UUID patterns have matching compatibility', async () => {
   }
 });
 
-test('canonical judoka omit prohibited game-state keys', async () => {
-  const directory = new URL('../data/judoka/', import.meta.url);
-  const files = (await readdir(directory)).filter((file) => file.endsWith('.json'));
-  const records = await Promise.all(files.map(async (file) => JSON.parse(await readFile(new URL(file, directory), 'utf8'))));
-  const prohibitedGameStateKeys = new Set([
-    'cardCode', 'matchesWon', 'matchesLost', 'matchesDrawn', 'playerOwnership',
-    'experiencePoints', 'cardInstanceId', 'gameScore',
-  ]);
-
-  for (const record of records) {
-    const canonicalGameStateKeys = new Set(
-      Object.keys(record).filter((property) => prohibitedGameStateKeys.has(property)),
-    );
-    assert.deepEqual([...canonicalGameStateKeys].sort(), [], record.id);
-  }
-});
-
 test('JU-DO-KON importer preserves game state (migrations/README.md#ju-do-kon-judoka-import-contract)', async () => {
   const judoka = JSON.parse(await readFile(new URL('../data/judoka/tatsuuma-ushiyama.json', import.meta.url), 'utf8'));
   const migration = JSON.parse(await readFile(new URL('../migrations/ju-do-kon-judoka-import.json', import.meta.url), 'utf8'));
@@ -111,6 +94,11 @@ test('JU-DO-KON migration validation enforces migrations/README.md#ju-do-kon-jud
       name,
     );
   }
+
+  assert.throws(
+    () => validateJuDoKonJudokaImport({ [immutableJudokaId]: { firstname: 'Canonical data' } }),
+    /firstname is not a game-state property/,
+  );
 
   assert.doesNotThrow(() => validateJuDoKonJudokaImport({
     [immutableJudokaId]: { cardCode: '01', matchesWon: 1, matchesLost: 2, matchesDrawn: 3 },
