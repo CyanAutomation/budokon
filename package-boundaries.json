@@ -1,6 +1,7 @@
 {
   "runtimeNeutralRoots": [
     "src/api",
+    "src/contracts",
     "src/domain",
     "src/draw",
     "src/mcp",

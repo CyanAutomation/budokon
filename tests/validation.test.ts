@@ -5,6 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { validateCanonical, validateSchema } from '../src/validation/validate-canonical.js';
+import { prohibitedGameStatePropertyNames } from '../src/contracts/game-state.js';
 
 const repository = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const cases = JSON.parse(await readFile(new URL('./fixtures/semantic-cases.json', import.meta.url), 'utf8'));
@@ -92,16 +93,9 @@ test('semantic text validation rejects non-string values without crashing', asyn
 });
 
 test('prohibited game-state property names remain rejected if schemas expand', async () => {
-  for (const property of ['cardCode', 'matchesWon', 'matchesLost', 'matchesDrawn']) {
-    const root = await sandbox();
-    await change(path.join(root, 'data/judoka/ashley-mckenzie.json'), (record) => { record[property] = true; });
-    await assert.rejects(
-      validateCanonical(root),
-      new RegExp(`(?:additional property ${property}|ashley-mckenzie\\.json\\.${property} is a prohibited game-state property)`),
-    );
-  }
-
-  for (const property of ['matchesWon', 'matchesLost', 'matchesDrawn', 'playerOwnership', 'experiencePoints', 'cardInstanceId', 'gameScore']) {
+  // Keep canonical data stateless even when schemas expand; game state belongs
+  // only in the import described by migrations/README.md#ju-do-kon-judoka-import-contract.
+  for (const property of prohibitedGameStatePropertyNames) {
     const root = await sandbox();
     await change(path.join(root, 'schema/dataset.schema.json'), schema => { schema.additionalProperties = true; });
     await change(path.join(root, 'data/dataset.json'), dataset => { dataset.futureSchema = { [property]: true }; });

@@ -1,13 +1,10 @@
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isProhibitedGameStatePropertyName } from '../contracts/game-state.js';
 
 const defaultRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const placeholder = /^(?:todo|tbd|unknown|n\/?a|none|more info to come)(?=$|[\s:_\p{P}\p{S}])/iu;
-const prohibitedGameStateProperties = new Set([
-  'matchesWon', 'matchesLost', 'matchesDrawn', 'playerOwnership',
-  'experiencePoints', 'cardInstanceId', 'gameScore',
-]);
 const rfc3339 = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?Z$/;
 
 interface ParsedFile<T> { name: string; value: T; }
@@ -105,7 +102,7 @@ function rejectGameStateProperties(value, location) {
     return;
   }
   for (const [key, item] of Object.entries(value)) {
-    if (prohibitedGameStateProperties.has(key)) throw new Error(`${location}.${key} is a prohibited game-state property`);
+    if (isProhibitedGameStatePropertyName(key)) throw new Error(`${location}.${key} is a prohibited game-state property`);
     rejectGameStateProperties(item, `${location}.${key}`);
   }
 }

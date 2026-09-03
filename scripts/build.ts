@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateCanonical } from '../src/validation/validate-canonical.js';
+import { isProhibitedGameStatePropertyName } from '../src/contracts/game-state.js';
 import algorithmContract from '../src/draw/algorithm-contract.json' with { type: 'json' };
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -25,6 +26,11 @@ export function validateJuDoKonJudokaImport(migration: unknown): asserts migrati
   for (const [judokaId, entry] of Object.entries(migration)) {
     if (entry === null || typeof entry !== 'object' || Array.isArray(entry) || (Object.getPrototypeOf(entry) !== Object.prototype && Object.getPrototypeOf(entry) !== null)) {
       throw new Error(`Invalid JU-DO-KON migration entry for immutable judoka ID ${JSON.stringify(judokaId)}: expected a plain object`);
+    }
+    for (const property of Object.keys(entry)) {
+      if (isProhibitedGameStatePropertyName(property)) {
+        throw new Error(`Invalid JU-DO-KON migration entry for immutable judoka ID ${JSON.stringify(judokaId)}: ${property} is not a game-state property`);
+      }
     }
   }
 }
