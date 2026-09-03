@@ -28,7 +28,7 @@ export function validateJuDoKonJudokaImport(migration: unknown): asserts migrati
       throw new Error(`Invalid JU-DO-KON migration entry for immutable judoka ID ${JSON.stringify(judokaId)}: expected a plain object`);
     }
     for (const property of Object.keys(entry)) {
-      if (!isProhibitedGameStatePropertyName(property)) {
+      if (isProhibitedGameStatePropertyName(property)) {
         throw new Error(`Invalid JU-DO-KON migration entry for immutable judoka ID ${JSON.stringify(judokaId)}: ${property} is not a game-state property`);
       }
     }
