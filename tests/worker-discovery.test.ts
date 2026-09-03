@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { documentationResponse, landingResponse, openApiResponse } from "../worker/discovery.js";
+import { documentationResponse, landingResponse } from "../worker/discovery.js";
+import { createWorker } from "../worker/router.js";
 
 test("landing document derives all links from the supplied origin", async () => {
   const origin = "https://budokon.example";
@@ -42,9 +43,31 @@ test("documentation is user-visible and links to the OpenAPI contract", async ()
   assert.match(docs, /openapi\/v1\.yaml/);
 });
 
-test("OpenAPI response preserves the content type and body", async () => {
-  const specification = "openapi: 3.1.0\n";
-  const contract = openApiResponse(specification);
+test("worker serves the byte-preserved OpenAPI contract", async () => {
+  const specification = `openapi: 3.1.0
+info:
+  title: Test catalogue API
+  version: 1.0.0
+paths:
+  /v1/status:
+    get:
+      responses:
+        "200":
+          description: Catalogue status
+`;
+  const contract = await createWorker(specification).fetch(
+    new Request("https://budokon.example/openapi/v1.yaml"),
+    { API_KEY: "test-key" },
+  );
+
+  assert.equal(contract.status, 200);
   assert.equal(contract.headers.get("content-type"), "application/yaml; charset=utf-8");
-  assert.equal(await contract.text(), specification);
+  const responseBytes = new Uint8Array(await contract.arrayBuffer());
+  assert.deepEqual(
+    responseBytes,
+    new TextEncoder().encode(specification),
+  );
+  const responseDocument = new TextDecoder().decode(responseBytes);
+  assert.match(responseDocument, /^openapi: 3\.1\.0$/m);
+  assert.match(responseDocument, /^  \/v1\/status:$/m);
 });
