@@ -41,7 +41,11 @@ paths:
       parameters: [ { $ref: '#/components/parameters/Id' } ]
       responses: { '200': { $ref: '#/components/responses/Judoka' }, '304': { $ref: '#/components/responses/NotModified' }, '404': { $ref: '#/components/responses/NotFound' }, '429': { $ref: '#/components/responses/RateLimited' } }
   /v1/techniques:
-    get: { operationId: listTechniques, summary: List techniques, responses: { '200': { $ref: '#/components/responses/TechniqueList' }, '304': { $ref: '#/components/responses/NotModified' }, '429': { $ref: '#/components/responses/RateLimited' } } }
+    get:
+      operationId: listTechniques
+      summary: List techniques, optionally with cursor pagination
+      parameters: [ { $ref: '#/components/parameters/Limit' }, { $ref: '#/components/parameters/Cursor' } ]
+      responses: { '200': { $ref: '#/components/responses/TechniqueList' }, '304': { $ref: '#/components/responses/NotModified' }, '400': { $ref: '#/components/responses/BadRequest' }, '429': { $ref: '#/components/responses/RateLimited' } }
   /v1/techniques/{id}:
     get:
       operationId: getTechnique
@@ -55,6 +59,8 @@ paths:
       parameters:
         - $ref: '#/components/parameters/Ruleset'
         - $ref: '#/components/parameters/EventCategory'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
       responses: { '200': { $ref: '#/components/responses/EventList' }, '304': { $ref: '#/components/responses/NotModified' }, '400': { $ref: '#/components/responses/BadRequest' }, '429': { $ref: '#/components/responses/RateLimited' } }
   /v1/events/{id}:
     get:
@@ -159,6 +165,7 @@ components:
         countryCode: { type: string, pattern: '^[A-Z]{2}$' }
         weightClass: { type: string }
         signatureMoveIds: { type: array, items: { type: string } }
+        sourceUrls: { type: array, items: { type: string, format: uri } }
         sources: { type: array, items: { $ref: '#/components/schemas/Source' } }
     Source:
       type: object
@@ -179,9 +186,9 @@ components:
     Judoka: { description: Judoka, content: { application/json: { schema: { $ref: '#/components/schemas/Judoka' } } } }
     JudokaList: { description: Judoka array or a page object when limit is supplied, content: { application/json: { schema: { oneOf: [ { type: array, items: { $ref: '#/components/schemas/Judoka' } }, { type: object, required: [judoka], properties: { judoka: { type: array, items: { $ref: '#/components/schemas/Judoka' } }, nextCursor: { type: string } } } ] } } } }
     Technique: { description: Technique, content: { application/json: { schema: { $ref: '#/components/schemas/Technique' } } } }
-    TechniqueList: { description: Technique array, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Technique' } } } } }
+    TechniqueList: { description: Technique array or a page object when limit is supplied, content: { application/json: { schema: { oneOf: [ { type: array, items: { $ref: '#/components/schemas/Technique' } }, { type: object, required: [techniques], properties: { techniques: { type: array, items: { $ref: '#/components/schemas/Technique' } }, nextCursor: { type: string } } } ] } } } }
     Event: { description: Event, content: { application/json: { schema: { $ref: '#/components/schemas/Event' } } } }
-    EventList: { description: Event array, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Event' } } } } }
+    EventList: { description: Event array or a page object when limit is supplied, content: { application/json: { schema: { oneOf: [ { type: array, items: { $ref: '#/components/schemas/Event' } }, { type: object, required: [events], properties: { events: { type: array, items: { $ref: '#/components/schemas/Event' } }, nextCursor: { type: string } } } ] } } } }
     EventDraw: { description: Event draw result, content: { application/json: { schema: { $ref: '#/components/schemas/EventDraw' } } } }
     Countries: { description: Country map, content: { application/json: { schema: { type: object, additionalProperties: { type: object } } } } }
     WeightCategories: { description: Weight-category array, content: { application/json: { schema: { type: array, items: { type: object } } } } }
