@@ -29,6 +29,23 @@ test("every documented catalogue and metadata endpoint conforms", async () => {
   ]) assert.deepEqual(await body(await request(path)), expected);
 });
 
+test("technique lookup reads the catalog exactly once", async () => {
+  const technique = catalog.listTechniques()[0];
+  let lookupCount = 0;
+  const countingCatalog: RestCatalogDependency = Object.create(catalog) as RestCatalogDependency;
+  countingCatalog.getTechnique = id => {
+    lookupCount += 1;
+    return catalog.getTechnique(id);
+  };
+  const countingRouter = createRestRouter({ catalog: countingCatalog, draw: new DrawService(catalog) });
+
+  const response = await countingRouter(new Request(`https://example.test/v1/techniques/${technique.id}`));
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await body(response), technique);
+  assert.equal(lookupCount, 1);
+});
+
 test("coverage returns empty rarity percentages when no public real judoka exist", () => {
   const coverage = summarizeCoverage([
     { id: "hidden-real", slug: "hidden-real", personType: "real", isHidden: true, rarity: "Rare", signatureMoveIds: [] },
