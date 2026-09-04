@@ -34,6 +34,11 @@ On `429`, honour `Retry-After` before retrying. The response also exposes the
 configured `RateLimit-Limit` and `RateLimit-Policy`; the Cloudflare limiter
 cannot accurately expose a distributed per-client remaining count.
 
+For integration details, compatibility guarantees, provenance semantics, and
+pagination examples, read [docs/API.md](docs/API.md). Operational monitoring,
+alerting, release checks, and the distinction between data and deployment
+commits are documented in [docs/OPERATIONS.md](docs/OPERATIONS.md).
+
 BU-DO-KON deliberately includes both factual attributes and a curated set of editorial/game-friendly attributes such as ratings, rarity, signature techniques, and biography text. These values form the shared BU-DO-KON representation of each judoka and can be reused consistently across different games.
 
 The canonical dataset is intentionally independent of any particular runtime, database, cloud provider, or consuming game.
@@ -1098,9 +1103,11 @@ const draw = await response.json();
 
 Public GET responses include an `ETag` and CDN-friendly `Cache-Control` header.
 `GET /v1/judoka` remains backwards compatible and returns an array by default.
-Use `limit` (1–100) to opt into cursor pagination; the response becomes
-`{ judoka, nextCursor }`, and the returned `nextCursor` is supplied as `cursor`
-on the following request. Pagination is applied after every filter and search.
+Use `limit` (1–100) to opt into cursor pagination for judoka, techniques, and
+events. The response becomes `{ judoka, nextCursor }`, `{ techniques,
+nextCursor }`, or `{ events, nextCursor }`; supply the returned `nextCursor` as
+`cursor` on the following request with the same filters. Pagination is applied
+after every filter and search.
 
 The deployed service has a JSON discovery document at `/`, an interactive Swagger UI
 at `/docs`, and the machine-readable contract at `/openapi/v1.yaml` (the source

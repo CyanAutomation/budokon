@@ -4,6 +4,11 @@ compatibility_date = "2026-08-25"
 
 preview_urls = false
 
+# Emit Worker request, error, and invocation data to Cloudflare Observability.
+# Configure alerts from these signals as documented in docs/OPERATIONS.md.
+[observability]
+enabled = true
+
 [vars]
 # The catalogue contains no private records by default, so any browser game may
 # read it. Replace * with a comma-separated origin allowlist to restrict this.

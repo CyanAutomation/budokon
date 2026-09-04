@@ -85,6 +85,40 @@ test("judoka pagination is opt-in, bounded, and preserves the filtered canonical
   assert.equal((await request("/v1/judoka?cursor=missing")).status, 400);
 });
 
+test("technique and event pagination is opt-in, bounded, and preserves filtered order", async () => {
+  const techniques = catalog.listTechniques();
+  const techniquePage = await request("/v1/techniques?limit=1");
+  assert.equal(techniquePage.status, 200);
+  const firstTechnique = await body(techniquePage);
+  assert.deepEqual(firstTechnique.techniques, techniques.slice(0, 1));
+  assert.equal(firstTechnique.nextCursor, techniques[0].id);
+  const secondTechnique = await request(`/v1/techniques?limit=1&cursor=${encodeURIComponent(firstTechnique.nextCursor)}`);
+  assert.deepEqual((await body(secondTechnique)).techniques, techniques.slice(1, 2));
+
+  const events = catalog.listEvents({ ruleset: "ju-do-kon-v1" });
+  const eventPage = await request("/v1/events?ruleset=ju-do-kon-v1&limit=1");
+  assert.equal(eventPage.status, 200);
+  const firstEvent = await body(eventPage);
+  assert.deepEqual(firstEvent.events, events.slice(0, 1));
+  assert.equal(firstEvent.nextCursor, events[0].id);
+  const secondEvent = await request(`/v1/events?ruleset=ju-do-kon-v1&limit=1&cursor=${encodeURIComponent(firstEvent.nextCursor)}`);
+  assert.deepEqual((await body(secondEvent)).events, events.slice(1, 2));
+
+  for (const path of ["/v1/techniques?limit=0", "/v1/techniques?cursor=missing", "/v1/events?limit=101", "/v1/events?unknown=x"]) {
+    assert.equal((await request(path)).status, 400, path);
+  }
+});
+
+test("public judoka responses preserve optional factual provenance", async () => {
+  const withProvenance = catalog.listJudoka().find(record => record.sourceUrls?.length || record.sources?.length);
+  assert.ok(withProvenance, "fixture must include a sourced judoka");
+  const response = await request(`/v1/judoka/${withProvenance.slug}`);
+  assert.equal(response.status, 200);
+  const record = await body(response);
+  assert.deepEqual(record.sourceUrls, withProvenance.sourceUrls);
+  assert.deepEqual(record.sources, withProvenance.sources);
+});
+
 test("hidden access is explicit and unauthorized access is forbidden", async () => {
   let response = await request("/v1/judoka?includeHidden=true");
   assert.equal(response.status, 403); assert.equal((await body(response)).error.code, "forbidden");

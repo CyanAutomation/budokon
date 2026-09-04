@@ -81,5 +81,6 @@ test("published OpenAPI models response bodies, cache validation, visibility, an
   for (const token of [
     "JudokaDraw:", "EventDraw:", "Coverage:", "Source:", "RateLimited:",
     "NotModified:", "IncludeHidden:", "Retry-After:", "RateLimit-Policy:",
+    "sourceUrls:", "TechniqueList:", "EventList:",
   ]) assert.ok(specification.includes(token), `OpenAPI is missing ${token}`);
 });
