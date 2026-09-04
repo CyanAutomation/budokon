@@ -43,6 +43,14 @@ function values(params: URLSearchParams, name: string): string[] {
   return params.getAll(name).flatMap(value => value.split(",")).map(value => value.trim()).filter(Boolean);
 }
 
+function parsePageQuery(params: URLSearchParams) {
+  const limit = values(params, "limit");
+  const cursor = values(params, "cursor");
+  if (limit.length > 1 || (limit.length === 1 && !/^(?:[1-9]|[1-9][0-9]|100)$/.test(limit[0]))) throw new TypeError("limit must be an integer from 1 through 100");
+  if (cursor.length > 1) throw new TypeError("cursor must have one value");
+  return { limit: limit[0] === undefined ? undefined : Number(limit[0]), cursor: cursor[0] };
+}
+
 function parseListQuery(params: URLSearchParams) {
   const allowed = new Set(["q", "exclude", "includeHidden", "limit", "cursor", ...FILTERS]);
   params.forEach((_value, key) => { if (!allowed.has(key)) throw new TypeError(`unsupported query parameter: ${key}`); });
@@ -55,22 +63,23 @@ function parseListQuery(params: URLSearchParams) {
   const hidden = values(params, "includeHidden");
   if (hidden.length > 1 || (hidden.length === 1 && hidden[0] !== "true" && hidden[0] !== "false")) throw new TypeError("includeHidden must be true or false");
   const query = values(params, "q");
-  const limit = values(params, "limit");
-  const cursor = values(params, "cursor");
   if (query.length > 1) throw new TypeError("q must have one value");
-  if (limit.length > 1 || (limit.length === 1 && !/^(?:[1-9]|[1-9][0-9]|100)$/.test(limit[0]))) throw new TypeError("limit must be an integer from 1 through 100");
-  if (cursor.length > 1) throw new TypeError("cursor must have one value");
-  return { filters: filters as Filters, exclude: values(params, "exclude"), query: query[0], includeHidden: hidden[0] === "true", limit: limit[0] === undefined ? undefined : Number(limit[0]), cursor: cursor[0] };
+  return { filters: filters as Filters, exclude: values(params, "exclude"), query: query[0], includeHidden: hidden[0] === "true", ...parsePageQuery(params) };
 }
 
-function paginateJudoka<T extends { id: string }>(records: T[], limit: number | undefined, cursor: string | undefined) {
+function paginate<T extends { id: string }>(records: T[], limit: number | undefined, cursor: string | undefined) {
   if (limit === undefined && cursor === undefined) return records;
   if (limit === undefined) throw new TypeError("cursor requires limit");
   const cursorIndex = cursor === undefined ? undefined : records.findIndex(record => record.id === cursor);
   if (cursorIndex === -1) throw new TypeError("cursor must identify a valid result from the current query");
   const index = cursorIndex === undefined ? 0 : cursorIndex + 1;
-  const judoka = records.slice(index, index + limit);
-  return { judoka, nextCursor: index + judoka.length < records.length ? judoka.at(-1)?.id : undefined };
+  const items = records.slice(index, index + limit);
+  return { items, nextCursor: index + items.length < records.length ? items.at(-1)?.id : undefined };
+}
+
+function namedPage<T extends { id: string }>(name: string, records: T[], limit: number | undefined, cursor: string | undefined) {
+  const result = paginate(records, limit, cursor);
+  return Array.isArray(result) ? result : { [name]: result.items, nextCursor: result.nextCursor };
 }
 
 function validateDrawBody(value: unknown): DrawRequest {
@@ -93,7 +102,7 @@ function validateDrawBody(value: unknown): DrawRequest {
 }
 
 function parseEventListQuery(params: URLSearchParams) {
-  const allowed = new Set(["ruleset", "category"]);
+  const allowed = new Set(["ruleset", "category", "limit", "cursor"]);
   params.forEach((_value, key) => { if (!allowed.has(key)) throw new TypeError(`unsupported query parameter: ${key}`); });
   const result: Record<string, string | undefined> = {};
   for (const key of allowed) {
@@ -102,7 +111,7 @@ function parseEventListQuery(params: URLSearchParams) {
     if (params.has(key) && value.length === 0) throw new TypeError(`${key} must not be empty`);
     result[key] = value[0];
   }
-  return result as { ruleset?: string; category?: string };
+  return { ...result as { ruleset?: string; category?: string }, ...parsePageQuery(params) };
 }
 
 function validateEventDrawBody(value: unknown): EventDrawRequest {
@@ -141,9 +150,15 @@ export function createRestRouter({ catalog, draw, eventDraw }: { catalog: RestCa
           const record = catalog.getJudoka(id, { includeHidden: query.includeHidden, authorizedInternal });
           return record ? json(record) : failure(404, "not_found", "judoka not found");
         }
-        return json(paginateJudoka(catalog.searchJudoka({ ...query, authorizedInternal }), query.limit, query.cursor));
+        return json(namedPage("judoka", catalog.searchJudoka({ ...query, authorizedInternal }), query.limit, query.cursor));
       }
-      if (resource === "techniques" && request.method === "GET") return id === undefined ? json(catalog.listTechniques()) : (catalog.getTechnique(id) ? json(catalog.getTechnique(id)) : failure(404, "not_found", "technique not found"));
+      if (resource === "techniques" && request.method === "GET") {
+        if (id !== undefined) return catalog.getTechnique(id) ? json(catalog.getTechnique(id)) : failure(404, "not_found", "technique not found");
+        const allowed = new Set(["limit", "cursor"]);
+        url.searchParams.forEach((_value, key) => { if (!allowed.has(key)) throw new TypeError(`unsupported query parameter: ${key}`); });
+        const page = parsePageQuery(url.searchParams);
+        return json(namedPage("techniques", catalog.listTechniques(), page.limit, page.cursor));
+      }
       if (resource === "events") {
         if (id === "draw" && request.method === "POST") {
           if (!eventDraw) return failure(404, "not_found", "route not found");
@@ -159,7 +174,8 @@ export function createRestRouter({ catalog, draw, eventDraw }: { catalog: RestCa
             if (hasQuery) throw new TypeError("unsupported query parameter for event lookup");
             const event = catalog.getEvent(id); return event ? json(event) : failure(404, "not_found", "event not found");
           }
-          return json(catalog.listEvents(parseEventListQuery(url.searchParams)));
+          const query = parseEventListQuery(url.searchParams);
+          return json(namedPage("events", catalog.listEvents(query), query.limit, query.cursor));
         }
       }
       if (resource === "countries" && request.method === "GET" && id === undefined) return json(catalog.listCountries());
