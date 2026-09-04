@@ -153,7 +153,10 @@ export function createRestRouter({ catalog, draw, eventDraw }: { catalog: RestCa
         return json(namedPage("judoka", catalog.searchJudoka({ ...query, authorizedInternal }), query.limit, query.cursor));
       }
       if (resource === "techniques" && request.method === "GET") {
-        if (id !== undefined) return catalog.getTechnique(id) ? json(catalog.getTechnique(id)) : failure(404, "not_found", "technique not found");
+        if (id !== undefined) {
+          const technique = catalog.getTechnique(id);
+          return technique ? json(technique) : failure(404, "not_found", "technique not found");
+        }
         const allowed = new Set(["limit", "cursor"]);
         url.searchParams.forEach((_value, key) => { if (!allowed.has(key)) throw new TypeError(`unsupported query parameter: ${key}`); });
         const page = parsePageQuery(url.searchParams);
