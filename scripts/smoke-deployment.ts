@@ -42,6 +42,16 @@ if (!etag) throw new Error("public catalogue response is missing ETag");
 await request("/v1/judoka", { headers: { "if-none-match": etag } }, 304);
 const search = await request("/v1/judoka?q=shozo&limit=1").then(response => response.json() as Promise<{ judoka?: unknown[] }>);
 if (!Array.isArray(search.judoka) || search.judoka.length === 0) throw new Error("catalogue search did not return the expected public record");
+const page = await request("/v1/judoka?limit=1").then(response => response.json() as Promise<{ judoka?: unknown[]; nextCursor?: string }>);
+if (!Array.isArray(page.judoka) || page.judoka.length !== 1 || !page.nextCursor) throw new Error("catalogue pagination did not return a cursor");
+const nextPage = await request(`/v1/judoka?limit=1&cursor=${encodeURIComponent(page.nextCursor)}`).then(response => response.json() as Promise<{ judoka?: unknown[] }>);
+if (!Array.isArray(nextPage.judoka) || nextPage.judoka.length !== 1) throw new Error("catalogue cursor pagination did not return a result");
+await request("/v1/judoka?unknown=smoke", undefined, 400);
+const preflight = await request("/v1/draw", {
+  method: "OPTIONS",
+  headers: { origin: "https://smoke.example", "access-control-request-method": "POST", "access-control-request-headers": "content-type" },
+}, 204);
+if (preflight.headers.get("access-control-allow-methods")?.includes("POST") !== true) throw new Error("CORS preflight does not permit public draws");
 const drawRequest: RequestInit = {
   method: "POST",
   headers: { "content-type": "application/json" },
@@ -52,4 +62,14 @@ const [firstDraw, secondDraw] = await Promise.all([
   request("/v1/draw", drawRequest).then(response => response.text()),
 ]);
 if (firstDraw !== secondDraw) throw new Error("seeded draw is not deterministic");
+const eventRequest: RequestInit = {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({ ruleset: "ju-do-kon-v1", category: "shiai", seed: "deployment-smoke" }),
+};
+const [firstEvent, secondEvent] = await Promise.all([
+  request("/v1/events/draw", eventRequest).then(response => response.text()),
+  request("/v1/events/draw", eventRequest).then(response => response.text()),
+]);
+if (firstEvent !== secondEvent) throw new Error("seeded event draw is not deterministic");
 console.log(`Smoke check passed for ${base} (${status.datasetVersion}, ${status.sourceGitCommit})`);
