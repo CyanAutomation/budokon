@@ -30,6 +30,7 @@
     "coverage": "tsx scripts/coverage-report.ts",
     "verify-release": "tsx scripts/verify-release.ts",
     "validate": "tsx src/validation/validate-canonical.ts",
+    "validate:openapi": "ruby scripts/validate-openapi.rb",
     "validate:deployment-target": "tsx scripts/validate-cloudflare-deployment-target.ts",
     "smoke:deployment": "tsx scripts/smoke-deployment.ts",
     "test": "npm run build && tsx --test scripts/*.test.ts tests/*.test.ts",
