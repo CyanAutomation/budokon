@@ -2,14 +2,9 @@ import type { CoverageResponse, Filters, JudoEvent, Judoka, ListJudokaOptions, S
 import type { ReadModelRepository } from "../repository/read-model-repository.js";
 import { DRAW_ALGORITHM, SUPPORTED_DRAW_ALGORITHMS } from "../draw/algorithm.js";
 import { summarizeCoverage } from "./coverage.js";
+import { FILTER_FIELDS, normalizeSearchText } from "./catalog-filters.js";
 
-const FILTER_FIELDS = new Set(["countryCode", "gender", "weightClass", "rarity", "personType", "signatureMoveIds"]);
 const byImmutableId = (a: Judoka, b: Judoka) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
-
-export function normalizeSearchText(value: unknown): string {
-  return String(value ?? "").normalize("NFD").replace(/\p{Mark}+/gu, "").toLowerCase()
-    .replace(/[^\p{Letter}\p{Number}]+/gu, " ").trim().replace(/\s+/gu, " ");
-}
 function searchableValues(judoka: Judoka) {
   return [judoka.slug, ...(judoka.legacySlugs ?? []), judoka.firstname, judoka.surname, `${judoka.firstname ?? ""} ${judoka.surname ?? ""}`.trim(), ...(judoka.aliases ?? [])].map(normalizeSearchText).filter(Boolean);
 }

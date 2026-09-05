@@ -3,6 +3,7 @@ import type {
   Filters, JudoEvent, Judoka, ListJudokaOptions, RequestContext, SearchJudokaOptions,
   StatusResponse, Technique, VersionResponse, WeightCategoryGroup
 } from "../domain/types.js";
+import { FILTER_FIELDS } from "../domain/catalog-filters.js";
 
 export interface RestCatalogDependency {
   searchJudoka(options?: SearchJudokaOptions): Judoka[];
@@ -32,7 +33,7 @@ export interface RestRouterOptions {
 }
 
 type ErrorCode = "bad_request" | "forbidden" | "not_found" | "method_not_allowed" | "conflict" | "internal_error";
-const FILTERS = ["countryCode", "gender", "weightClass", "rarity", "personType", "signatureMoveIds"] as const;
+const FILTERS = Array.from(FILTER_FIELDS) as readonly string[];
 const json = (body: unknown, status = 200, headers: HeadersInit = {}) => new Response(JSON.stringify(body), {
   status, headers: { "content-type": "application/json; charset=utf-8", ...headers }
 });

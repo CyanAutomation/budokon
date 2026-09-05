@@ -1,5 +1,6 @@
 import type { CompiledDataset, JsonValue } from "../domain/types.js";
 import { ReadModelRepository } from "./read-model-repository.js";
+import { normalizeSearchText } from "../domain/catalog-filters.js";
 
 const byId = (a: { id: string }, b: { id: string }) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
 
@@ -34,10 +35,10 @@ export class JsonReadModelRepository extends ReadModelRepository {
   listJudoka() { return this.model.judoka.slice(); }
   getJudoka(key: string | undefined) {
     if (key === undefined) return undefined;
-    const normalized = String(key).normalize("NFD").replace(/\p{Mark}+/gu, "").toLowerCase().replace(/[^\p{Letter}\p{Number}]+/gu, " ").trim().replace(/\s+/gu, " ");
+    const normalized = normalizeSearchText(key);
     return this.model.judoka.find(j => j.id === key || j.slug === key || j.legacySlugs?.includes(key)
       || [j.firstname, j.surname, `${j.firstname ?? ""} ${j.surname ?? ""}`.trim(), ...(j.aliases ?? [])]
-        .some(value => String(value ?? "").normalize("NFD").replace(/\p{Mark}+/gu, "").toLowerCase().replace(/[^\p{Letter}\p{Number}]+/gu, " ").trim().replace(/\s+/gu, " ") === normalized));
+        .some(value => normalizeSearchText(value) === normalized));
   }
   listTechniques() { return this.model.techniques.slice(); }
   getTechnique(id: string | undefined) { return id === undefined ? undefined : this.model.techniques.find(t => t.id === id); }
