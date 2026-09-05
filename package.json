@@ -33,6 +33,8 @@
     "validate:openapi": "ruby scripts/validate-openapi.rb",
     "validate:deployment-target": "tsx scripts/validate-cloudflare-deployment-target.ts",
     "smoke:deployment": "tsx scripts/smoke-deployment.ts",
+    "test:validation:focused": "BUDOKON_SKIP_REPOSITORY_SMOKE=1 tsx --test tests/validation.test.ts",
+    "test:validation:integration": "tsx --test --test-name-pattern='integration: canonical repository release gate' tests/validation.test.ts",
     "test": "npm run build && tsx --test scripts/*.test.ts tests/*.test.ts",
     "deploy": "wrangler deploy"
   },
