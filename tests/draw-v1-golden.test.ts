@@ -3,7 +3,6 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { CatalogService, DRAW_ALGORITHM, DrawService, JsonReadModelRepository, createMcpTools } from "../build/runtime/index.js";
 import { createRestHandlers } from "../build/runtime/api/handlers.js";
-import { createRestHandlers } from "../build/runtime/api/handlers.js";
 
 const fixture = JSON.parse(await readFile(new URL("./fixtures/draw-v1-golden.json", import.meta.url), "utf8"));
 const catalog = new CatalogService(new JsonReadModelRepository(fixture.dataset));
