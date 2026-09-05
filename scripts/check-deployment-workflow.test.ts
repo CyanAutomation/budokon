@@ -183,6 +183,17 @@ test("rejects an artifact check outside the release job", async t => {
   });
 });
 
+test("reports a validation error when the release job is missing", async t => {
+  const workflow = completeReleaseWorkflow.replace("  release:\n", "  publish:\n");
+  const root = await createArtifactWorkflowFixture(t, artifactCheckingDeploymentWorkflow, workflow);
+  await assert.rejects(checkDeploymentReleaseArtifacts(root), (error: unknown) => {
+    assert.ok(error instanceof DeploymentWorkflowValidationError);
+    assert.equal(error.code, "missing-artifact-check");
+    assert.match(error.message, /job release/);
+    return true;
+  });
+});
+
 test("rejects a release upload that omits a required JSON artifact", async t => {
   const workflow = completeReleaseWorkflow.replace("            dist/events.json\n", "");
   const root = await createArtifactWorkflowFixture(t, artifactCheckingDeploymentWorkflow, workflow);
