@@ -79,5 +79,9 @@ paths:
 
 test("published OpenAPI models response bodies, cache validation, visibility, and rate limiting", async () => {
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-  await promisify(execFile)("ruby", ["scripts/validate-openapi.rb"], { cwd: root });
+  try {
+    await promisify(execFile)("ruby", ["scripts/validate-openapi.rb"], { cwd: root });
+  } catch (error) {
+    throw new Error(`OpenAPI validation failed: ${error.message}`);
+  }
 });
