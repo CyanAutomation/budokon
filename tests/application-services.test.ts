@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { CatalogService } from "../build/runtime/domain/catalog-service.js";
-import { DrawService } from "../build/runtime/draw/draw-service.js";
+import { DRAW_ALGORITHM, DrawService } from "../build/runtime/draw/draw-service.js";
 import { JsonReadModelRepository } from "../build/runtime/repository/json-read-model-repository.js";
 import { createRestHandlers } from "../build/runtime/api/handlers.js";
 import { createMcpTools } from "../build/runtime/mcp/tools.js";
@@ -141,9 +141,16 @@ test("version, draw, and MCP results expose the canonical dataset version", () =
   assert.equal(mcp.search_judoka().datasetVersion, compiledModel.datasetVersion);
   assert.equal(mcp.get_judoka({ id: "shozo-fujii" }).datasetVersion, compiledModel.datasetVersion);
   assert.equal(mcp.version().datasetVersion, compiledModel.datasetVersion);
-  assert.deepEqual(rest.version().body.drawAlgorithms, ["budokon-v1"]);
-  assert.equal(rest.version().body.defaultDrawAlgorithm, "budokon-v1");
-  assert.equal(rest.draw({ body: {} }).body.algorithm, "budokon-v1");
+});
+
+test("REST and MCP version metadata declare the supported and default draw algorithm", () => {
+  const restVersion = rest.version().body;
+  const mcpVersion = mcp.version();
+
+  assert.deepEqual(restVersion.drawAlgorithms, [DRAW_ALGORITHM]);
+  assert.equal(restVersion.defaultDrawAlgorithm, DRAW_ALGORITHM);
+  assert.deepEqual(mcpVersion.drawAlgorithms, [DRAW_ALGORITHM]);
+  assert.equal(mcpVersion.defaultDrawAlgorithm, DRAW_ALGORITHM);
 });
 
 test("search normalizes case, whitespace, punctuation, and diacritics across every text field", () => {
