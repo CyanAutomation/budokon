@@ -3,6 +3,7 @@
   "slug": "fixture-judoka",
   "firstname": "Fixture",
   "surname": "Judoka",
+  "aliases": ["Fixture Athlete"],
   "personType": "real",
   "countryCode": "GB",
   "weightClass": "-73",
