@@ -50,10 +50,6 @@ test("exclusions remove an otherwise eligible record", () => {
   assert.equal(catalog.listJudoka({ filters, exclude: ["shozo-fujii"] }).some(j => j.slug === "shozo-fujii"), false);
 });
 
-test("direct lookup resolves a known canonical slug", () => {
-  assert.equal(catalog.getJudoka("shozo-fujii").slug, "shozo-fujii");
-});
-
 test("draw count validation rejects a count larger than the eligible pool", () => {
   const poolSize = catalog.listJudoka().length;
   assert.throws(
@@ -65,9 +61,15 @@ test("draw count validation rejects a count larger than the eligible pool", () =
   );
 });
 test("display aliases, diacritic-free names, and legacy slugs resolve consistently", () => {
-  assert.equal(catalog.getJudoka("Shozo Fujii")?.slug, "shozo-fujii");
-  assert.equal(catalog.getJudoka("Shōzō Fujii")?.slug, "shozo-fujii");
-  assert.equal(catalog.getJudoka("askley-mckenzie")?.slug, "ashley-mckenzie");
+  for (const [inputType, input, expectedCanonicalSlug] of [
+    ["canonical slug", "shozo-fujii", "shozo-fujii"],
+    ["display alias", "Shozo Fujii", "shozo-fujii"],
+    ["diacritic form", "Shōzō Fujii", "shozo-fujii"],
+    ["legacy slug", "askley-mckenzie", "ashley-mckenzie"],
+    ["unknown identifier", "unknown-judoka", undefined]
+  ] as const) {
+    assert.equal(catalog.getJudoka(input)?.slug, expectedCanonicalSlug, inputType);
+  }
   assert.deepEqual(catalog.searchJudoka({ query: "Askley McKenzie" }).map(j => j.slug), ["ashley-mckenzie"]);
 });
 
