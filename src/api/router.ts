@@ -3,7 +3,16 @@ import type {
   Filters, JudoEvent, Judoka, ListJudokaOptions, RequestContext, SearchJudokaOptions,
   StatusResponse, Technique, VersionResponse, WeightCategoryGroup
 } from "../domain/types.js";
-import { FILTER_FIELDS } from "../domain/catalog-filters.js";
+import {
+  parsePageQuery,
+  parseListQuery,
+  parseEventListQuery,
+  validateDrawBody,
+  validateEventDrawBody,
+} from "./schemas.js";
+import { createQueryParser } from "./query-parser.js";
+import { createBodyValidator } from "./body-validator.js";
+import { createRequestAuthority } from "./request-authority.js";
 
 export interface RestCatalogDependency {
   searchJudoka(options?: SearchJudokaOptions): Judoka[];
@@ -33,40 +42,11 @@ export interface RestRouterOptions {
 }
 
 type ErrorCode = "bad_request" | "forbidden" | "not_found" | "method_not_allowed" | "conflict" | "internal_error";
-const FILTERS = Array.from(FILTER_FIELDS) as readonly string[];
 const json = (body: unknown, status = 200, headers: HeadersInit = {}) => new Response(JSON.stringify(body), {
   status, headers: { "content-type": "application/json; charset=utf-8", ...headers }
 });
 const failure = (status: number, code: ErrorCode, message: string) => json({ error: { code, message } }, status);
 const badRequest = (message: string) => failure(400, "bad_request", message);
-
-function values(params: URLSearchParams, name: string): string[] {
-  return params.getAll(name).flatMap(value => value.split(",")).map(value => value.trim()).filter(Boolean);
-}
-
-function parsePageQuery(params: URLSearchParams) {
-  const limit = values(params, "limit");
-  const cursor = values(params, "cursor");
-  if (limit.length > 1 || (limit.length === 1 && !/^(?:[1-9]|[1-9][0-9]|100)$/.test(limit[0]))) throw new TypeError("limit must be an integer from 1 through 100");
-  if (cursor.length > 1) throw new TypeError("cursor must have one value");
-  return { limit: limit[0] === undefined ? undefined : Number(limit[0]), cursor: cursor[0] };
-}
-
-function parseListQuery(params: URLSearchParams) {
-  const allowed = new Set(["q", "exclude", "includeHidden", "limit", "cursor", ...FILTERS]);
-  params.forEach((_value, key) => { if (!allowed.has(key)) throw new TypeError(`unsupported query parameter: ${key}`); });
-  const filters: Record<string, string[]> = {};
-  for (const field of FILTERS) {
-    const parsed = values(params, field);
-    if (params.has(field) && parsed.length === 0) throw new TypeError(`filter ${field} must not be empty`);
-    if (parsed.length) filters[field] = parsed;
-  }
-  const hidden = values(params, "includeHidden");
-  if (hidden.length > 1 || (hidden.length === 1 && hidden[0] !== "true" && hidden[0] !== "false")) throw new TypeError("includeHidden must be true or false");
-  const query = values(params, "q");
-  if (query.length > 1) throw new TypeError("q must have one value");
-  return { filters: filters as Filters, exclude: values(params, "exclude"), query: query[0], includeHidden: hidden[0] === "true", ...parsePageQuery(params) };
-}
 
 function paginate<T extends { id: string }>(records: T[], limit: number | undefined, cursor: string | undefined) {
   if (limit === undefined && cursor === undefined) return records;
@@ -83,51 +63,13 @@ function namedPage<T extends { id: string }>(name: string, records: T[], limit: 
   return Array.isArray(result) ? result : { [name]: result.items, nextCursor: result.nextCursor };
 }
 
-function validateDrawBody(value: unknown): DrawRequest {
-  if (!value || typeof value !== "object" || Array.isArray(value)) throw new TypeError("request body must be a JSON object");
-  const body = value as Record<string, unknown>;
-  const allowed = new Set(["count", "seed", "algorithm", "filters", "exclude", "includeHidden"]);
-  for (const key of Object.keys(body)) if (!allowed.has(key)) throw new TypeError(`unsupported body field: ${key}`);
-  if (body.count !== undefined && (!Number.isSafeInteger(body.count) || (body.count as number) < 1)) throw new TypeError("count must be a positive integer");
-  for (const key of ["seed", "algorithm"] as const) if (body[key] !== undefined && typeof body[key] !== "string") throw new TypeError(`${key} must be a string`);
-  if (body.includeHidden !== undefined && typeof body.includeHidden !== "boolean") throw new TypeError("includeHidden must be a boolean");
-  if (body.exclude !== undefined && (!Array.isArray(body.exclude) || body.exclude.some(item => typeof item !== "string"))) throw new TypeError("exclude must be an array of strings");
-  if (body.filters !== undefined) {
-    if (!body.filters || typeof body.filters !== "object" || Array.isArray(body.filters)) throw new TypeError("filters must be an object");
-    for (const [key, item] of Object.entries(body.filters as Record<string, unknown>)) {
-      if (!(FILTERS as readonly string[]).includes(key)) throw new TypeError(`unsupported filter: ${key}`);
-      if (!(typeof item === "string" || (Array.isArray(item) && item.length > 0 && item.every(entry => typeof entry === "string")))) throw new TypeError(`filter ${key} must be a string or non-empty array of strings`);
-    }
-  }
-  return body as DrawRequest;
-}
-
-function parseEventListQuery(params: URLSearchParams) {
-  const allowed = new Set(["ruleset", "category", "limit", "cursor"]);
-  params.forEach((_value, key) => { if (!allowed.has(key)) throw new TypeError(`unsupported query parameter: ${key}`); });
-  const result: Record<string, string | undefined> = {};
-  for (const key of allowed) {
-    const value = values(params, key);
-    if (value.length > 1) throw new TypeError(`${key} must have one value`);
-    if (params.has(key) && value.length === 0) throw new TypeError(`${key} must not be empty`);
-    result[key] = value[0];
-  }
-  return { ...result as { ruleset?: string; category?: string }, ...parsePageQuery(params) };
-}
-
-function validateEventDrawBody(value: unknown): EventDrawRequest {
-  if (!value || typeof value !== "object" || Array.isArray(value)) throw new TypeError("request body must be a JSON object");
-  const body = value as Record<string, unknown>;
-  const allowed = new Set(["ruleset", "category", "seed", "exclude"]);
-  for (const key of Object.keys(body)) if (!allowed.has(key)) throw new TypeError(`unsupported body field: ${key}`);
-  if (typeof body.ruleset !== "string" || body.ruleset.trim() === "") throw new TypeError("ruleset must be a non-empty string");
-  for (const key of ["category", "seed"] as const) if (body[key] !== undefined && typeof body[key] !== "string") throw new TypeError(`${key} must be a string`);
-  if (body.exclude !== undefined && (!Array.isArray(body.exclude) || body.exclude.some(item => typeof item !== "string"))) throw new TypeError("exclude must be an array of strings");
-  return body as unknown as EventDrawRequest;
-}
-
 /** Create a runtime-neutral Fetch API handler backed exclusively by application services. */
 export function createRestRouter({ catalog, draw, eventDraw }: { catalog: RestCatalogDependency; draw: RestDrawDependency; eventDraw?: RestEventDrawDependency }, options: RestRouterOptions = {}) {
+  // Initialize middleware utilities
+  const queryParser = createQueryParser();
+  const bodyValidator = createBodyValidator();
+  const authority = createRequestAuthority(options.authorizeInternal);
+
   return async function route(request: Request): Promise<Response> {
     try {
       const url = new URL(request.url);
@@ -136,13 +78,13 @@ export function createRestRouter({ catalog, draw, eventDraw }: { catalog: RestCa
       catch { return badRequest("path contains invalid encoding"); }
       if (segments[0] !== "v1") return failure(404, "not_found", "route not found");
       let authorizedInternal = false;
-      try { authorizedInternal = await options.authorizeInternal?.(request) === true; }
+      try { authorizedInternal = await authority.isAuthorizedInternal(request); }
       catch { return failure(500, "internal_error", "internal server error"); }
       const resource = segments[1]; const id = segments[2];
       if (segments.length > 3) return failure(404, "not_found", "route not found");
 
       if (resource === "judoka" && request.method === "GET") {
-        const query = parseListQuery(url.searchParams);
+        const query = queryParser.parseListQuery(url.searchParams);
         if (query.includeHidden && !authorizedInternal) return failure(403, "forbidden", "hidden records require internal authorization");
         if (id !== undefined) {
           let unsupportedLookupQuery = false;
@@ -160,14 +102,14 @@ export function createRestRouter({ catalog, draw, eventDraw }: { catalog: RestCa
         }
         const allowed = new Set(["limit", "cursor"]);
         url.searchParams.forEach((_value, key) => { if (!allowed.has(key)) throw new TypeError(`unsupported query parameter: ${key}`); });
-        const page = parsePageQuery(url.searchParams);
+        const page = queryParser.parsePageQuery(url.searchParams);
         return json(namedPage("techniques", catalog.listTechniques(), page.limit, page.cursor));
       }
       if (resource === "events") {
         if (id === "draw" && request.method === "POST") {
           if (!eventDraw) return failure(404, "not_found", "route not found");
           if (!/^application\/json(?:\s*;|$)/i.test(request.headers.get("content-type") ?? "")) throw new TypeError("content-type must be application/json");
-          let body: EventDrawRequest; try { body = validateEventDrawBody(await request.json()); } catch (error) { if (error instanceof SyntaxError) throw new TypeError("request body contains malformed JSON"); throw error; }
+          let body: EventDrawRequest; try { body = bodyValidator.validateEventDrawBody(await request.json()); } catch (error) { if (error instanceof SyntaxError) throw new TypeError("request body contains malformed JSON"); throw error; }
           try { return json(eventDraw.draw(body)); }
           catch (error) { if (error instanceof RangeError && /exceeds eligible pool size/.test(error.message)) return failure(409, "conflict", "requested event exceeds the eligible pool"); throw error; }
         }
@@ -178,7 +120,7 @@ export function createRestRouter({ catalog, draw, eventDraw }: { catalog: RestCa
             if (hasQuery) throw new TypeError("unsupported query parameter for event lookup");
             const event = catalog.getEvent(id); return event ? json(event) : failure(404, "not_found", "event not found");
           }
-          const query = parseEventListQuery(url.searchParams);
+          const query = queryParser.parseEventListQuery(url.searchParams);
           return json(namedPage("events", catalog.listEvents(query), query.limit, query.cursor));
         }
       }
@@ -189,7 +131,7 @@ export function createRestRouter({ catalog, draw, eventDraw }: { catalog: RestCa
       if (resource === "coverage" && request.method === "GET" && id === undefined) return json(catalog.coverage());
       if (resource === "draw" && request.method === "POST" && id === undefined) {
         if (!/^application\/json(?:\s*;|$)/i.test(request.headers.get("content-type") ?? "")) throw new TypeError("content-type must be application/json");
-        let body: DrawRequest; try { body = validateDrawBody(await request.json()); } catch (error) { if (error instanceof SyntaxError) throw new TypeError("request body contains malformed JSON"); throw error; }
+        let body: DrawRequest; try { body = bodyValidator.validateDrawBody(await request.json()); } catch (error) { if (error instanceof SyntaxError) throw new TypeError("request body contains malformed JSON"); throw error; }
         if (body.includeHidden && !authorizedInternal) return failure(403, "forbidden", "hidden records require internal authorization");
         try { return json(draw.draw(body, { authorizedInternal })); }
         catch (error) { if (error instanceof RangeError && /exceeds eligible pool size/.test(error.message)) return failure(409, "conflict", "requested count exceeds the eligible pool"); throw error; }

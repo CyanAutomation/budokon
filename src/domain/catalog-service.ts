@@ -1,51 +1,88 @@
 import type { CoverageResponse, Filters, JudoEvent, Judoka, ListJudokaOptions, SearchJudokaOptions, StatusResponse, VersionResponse } from "./types.js";
 import type { ReadModelRepository } from "../repository/read-model-repository.js";
-import { DRAW_ALGORITHM, SUPPORTED_DRAW_ALGORITHMS } from "../draw/algorithm.js";
-import { summarizeCoverage } from "./coverage.js";
-import { FILTER_FIELDS, normalizeSearchText } from "./catalog-filters.js";
+import { createFilterService } from "./filter-service.js";
+import { createSearchService } from "./search-service.js";
+import { createMetadataService } from "./metadata-service.js";
 
-const byImmutableId = (a: Judoka, b: Judoka) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
-function searchableValues(judoka: Judoka) {
-  return [judoka.slug, ...(judoka.legacySlugs ?? []), judoka.firstname, judoka.surname, `${judoka.firstname ?? ""} ${judoka.surname ?? ""}`.trim(), ...(judoka.aliases ?? [])].map(normalizeSearchText).filter(Boolean);
-}
-export function normalizeFilters(filters: Filters = {}): Record<string, string[]> {
-  if (filters === null || typeof filters !== "object" || Array.isArray(filters)) throw new TypeError("filters must be an object");
-  return Object.fromEntries(Object.entries(filters).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([field, value]) => {
-    if (!FILTER_FIELDS.has(field)) throw new TypeError(`unsupported filter: ${field}`);
-    const values = (Array.isArray(value) ? value : [value]).map(String).map(v => v.trim()).filter(Boolean);
-    if (!values.length) throw new TypeError(`filter ${field} must not be empty`);
-    return [field, [...new Set(values)].sort()];
-  }));
-}
+/**
+ * Main catalog service providing access to judoka, techniques, events, and metadata.
+ * Coordinates filtering, searching, and metadata services.
+ */
 export class CatalogService {
-  constructor(readonly repository: ReadModelRepository) {}
+  private filterService: ReturnType<typeof createFilterService>;
+  private searchService: ReturnType<typeof createSearchService>;
+  private metadataService: ReturnType<typeof createMetadataService>;
+
+  constructor(readonly repository: ReadModelRepository) {
+    this.filterService = createFilterService();
+    this.searchService = createSearchService(this.filterService);
+    this.metadataService = createMetadataService(this.repository);
+  }
+
   version(): VersionResponse {
-    return {
-      datasetVersion: this.repository.datasetVersion,
-      serviceVersion: this.repository.serviceVersion,
-      sourceGitCommit: this.repository.sourceGitCommit,
-      datasetChecksum: this.repository.datasetChecksum,
-      drawAlgorithms: [...SUPPORTED_DRAW_ALGORITHMS],
-      defaultDrawAlgorithm: DRAW_ALGORITHM
-    };
+    return this.metadataService.version();
   }
-  status(): StatusResponse { return { status: "ok", ...this.version() }; }
-  coverage(): CoverageResponse { return summarizeCoverage(this.repository.listJudoka()); }
+
+  status(): StatusResponse {
+    return this.metadataService.status();
+  }
+
+  coverage(): CoverageResponse {
+    return this.metadataService.coverage(this.repository.listJudoka());
+  }
+
   listJudoka(options: ListJudokaOptions = {}): Judoka[] {
-    const filters = normalizeFilters(options.filters); const exclusions = new Set((options.exclude ?? []).map(String));
-    const includeHidden = options.includeHidden === true && options.authorizedInternal === true;
-    return this.repository.listJudoka().filter(j => includeHidden || j.isHidden !== true)
-      .filter(j => Object.entries(filters).every(([field, values]) => field === "signatureMoveIds"
-        ? values.some(value => j.signatureMoveIds.includes(value))
-        : j[field] != null && values.includes(String(j[field]))))
-      .filter(j => !exclusions.has(j.id) && !exclusions.has(j.slug));
+    return this.filterService.applyFilters(
+      this.repository.listJudoka(),
+      options.filters,
+      options.exclude,
+      options.includeHidden,
+      options.authorizedInternal
+    );
   }
-  searchJudoka(options: SearchJudokaOptions = {}) { const query = normalizeSearchText(options.query ?? options.q); return (query ? this.listJudoka(options).filter(j => searchableValues(j).some(value => value.includes(query))) : this.listJudoka(options)).sort(query ? byImmutableId : () => 0); }
-  getJudoka(id: string | undefined, options: Pick<ListJudokaOptions, "includeHidden" | "authorizedInternal"> = {}) { const match = this.repository.getJudoka(id); return match && (match.isHidden !== true || (options.includeHidden === true && options.authorizedInternal === true)) ? match : undefined; }
-  listTechniques() { return this.repository.listTechniques(); } getTechnique(id: string | undefined) { return this.repository.getTechnique(id); }
+
+  searchJudoka(options: SearchJudokaOptions = {}): Judoka[] {
+    return this.searchService.search(this.repository.listJudoka(), options);
+  }
+
+  getJudoka(
+    id: string | undefined,
+    options: Pick<ListJudokaOptions, "includeHidden" | "authorizedInternal"> = {}
+  ): Judoka | undefined {
+    const match = this.repository.getJudoka(id);
+    return match && (match.isHidden !== true || (options.includeHidden === true && options.authorizedInternal === true))
+      ? match
+      : undefined;
+  }
+
+  listTechniques(): Technique[] {
+    return this.repository.listTechniques();
+  }
+
+  getTechnique(id: string | undefined): Technique | undefined {
+    return this.repository.getTechnique(id);
+  }
+
   listEvents(options: { ruleset?: string; category?: string } = {}): JudoEvent[] {
-    return this.repository.listEvents().filter(event => (options.ruleset === undefined || event.ruleset === options.ruleset) && (options.category === undefined || event.category === options.category));
+    return this.repository.listEvents().filter(
+      event =>
+        (options.ruleset === undefined || event.ruleset === options.ruleset) &&
+        (options.category === undefined || event.category === options.category)
+    );
   }
-  getEvent(id: string | undefined) { return this.repository.getEvent(id); }
-  listCountries() { return this.repository.listCountries(); } listWeightCategories() { return this.repository.listWeightCategories(); }
+
+  getEvent(id: string | undefined): JudoEvent | undefined {
+    return this.repository.getEvent(id);
+  }
+
+  listCountries() {
+    return this.repository.listCountries();
+  }
+
+  listWeightCategories() {
+    return this.repository.listWeightCategories();
+  }
 }
+
+// Import types needed for methods
+import type { Technique } from "./types.js";
