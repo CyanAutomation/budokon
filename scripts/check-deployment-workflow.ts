@@ -104,7 +104,14 @@ export async function checkDeploymentReleaseArtifacts(repositoryRoot: string): P
     }
   }
 
-  const releaseJob = jobBody(releaseWorkflow, "release")!;
+  const releaseJob = jobBody(releaseWorkflow, "release");
+  if (!releaseJob) {
+    throw new DeploymentWorkflowValidationError(
+      "missing-artifact-check",
+      "Release job not found in release.yml",
+      { workflowPath: releasePath },
+    );
+  }
   const uploadedFiles = releaseUploadFiles(releaseJob);
   if (!uploadedFiles) {
     throw new DeploymentWorkflowValidationError(
