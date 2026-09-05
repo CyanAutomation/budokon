@@ -196,7 +196,7 @@ components:
     Status: { description: Service status and release metadata, content: { application/json: { schema: { $ref: '#/components/schemas/Status' } } } }
     Coverage: { description: Representation and rarity coverage metrics, content: { application/json: { schema: { $ref: '#/components/schemas/Coverage' } } } }
     JudokaDraw: { description: Draw result, content: { application/json: { schema: { $ref: '#/components/schemas/JudokaDraw' } } } }
-    NotModified: { description: Representation has not changed; ETag is returned. }
+    NotModified: { description: Representation has not changed; ETag is returned., headers: { ETag: { schema: { type: string }, description: Entity tag for the current representation. } } }
     BadRequest: { description: Invalid request, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
     Forbidden: { description: Internal visibility was requested without valid credentials, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
     NotFound: { description: Resource not found, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }

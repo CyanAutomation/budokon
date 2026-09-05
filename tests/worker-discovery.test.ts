@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 import { documentationResponse, landingResponse } from "../worker/discovery.js";
 import { createWorker } from "../worker/router.js";
 
@@ -77,10 +79,9 @@ paths:
 
 test("published OpenAPI models response bodies, cache validation, visibility, and rate limiting", async () => {
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-  const specification = await readFile(path.join(root, "openapi/v1.yaml"), "utf8");
-  for (const token of [
-    "JudokaDraw:", "EventDraw:", "Coverage:", "Source:", "RateLimited:",
-    "NotModified:", "IncludeHidden:", "Retry-After:", "RateLimit-Policy:",
-    "sourceUrls:", "TechniqueList:", "EventList:",
-  ]) assert.ok(specification.includes(token), `OpenAPI is missing ${token}`);
+  try {
+    await promisify(execFile)("ruby", ["scripts/validate-openapi.rb"], { cwd: root });
+  } catch (error) {
+    throw new Error(`OpenAPI validation failed: ${error.message}`);
+  }
 });
