@@ -1,4 +1,5 @@
-import { normalizeFilters, type CatalogService } from "../domain/catalog-service.js";
+import { normalizeFilters } from "../domain/catalog-filters.js";
+import type { CatalogService } from "../domain/catalog-service.js";
 import type { DrawRequest, DrawResponse, RequestContext } from "../domain/types.js";
 import { DRAW_ALGORITHM, SUPPORTED_DRAW_ALGORITHMS } from "./algorithm.js";
 import { createSeededRandom } from "./seeded-random.js";

@@ -5,10 +5,10 @@ import {
   EventDrawService,
   JsonReadModelRepository,
   createMcpTools,
-  createRestHandlers,
   createRestRouter,
   DrawService,
 } from "../build/runtime/index.js";
+import { createRestHandlers } from "../build/runtime/api/handlers.js";
 import compiledModel from "./fixtures/compiled-model.js";
 
 const events = [
