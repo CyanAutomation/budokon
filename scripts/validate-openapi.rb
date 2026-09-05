@@ -44,7 +44,7 @@ visibility_operations = document.fetch("paths").flat_map do |path, path_item|
 end
 assert_equal(visibility_operations, [["/v1/judoka", "get"]], "operations using IncludeHidden")
 
-responses = document.dig("components", "responses")
+responses = document.dig("components", "responses") || {}
 assert_equal(responses.dig("NotModified", "headers")&.keys || [], ["ETag"], "NotModified response headers")
 assert_equal(
   responses.dig("RateLimited", "headers")&.keys&.sort || [],
@@ -62,6 +62,6 @@ response_schemas.each do |response, schema|
   assert_equal(actual, "#/components/schemas/#{schema}", "#{response} response body")
 end
 
-schemas = document.dig("components", "schemas")
+schemas = document.dig("components", "schemas") || {}
 assert_equal(schemas.dig("Judoka", "properties", "sources", "items", "$ref"), "#/components/schemas/Source", "Judoka sources")
 assert_equal(schemas.dig("Judoka", "properties", "sourceUrls", "items", "format"), "uri", "Judoka sourceUrls")
