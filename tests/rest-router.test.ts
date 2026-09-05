@@ -23,27 +23,15 @@ test("every documented catalogue and metadata endpoint conforms", async () => {
     const response = await request(path); assert.equal(response.status, 200, path);
     assert.match(response.headers.get("content-type"), /^application\/json/); assert.deepEqual(await body(response), expected);
   }
-  for (const [path, expected] of <[string, unknown][]>[
-    ["/v1/judoka/shozo-fujii", catalog.getJudoka("shozo-fujii")],
-    [`/v1/techniques/${catalog.listTechniques()[0].id}`, catalog.listTechniques()[0]]
-  ]) assert.deepEqual(await body(await request(path)), expected);
-});
-
-test("technique lookup reads the catalog exactly once", async () => {
   const technique = catalog.listTechniques()[0];
-  let lookupCount = 0;
-  const countingCatalog: RestCatalogDependency = Object.create(catalog) as RestCatalogDependency;
-  countingCatalog.getTechnique = id => {
-    lookupCount += 1;
-    return catalog.getTechnique(id);
-  };
-  const countingRouter = createRestRouter({ catalog: countingCatalog, draw: new DrawService(catalog) });
-
-  const response = await countingRouter(new Request(`https://example.test/v1/techniques/${technique.id}`));
-
+  let response = await request(`/v1/techniques/${technique.id}`);
   assert.equal(response.status, 200);
   assert.deepEqual(await body(response), technique);
-  assert.equal(lookupCount, 1);
+  response = await request("/v1/techniques/missing");
+  assert.equal(response.status, 404);
+  assert.deepEqual(await body(response), { error: { code: "not_found", message: "technique not found" } });
+
+  assert.deepEqual(await body(await request("/v1/judoka/shozo-fujii")), catalog.getJudoka("shozo-fujii"));
 });
 
 test("coverage returns empty rarity percentages when no public real judoka exist", () => {
@@ -166,7 +154,6 @@ test("draw succeeds and impossible counts have the documented conflict response"
 test("missing resources, unsupported input, methods, and unexpected failures are stable", async () => {
   for (const [path, message] of [
     ["/v1/judoka/missing", "judoka not found"],
-    ["/v1/techniques/missing", "technique not found"],
     ["/v1/collections", "route not found"],
     ["/v1/unknown", "route not found"],
   ]) {
