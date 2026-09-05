@@ -47,7 +47,7 @@ assert_equal(visibility_operations, [["/v1/judoka", "get"]], "operations using I
 responses = document.dig("components", "responses")
 assert_equal(responses.dig("NotModified", "headers")&.keys || [], ["ETag"], "NotModified response headers")
 assert_equal(
-  responses.dig("RateLimited", "headers").keys.sort,
+  responses.dig("RateLimited", "headers")&.keys&.sort || [],
   ["RateLimit-Limit", "RateLimit-Policy", "Retry-After"].sort,
   "RateLimited response headers"
 )
