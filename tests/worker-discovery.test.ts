@@ -82,6 +82,7 @@ test("published OpenAPI models response bodies, cache validation, visibility, an
   try {
     await promisify(execFile)("ruby", ["scripts/validate-openapi.rb"], { cwd: root });
   } catch (error) {
-    throw new Error(`OpenAPI validation failed: ${error.message}`);
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`OpenAPI validation failed: ${detail}`, { cause: error });
   }
 });
