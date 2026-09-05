@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, rm, writeFile, readFile as readRepositoryFile } from "node:fs/promises";
+import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test, { type TestContext } from "node:test";
-import { fileURLToPath } from "node:url";
 import {
+  checkDeploymentReleaseArtifacts,
   checkDeploymentWorkflow,
   DeploymentWorkflowValidationError,
   type DeploymentWorkflowValidationErrorCode,
@@ -112,10 +112,84 @@ for (const fixture of fixtures) {
   });
 }
 
-test("production workflows verify generated artifacts and release every JSON artifact", async () => {
-  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-  const deployment = await readRepositoryFile(path.join(root, ".github/workflows/deploy-cloudflare.yml"), "utf8");
-  const release = await readRepositoryFile(path.join(root, ".github/workflows/release.yml"), "utf8");
-  assert.match(deployment, /npm run check-artifacts/);
-  assert.match(release, /dist\/\*\.json/);
+const artifactCheckingDeploymentWorkflow = `jobs:
+  housekeeping:
+    steps:
+      - run: echo deploy
+  deploy:
+    steps:
+      - run: npm run check-artifacts
+`;
+
+const completeReleaseWorkflow = `jobs:
+  release:
+    steps:
+      - run: npm run check-artifacts
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/budokon.json
+            dist/countries.json
+            dist/events.json
+            dist/judoka.json
+            dist/manifest.json
+            dist/techniques.json
+            dist/weight-categories.json
+`;
+
+async function createArtifactWorkflowFixture(
+  t: TestContext,
+  deploymentWorkflow: string,
+  releaseWorkflow: string,
+): Promise<string> {
+  const repositoryRoot = await mkdtemp(path.join(os.tmpdir(), "budokon-artifact-workflows-"));
+  t.after(() => rm(repositoryRoot, { recursive: true, force: true }));
+  await mkdir(path.join(repositoryRoot, ".github/workflows"), { recursive: true });
+  await writeFile(path.join(repositoryRoot, ".github/workflows/deploy-cloudflare.yml"), deploymentWorkflow);
+  await writeFile(path.join(repositoryRoot, ".github/workflows/release.yml"), releaseWorkflow);
+  return repositoryRoot;
+}
+
+test("accepts artifact checks in deployment and release jobs with a complete release upload", async t => {
+  const root = await createArtifactWorkflowFixture(t, artifactCheckingDeploymentWorkflow, completeReleaseWorkflow);
+  await assert.doesNotReject(checkDeploymentReleaseArtifacts(root));
+});
+
+test("rejects an artifact check outside the deployment job", async t => {
+  const workflow = artifactCheckingDeploymentWorkflow.replace(
+    "      - run: npm run check-artifacts\n",
+    "      - run: echo no artifact check\n",
+  );
+  const root = await createArtifactWorkflowFixture(t, workflow, completeReleaseWorkflow);
+  await assert.rejects(checkDeploymentReleaseArtifacts(root), (error: unknown) => {
+    assert.ok(error instanceof DeploymentWorkflowValidationError);
+    assert.equal(error.code, "missing-artifact-check");
+    assert.match(error.message, /job deploy/);
+    return true;
+  });
+});
+
+test("rejects an artifact check outside the release job", async t => {
+  const workflow = completeReleaseWorkflow.replace(
+    "  release:\n",
+    "  checks:\n    steps:\n      - run: npm run check-artifacts\n  release:\n",
+  ).replace("      - run: npm run check-artifacts\n      - uses:", "      - run: echo no artifact check\n      - uses:");
+  const root = await createArtifactWorkflowFixture(t, artifactCheckingDeploymentWorkflow, workflow);
+  await assert.rejects(checkDeploymentReleaseArtifacts(root), (error: unknown) => {
+    assert.ok(error instanceof DeploymentWorkflowValidationError);
+    assert.equal(error.code, "missing-artifact-check");
+    assert.match(error.message, /job release/);
+    return true;
+  });
+});
+
+test("rejects a release upload that omits a required JSON artifact", async t => {
+  const workflow = completeReleaseWorkflow.replace("            dist/events.json\n", "");
+  const root = await createArtifactWorkflowFixture(t, artifactCheckingDeploymentWorkflow, workflow);
+  await assert.rejects(checkDeploymentReleaseArtifacts(root), (error: unknown) => {
+    assert.ok(error instanceof DeploymentWorkflowValidationError);
+    assert.equal(error.code, "missing-release-artifact");
+    assert.equal(error.details.artifactName, "events.json");
+    return true;
+  });
 });
