@@ -5,6 +5,16 @@ import { fileURLToPath } from "node:url";
 const workflowRelativePath = ".github/workflows/deploy-cloudflare.yml";
 const packageRelativePath = "package.json";
 const requiredScriptNames = ["validate:deployment-target", "smoke:deployment"] as const;
+const releaseWorkflowRelativePath = ".github/workflows/release.yml";
+export const requiredReleaseArtifacts = [
+  "budokon.json",
+  "countries.json",
+  "events.json",
+  "judoka.json",
+  "manifest.json",
+  "techniques.json",
+  "weight-categories.json",
+] as const;
 
 type RequiredScriptName = (typeof requiredScriptNames)[number];
 
@@ -13,7 +23,10 @@ export type DeploymentWorkflowValidationErrorCode =
   | "missing-npm-script"
   | "missing-workflow-command"
   | "invalid-entry-point"
-  | "missing-entry-point";
+  | "missing-entry-point"
+  | "missing-artifact-check"
+  | "missing-release-upload"
+  | "missing-release-artifact";
 
 export class DeploymentWorkflowValidationError extends Error {
   constructor(
@@ -23,10 +36,91 @@ export class DeploymentWorkflowValidationError extends Error {
       scriptName?: RequiredScriptName;
       entryPoint?: string;
       staleHelpers?: string[];
+      workflowPath?: string;
+      artifactName?: string;
     } = {},
   ) {
     super(message);
     this.name = "DeploymentWorkflowValidationError";
+  }
+}
+
+function jobBody(workflow: string, jobName: string): string | undefined {
+  const lines = workflow.split(/\r?\n/);
+  const jobsIndex = lines.findIndex(line => /^jobs:\s*(?:#.*)?$/.test(line));
+  if (jobsIndex < 0) return undefined;
+
+  const jobPattern = new RegExp(`^(\\s{2})${jobName}:\\s*(?:#.*)?$`);
+  const start = lines.findIndex((line, index) => index > jobsIndex && jobPattern.test(line));
+  if (start < 0) return undefined;
+  const end = lines.findIndex((line, index) => index > start && /^ {0,2}\S/.test(line));
+  return lines.slice(start + 1, end < 0 ? undefined : end).join("\n");
+}
+
+function invokesNpmScript(job: string, scriptName: string): boolean {
+  const escapedName = scriptName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?:^|[;&|\\s])npm\\s+run\\s+${escapedName}(?=$|[;&|\\s])`, "m").test(job);
+}
+
+function releaseUploadFiles(job: string): string[] | undefined {
+  const lines = job.split(/\r?\n/);
+  const uploadIndex = lines.findIndex(line => /^\s*-\s+uses:\s*softprops\/action-gh-release@/.test(line));
+  if (uploadIndex < 0) return undefined;
+  const stepIndent = lines[uploadIndex].match(/^\s*/)?.[0].length ?? 0;
+  const end = lines.findIndex(
+    (line, index) => index > uploadIndex && new RegExp(`^\\s{${stepIndent}}-\\s`).test(line),
+  );
+  const step = lines.slice(uploadIndex, end < 0 ? undefined : end);
+  const filesIndex = step.findIndex(line => /^\s+files:\s*(?:[|>][-+]?\s*)?$/.test(line));
+  if (filesIndex < 0) return [];
+  const filesIndent = step[filesIndex].match(/^\s*/)?.[0].length ?? 0;
+  return step
+    .slice(filesIndex + 1)
+    .filter(line => (line.match(/^\s*/)?.[0].length ?? 0) > filesIndent)
+    .map(line => line.trim())
+    .filter(line => line !== "" && !line.startsWith("#"));
+}
+
+/** Validate commands and upload inputs in their intended jobs, rather than anywhere in the YAML text. */
+export async function checkDeploymentReleaseArtifacts(repositoryRoot: string): Promise<void> {
+  const deploymentPath = path.resolve(repositoryRoot, workflowRelativePath);
+  const releasePath = path.resolve(repositoryRoot, releaseWorkflowRelativePath);
+  const [deploymentWorkflow, releaseWorkflow] = await Promise.all([
+    readFile(deploymentPath, "utf8"),
+    readFile(releasePath, "utf8"),
+  ]);
+
+  for (const [workflowPath, jobName, workflow] of [
+    [deploymentPath, "deploy", deploymentWorkflow],
+    [releasePath, "release", releaseWorkflow],
+  ] as const) {
+    const job = jobBody(workflow, jobName);
+    if (!job || !invokesNpmScript(job, "check-artifacts")) {
+      throw new DeploymentWorkflowValidationError(
+        "missing-artifact-check",
+        `${path.basename(workflowPath)} job ${jobName} does not invoke npm run check-artifacts`,
+        { workflowPath },
+      );
+    }
+  }
+
+  const releaseJob = jobBody(releaseWorkflow, "release")!;
+  const uploadedFiles = releaseUploadFiles(releaseJob);
+  if (!uploadedFiles) {
+    throw new DeploymentWorkflowValidationError(
+      "missing-release-upload",
+      "Release job does not contain a softprops/action-gh-release upload step",
+      { workflowPath: releasePath },
+    );
+  }
+  for (const artifactName of requiredReleaseArtifacts) {
+    if (!uploadedFiles.includes(`dist/${artifactName}`) && !uploadedFiles.includes("dist/*.json")) {
+      throw new DeploymentWorkflowValidationError(
+        "missing-release-artifact",
+        `Release upload does not include dist/${artifactName}`,
+        { workflowPath: releasePath, artifactName },
+      );
+    }
   }
 }
 
@@ -102,6 +196,7 @@ export async function checkDeploymentWorkflow(
 async function runCli(): Promise<void> {
   try {
     await checkDeploymentWorkflow(process.cwd());
+    await checkDeploymentReleaseArtifacts(process.cwd());
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);
     process.exitCode = 1;
