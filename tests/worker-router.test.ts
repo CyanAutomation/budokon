@@ -349,28 +349,51 @@ test("MCP notifications/initialized returns 202", async () => {
 });
 
 /**
- * Test tool error handling - draw_event with missing ruleset.
+ * The draw_event input schema requires a string ruleset (see toolDefinitions in
+ * worker/router.ts and the drawEvent request body in openapi/v1.yaml).
  */
 test("MCP tools/call draw_event validates required parameters", async () => {
-  const response = await worker.fetch(
+  const toolsResponse = await worker.fetch(
     new Request("https://example.test/mcp", {
       method: "POST",
       headers: { authorization: `Bearer ${mockEnv.API_KEY}` },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 20,
-        method: "tools/call",
-        params: {
-          name: "draw_event",
-          arguments: {}, // Missing required ruleset
-        },
-      }),
+      body: JSON.stringify({ jsonrpc: "2.0", id: 19, method: "tools/list" }),
     }),
     mockEnv
   );
+  const toolsData = await toolsResponse.json();
+  const drawEventDefinition = toolsData.result.tools.find((tool: { name: string }) => tool.name === "draw_event");
+  assert.deepEqual(drawEventDefinition.inputSchema.required, ["ruleset"]);
+  assert.equal(drawEventDefinition.inputSchema.properties.ruleset.type, "string");
 
-  assert.equal(response.status, 200);
-  const data = await response.json();
-  assert.equal(data.result.isError, true);
-  assert.ok(data.result.content[0].text.includes("must be a non-empty string") || data.result.content[0].text.includes("error"));
+  const cases = [
+    { id: 20, description: "missing", arguments: {} },
+    { id: 21, description: "empty", arguments: { ruleset: "" } },
+    { id: 22, description: "non-string", arguments: { ruleset: 42 } },
+  ] as const;
+
+  for (const validationCase of cases) {
+    const response = await worker.fetch(
+      new Request("https://example.test/mcp", {
+        method: "POST",
+        headers: { authorization: `Bearer ${mockEnv.API_KEY}` },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: validationCase.id,
+          method: "tools/call",
+          params: { name: "draw_event", arguments: validationCase.arguments },
+        }),
+      }),
+      mockEnv
+    );
+
+    assert.equal(response.status, 200, validationCase.description);
+    const data = await response.json();
+    assert.equal(data.jsonrpc, "2.0", validationCase.description);
+    assert.equal(data.id, validationCase.id, validationCase.description);
+    assert.equal(data.result.isError, true, validationCase.description);
+    assert.equal(data.result.content.length, 1, validationCase.description);
+    assert.equal(data.result.content[0].type, "text", validationCase.description);
+    assert.equal(data.result.content[0].text, "ruleset must be a non-empty string", validationCase.description);
+  }
 });
