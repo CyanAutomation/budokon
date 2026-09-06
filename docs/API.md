@@ -13,8 +13,9 @@ ANDed.
 
 Use `limit` (1--100) to opt into cursor pagination on judoka, technique, and
 event lists. The resulting object uses the collection name (`judoka`,
-`techniques`, or `events`) and `nextCursor`. Supply that cursor with the same
-query filters to fetch the following page. Without `limit`, list endpoints
+`techniques`, or `events`) and `nextCursor`. Supply that returned value as the
+`cursor` query parameter, with the same filters, to fetch the following page:
+`/v1/judoka?limit=20&cursor=<nextCursor>`. Without `limit`, list endpoints
 continue to return their original array response.
 
 `POST /v1/draw` draws judoka. A supplied `seed`, together with the returned
@@ -23,7 +24,8 @@ use the equivalent `POST /v1/events/draw` endpoint and require a `ruleset`.
 
 All public GET responses include `ETag`. Send it as `If-None-Match` to receive
 `304 Not Modified` when the representation has not changed. On `429`, honour
-`Retry-After` before retrying.
+`Retry-After` before retrying; that response also includes `RateLimit-Limit`
+and `RateLimit-Policy`.
 
 ## Data confidence
 
