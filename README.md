@@ -251,9 +251,19 @@ regenerate the compiled dataset with `npm run build:data`.
 The included Worker exposes the public catalogue REST service at `/v1/*` and a
 separately API-key-protected remote MCP server at `/mcp`. Browser games must
 use REST only; never embed `API_KEY` or `INTERNAL_API_KEY` in browser code.
-Supply the MCP key using either `X-API-Key: <key>` or `Authorization: Bearer
-<key>`. Send exactly one of these credential headers: requests containing both
-are rejected, even when the two values are identical.
+
+#### MCP authentication and allowed methods
+
+The `/mcp` endpoint accepts authenticated `POST` requests only. Supply the MCP
+key using either `X-API-Key: <key>` or `Authorization: Bearer <key>`. Send
+exactly one of these credential headers: requests containing both are rejected,
+even when the two values are identical.
+
+An unauthenticated request receives a JSON `401` response with the stable error
+code `unauthorized`; the response does not disclose which methods the protected
+endpoint accepts. An authenticated request using a method other than `POST`
+receives a JSON `405` response with the stable error code
+`method_not_allowed` and an `Allow: POST` header.
 
 #### Worker documentation security requirements
 
