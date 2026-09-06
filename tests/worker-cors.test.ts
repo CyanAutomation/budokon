@@ -35,6 +35,12 @@ test("CORS preflight allows the public REST methods without accepting API-key he
   }), env);
   assert.equal(disallowed.status, 403);
 
+  const disallowedOrigin = preflightResponse(request("https://evil.example", {
+    method: "OPTIONS", headers: { "access-control-request-method": "POST", "access-control-request-headers": "content-type" }
+  }), env);
+  assert.equal(disallowedOrigin.status, 403);
+  assert.equal(disallowedOrigin.headers.get("access-control-allow-origin"), null);
+
   const missingMethod = preflightResponse(request("https://game.example", { method: "OPTIONS" }), env);
   assert.equal(missingMethod.status, 403);
 });
