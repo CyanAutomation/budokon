@@ -6,6 +6,20 @@
 import type { DrawRequest, EventDrawRequest, Filters } from "../domain/types.js";
 import { FILTER_FIELDS } from "../domain/catalog-filters.js";
 
+/** Schema definition for filter validation in MCP and REST APIs. */
+export const FILTERS_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    countryCode: { oneOf: [{ type: "string" }, { type: "array", items: { type: "string" }, minItems: 1 }] },
+    gender: { oneOf: [{ type: "string" }, { type: "array", items: { type: "string" }, minItems: 1 }] },
+    weightClass: { oneOf: [{ type: "string" }, { type: "array", items: { type: "string" }, minItems: 1 }] },
+    rarity: { oneOf: [{ type: "string" }, { type: "array", items: { type: "string" }, minItems: 1 }] },
+    personType: { oneOf: [{ type: "string" }, { type: "array", items: { type: "string" }, minItems: 1 }] },
+    signatureMoveIds: { oneOf: [{ type: "string" }, { type: "array", items: { type: "string" }, minItems: 1 }] },
+  },
+} as const;
+
 export interface ListQuerySchema {
   filters: Filters;
   exclude: string[];
