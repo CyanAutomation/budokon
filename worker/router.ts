@@ -50,7 +50,11 @@ const toolDefinitions = [
 ] as const;
 
 async function handleMcp(request: Request, env: Env) {
-  if (request.method !== "POST") return new Response(null, { status: 405, headers: { allow: "POST" } });
+  if (request.method !== "POST") return json(
+    { error: { code: "method_not_allowed", message: "Method not allowed" } },
+    405,
+    { allow: "POST" }
+  );
   let rpc: RpcRequest;
   try { rpc = await request.json() as RpcRequest; } catch { return mcpError(null, -32700, "Parse error"); }
   if (rpc.jsonrpc !== "2.0" || typeof rpc.method !== "string") return mcpError(rpc.id, -32600, "Invalid Request");
