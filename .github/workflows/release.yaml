@@ -46,7 +46,7 @@ jobs:
         run: npm run build
 
       - name: Publish smoke test
-        run: npm run test:publish-smoke
+        run: npm run test
 
       - name: Fallow - Codebase Intelligence
         uses: fallow-rs/fallow@v2.95.0
