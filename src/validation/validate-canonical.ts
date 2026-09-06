@@ -117,7 +117,7 @@ export async function validateCanonical(root = defaultRoot) {
   rejectGameStateProperties(dataset, 'data/dataset.json');
   const judoka = validatedJudokaFiles.map(({ value }) => value), techniques = validatedTechniqueFiles.map(({ value }) => value), events = validatedEventFiles.map(({ value }) => value);
   ensureUnique(judoka, 'id', 'judoka UUID');
-  ensureUnique(judoka, 'handles', 'judoka slug or legacy slug', (item: any) => [item.slug, ...(item.legacySlugs ?? [])]);
+  ensureUnique(judoka, 'handles', 'judoka slug or legacy slug', (item) => [item.slug, ...(item.legacySlugs ?? [])]);
   const names = new Map();
   for (const record of judoka) for (const name of [`${record.firstname} ${record.surname}`, ...(record.aliases ?? [])]) {
     const normalized = normalizedName(name);
