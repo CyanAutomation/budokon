@@ -311,15 +311,6 @@ test("Landing page at / returns documentation links in JSON", async () => {
 });
 
 /**
- * Test worker routing - documentation.
- */
-test("Documentation page at /docs returns valid response", async () => {
-  const response = await worker.fetch(new Request("https://example.test/docs"), mockEnv);
-  assert.equal(response.status, 200);
-  assert.match(response.headers.get("content-type"), /^text\/html/);
-});
-
-/**
  * Test worker CORS - OPTIONS request for REST endpoint.
  */
 test("OPTIONS request for /v1/ endpoint returns CORS headers when origin is allowed", async () => {

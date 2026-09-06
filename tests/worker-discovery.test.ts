@@ -5,7 +5,7 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
-import { documentationResponse, landingResponse } from "../worker/discovery.js";
+import { landingResponse } from "../worker/discovery.js";
 import { createWorker } from "../worker/router.js";
 
 test("landing document derives all links from the supplied origin", async () => {
@@ -20,7 +20,10 @@ test("landing document derives all links from the supplied origin", async () => 
 });
 
 test("documentation is user-visible and links to the OpenAPI contract", async () => {
-  const documentation = documentationResponse();
+  const documentation = await createWorker("openapi: 3.1.0").fetch(
+    new Request("https://budokon.example/docs"),
+    { API_KEY: "test-key" },
+  );
 
   // Keep this in sync with README.md#worker-documentation-security-requirements.
   assert.equal(documentation.headers.get("content-type"), "text/html; charset=utf-8");
