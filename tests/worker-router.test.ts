@@ -303,18 +303,29 @@ test("MCP unauthorized when API key is missing", async () => {
   assert.ok(data.error.message.includes("API key"));
 });
 
-/**
- * Test worker routing - REST routes are public.
- */
-test("REST /v1/judoka endpoint is accessible without API key", async () => {
-  const response = await worker.fetch(
-    new Request("https://example.test/v1/judoka"),
-    mockEnv
-  );
+// Public-catalogue authentication and visibility requirement: docs/API.md,
+// "BU-DO-KON API guide" (the public API needs no credential).
+test("assembled worker exposes exactly the public judoka catalogue without credentials", async () => {
+  const request = new Request("https://example.test/v1/judoka");
+  assert.equal(request.headers.get("authorization"), null);
+  assert.equal(request.headers.get("x-api-key"), null);
 
+  const response = await worker.fetch(request, mockEnv);
   assert.equal(response.status, 200);
-  const data = await response.json();
-  assert.ok(Array.isArray(data));
+  assert.equal(response.headers.get("content-type"), "application/json; charset=utf-8");
+
+  const records = await response.json();
+  const expectedPublicCatalogue = catalog.listJudoka();
+  const hiddenFixtureIds = compiledModel.judoka
+    .filter(record => record.isHidden)
+    .map(record => record.id);
+  assert.ok(hiddenFixtureIds.length > 0, "fixture must exercise hidden-record exclusion");
+  assert.deepEqual(records, expectedPublicCatalogue);
+  assert.equal(
+    records.some((record: { id: string }) => hiddenFixtureIds.includes(record.id)),
+    false,
+    "public catalogue must not expose hidden fixture records",
+  );
 });
 
 /**
