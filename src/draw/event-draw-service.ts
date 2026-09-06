@@ -8,8 +8,10 @@ export const EVENT_DRAW_ALGORITHM = "budokon-event-v1";
 export class EventDrawService {
   constructor(readonly repository: ReadModelRepository, private readonly random: () => number = Math.random) {}
   draw(input: EventDrawRequest): EventDrawResponse {
-    const ruleset = String(input.ruleset ?? "").trim();
-    if (!ruleset) throw new RangeError("ruleset must be a non-empty string");
+    if (typeof input.ruleset !== "string" || input.ruleset.trim() === "") {
+      throw new RangeError("ruleset must be a non-empty string");
+    }
+    const ruleset = input.ruleset.trim();
     const category = input.category === undefined ? undefined : String(input.category).trim();
     if (category === "") throw new RangeError("category must be a non-empty string");
     const exclude = [...new Set((input.exclude ?? []).map(String))].sort();
