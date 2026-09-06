@@ -48,6 +48,7 @@ test("documentation is user-visible and links to the OpenAPI contract", async ()
   assert.match(docs, /openapi\/v1\.yaml/);
 });
 
+// OpenAPI publication requirement: README.md, "REST API" (the contract at /openapi/v1.yaml).
 test("worker serves the byte-preserved OpenAPI contract", async () => {
   const specification = `openapi: 3.1.0
 info:

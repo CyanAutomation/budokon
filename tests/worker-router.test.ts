@@ -320,14 +320,6 @@ test("Documentation page at /docs returns valid response", async () => {
 });
 
 /**
- * Test worker routing - OpenAPI spec.
- */
-test("OpenAPI spec at /openapi/v1.yaml returns valid response", async () => {
-  const response = await worker.fetch(new Request("https://example.test/openapi/v1.yaml"), mockEnv);
-  assert.equal(response.status, 200);
-});
-
-/**
  * Test worker CORS - OPTIONS request for REST endpoint.
  */
 test("OPTIONS request for /v1/ endpoint returns CORS headers when origin is allowed", async () => {
