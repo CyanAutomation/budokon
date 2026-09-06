@@ -1,7 +1,7 @@
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { isProhibitedGameStatePropertyName } from '../contracts/game-state.js';
+import { meaningfulText, ensureUnique, rejectGameStateProperties, isValidDateTime, rejectFutureDate } from './validators.js';
 
 const defaultRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const placeholder = /^(?:todo|tbd|unknown|n\/?a|none|more info to come)(?=$|[\s:_\p{P}\p{S}])/iu;
@@ -22,17 +22,6 @@ interface CanonicalEvent { id: string; slug?: string; description: string; effec
 interface CanonicalWeightCategory { weight: string; descriptor: string; }
 interface CanonicalWeightGroup { gender: string; description: string; categories: CanonicalWeightCategory[]; }
 interface CanonicalDataset { datasetVersion: string; }
-function isValidDateTime(value) {
-  if (!rfc3339.test(value)) return false;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return false;
-  // Normalize the optional fraction before comparing so calendar overflow cannot
-  // be silently accepted while one- and two-digit fractions remain valid.
-  const normalized = value.includes('.')
-    ? value.replace(/\.(\d{1,3})Z$/, (_, fraction) => `.${fraction.padEnd(3, '0')}Z`)
-    : value.replace(/Z$/, '.000Z');
-  return date.toISOString() === normalized;
-}
 
 function fail(location, message) { throw new Error(`${location}: ${message}`); }
 function equal(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
@@ -92,30 +81,6 @@ async function records(directory) {
   return Promise.all(names.map(async (name) => ({ name, value: await parse(path.join(directory, name)) })));
 }
 function normalizedName(value) { return String(value).normalize('NFD').replace(/\p{Mark}+/gu, '').toLowerCase().replace(/[^\p{Letter}\p{Number}]+/gu, ' ').trim().replace(/\s+/gu, ' '); }
-function meaningfulText(value, location) {
-  if (typeof value !== 'string' || !value.trim()) throw new Error(`${location} must contain meaningful text`);
-  if (placeholder.test(value.trim())) throw new Error(`${location} contains placeholder content`);
-}
-function rejectGameStateProperties(value, location) {
-  if (!value || typeof value !== 'object') return;
-  if (Array.isArray(value)) {
-    value.forEach((item, index) => rejectGameStateProperties(item, `${location}[${index}]`));
-    return;
-  }
-  for (const [key, item] of Object.entries(value)) {
-    if (isProhibitedGameStatePropertyName(key)) throw new Error(`${location}.${key} is a prohibited game-state property`);
-    rejectGameStateProperties(item, `${location}.${key}`);
-  }
-}
-function unique(items, field, label) {
-  const seen = new Map();
-  for (const item of items) {
-    for (const value of field === 'handles' ? [item.slug, ...(item.legacySlugs ?? [])] : [item[field]]) {
-      if (seen.has(value)) throw new Error(`duplicate ${label} ${JSON.stringify(value)} in ${seen.get(value)} and ${item.slug ?? item.id}`);
-      seen.set(value, item.slug ?? item.id);
-    }
-  }
-}
 
 /** Parse and validate all canonical datasets, including cross-record rules. */
 export async function validateCanonical(root = defaultRoot) {
@@ -151,13 +116,16 @@ export async function validateCanonical(root = defaultRoot) {
   rejectGameStateProperties(weights, 'data/reference/weight-categories.json');
   rejectGameStateProperties(dataset, 'data/dataset.json');
   const judoka = validatedJudokaFiles.map(({ value }) => value), techniques = validatedTechniqueFiles.map(({ value }) => value), events = validatedEventFiles.map(({ value }) => value);
-  unique(judoka, 'id', 'judoka UUID'); unique(judoka, 'handles', 'judoka slug or legacy slug');
+  ensureUnique(judoka, 'id', 'judoka UUID');
+  ensureUnique(judoka, 'handles', 'judoka slug or legacy slug', (item: any) => [item.slug, ...(item.legacySlugs ?? [])]);
   const names = new Map();
   for (const record of judoka) for (const name of [`${record.firstname} ${record.surname}`, ...(record.aliases ?? [])]) {
     const normalized = normalizedName(name);
     if (names.has(normalized) && names.get(normalized) !== record.slug) throw new Error(`ambiguous normalized judoka name ${JSON.stringify(normalized)} in ${names.get(normalized)} and ${record.slug}`);
     names.set(normalized, record.slug);
-  } unique(techniques, 'id', 'technique ID'); unique(events, 'id', 'event ID');
+  } 
+  ensureUnique(techniques, 'id', 'technique ID');
+  ensureUnique(events, 'id', 'event ID');
   for (const file of validatedJudokaFiles) if (path.parse(file.name).name !== file.value.slug) {
     throw new Error(`data/judoka/${file.name}: filename must match canonical slug ${file.value.slug}`);
   }
@@ -178,16 +146,16 @@ export async function validateCanonical(root = defaultRoot) {
   for (const [key, country] of Object.entries(countries)) {
     if (country.code !== key) throw new Error(`country key ${key} does not match embedded code ${country.code}`);
     meaningfulText(country.country, `countries.${key}.country`);
-    if (Date.parse(country.lastUpdated) > Date.now()) throw new Error(`countries.${key}.lastUpdated must not be in the future`);
+    rejectFutureDate(country.lastUpdated, `countries.${key}.lastUpdated`);
   }
   for (const record of judoka) {
     if (record.personType === 'fictional' && !record.isHidden) throw new Error(`${record.slug}: fictional judoka must be hidden`);
     if (!countries[record.countryCode]?.active) throw new Error(`${record.slug} references unknown or inactive country ${record.countryCode}`);
     for (const techniqueId of record.signatureMoveIds) if (!techniqueIds.has(techniqueId)) throw new Error(`${record.slug} references unknown technique ${techniqueId}`);
     if (!weightMap.get(record.gender)?.has(record.weightClass)) throw new Error(`${record.slug} has invalid ${record.gender} weight class ${record.weightClass}`);
-    if (Date.parse(record.lastUpdated) > Date.now()) throw new Error(`${record.slug} lastUpdated must not be in the future`);
+    rejectFutureDate(record.lastUpdated, `${record.slug} lastUpdated`);
     for (const [index, source] of (record.sources ?? []).entries()) {
-      if (Date.parse(source.checkedAt) > Date.now()) throw new Error(`${record.slug}.sources[${index}].checkedAt must not be in the future`);
+      rejectFutureDate(source.checkedAt, `${record.slug}.sources[${index}].checkedAt`);
     }
     meaningfulText(record.firstname, `${record.slug}.firstname`);
     meaningfulText(record.surname, `${record.slug}.surname`);

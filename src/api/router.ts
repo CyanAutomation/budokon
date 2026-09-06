@@ -13,6 +13,11 @@ import {
 import { createQueryParser } from "./query-parser.js";
 import { createBodyValidator } from "./body-validator.js";
 import { createRequestAuthority } from "./request-authority.js";
+import { judokaListHandler, judokaGetHandler } from "./handlers/judoka-handler.js";
+import { techniquesListHandler, techniquesGetHandler } from "./handlers/techniques-handler.js";
+import { eventsListHandler, eventsGetHandler, eventsDrawHandler } from "./handlers/events-handler.js";
+import { countriesHandler, weightCategoriesHandler, versionHandler, statusHandler, coverageHandler } from "./handlers/simple-handlers.js";
+import { drawHandler } from "./handlers/draw-handler.js";
 
 export interface RestCatalogDependency {
   searchJudoka(options?: SearchJudokaOptions): Judoka[];
@@ -70,6 +75,30 @@ export function createRestRouter({ catalog, draw, eventDraw }: { catalog: RestCa
   const bodyValidator = createBodyValidator();
   const authority = createRequestAuthority(options.authorizeInternal);
 
+  // Create context object for handlers
+  const createContext = () => ({
+    json,
+    failure,
+    namedPage,
+  });
+
+  // Handler routing table: [resource, method?, id?] -> handler function
+  const handlers = {
+    judokaList: () => judokaListHandler(createContext(), new URL(""), catalog, false), // Will be called with proper params
+    judokaGet: () => judokaGetHandler(createContext(), new URL(""), "", catalog, false),
+    techniquesList: () => techniquesListHandler(createContext(), new URL(""), catalog),
+    techniquesGet: () => techniquesGetHandler(createContext(), "", catalog),
+    eventsList: () => eventsListHandler(createContext(), new URL(""), catalog),
+    eventsGet: () => eventsGetHandler(createContext(), new URL(""), "", catalog),
+    eventsDraw: () => eventsDrawHandler(createContext(), new Request("http://localhost"), eventDraw),
+    countries: () => countriesHandler(createContext(), catalog),
+    weightCategories: () => weightCategoriesHandler(createContext(), catalog),
+    version: () => versionHandler(createContext(), catalog),
+    status: () => statusHandler(createContext(), catalog),
+    coverage: () => coverageHandler(createContext(), catalog),
+    draw: () => drawHandler(createContext(), new Request("http://localhost"), draw, false),
+  };
+
   return async function route(request: Request): Promise<Response> {
     try {
       const url = new URL(request.url);
@@ -83,58 +112,36 @@ export function createRestRouter({ catalog, draw, eventDraw }: { catalog: RestCa
       const resource = segments[1]; const id = segments[2];
       if (segments.length > 3) return failure(404, "not_found", "route not found");
 
+      const context = { json, failure, namedPage };
+
       if (resource === "judoka" && request.method === "GET") {
-        const query = queryParser.parseListQuery(url.searchParams);
-        if (query.includeHidden && !authorizedInternal) return failure(403, "forbidden", "hidden records require internal authorization");
-        if (id !== undefined) {
-          let unsupportedLookupQuery = false;
-          url.searchParams.forEach((_value, key) => { if (key !== "includeHidden") unsupportedLookupQuery = true; });
-          if (unsupportedLookupQuery) throw new TypeError("unsupported query parameter for judoka lookup");
-          const record = catalog.getJudoka(id, { includeHidden: query.includeHidden, authorizedInternal });
-          return record ? json(record) : failure(404, "not_found", "judoka not found");
-        }
-        return json(namedPage("judoka", catalog.searchJudoka({ ...query, authorizedInternal }), query.limit, query.cursor));
+        return id !== undefined
+          ? await judokaGetHandler(context, url, id, catalog, authorizedInternal)
+          : await judokaListHandler(context, url, catalog, authorizedInternal);
       }
       if (resource === "techniques" && request.method === "GET") {
-        if (id !== undefined) {
-          const technique = catalog.getTechnique(id);
-          return technique ? json(technique) : failure(404, "not_found", "technique not found");
-        }
-        const allowed = new Set(["limit", "cursor"]);
-        url.searchParams.forEach((_value, key) => { if (!allowed.has(key)) throw new TypeError(`unsupported query parameter: ${key}`); });
-        const page = queryParser.parsePageQuery(url.searchParams);
-        return json(namedPage("techniques", catalog.listTechniques(), page.limit, page.cursor));
+        return id !== undefined
+          ? await techniquesGetHandler(context, id, catalog)
+          : await techniquesListHandler(context, url, catalog);
       }
       if (resource === "events") {
         if (id === "draw" && request.method === "POST") {
-          if (!eventDraw) return failure(404, "not_found", "route not found");
-          if (!/^application\/json(?:\s*;|$)/i.test(request.headers.get("content-type") ?? "")) throw new TypeError("content-type must be application/json");
-          let body: EventDrawRequest; try { body = bodyValidator.validateEventDrawBody(await request.json()); } catch (error) { if (error instanceof SyntaxError) throw new TypeError("request body contains malformed JSON"); throw error; }
-          try { return json(eventDraw.draw(body)); }
-          catch (error) { if (error instanceof RangeError && /exceeds eligible pool size/.test(error.message)) return failure(409, "conflict", "requested event exceeds the eligible pool"); throw error; }
+          return await eventsDrawHandler(context, request, eventDraw);
         }
         if (id === "draw") return failure(405, "method_not_allowed", "method not allowed");
         if (request.method === "GET") {
-          if (id !== undefined) {
-            let hasQuery = false; url.searchParams.forEach(() => { hasQuery = true; });
-            if (hasQuery) throw new TypeError("unsupported query parameter for event lookup");
-            const event = catalog.getEvent(id); return event ? json(event) : failure(404, "not_found", "event not found");
-          }
-          const query = queryParser.parseEventListQuery(url.searchParams);
-          return json(namedPage("events", catalog.listEvents(query), query.limit, query.cursor));
+          return id !== undefined
+            ? await eventsGetHandler(context, url, id, catalog)
+            : await eventsListHandler(context, url, catalog);
         }
       }
-      if (resource === "countries" && request.method === "GET" && id === undefined) return json(catalog.listCountries());
-      if (resource === "weight-categories" && request.method === "GET" && id === undefined) return json(catalog.listWeightCategories());
-      if (resource === "version" && request.method === "GET" && id === undefined) return json(catalog.version());
-      if (resource === "status" && request.method === "GET" && id === undefined) return json(catalog.status());
-      if (resource === "coverage" && request.method === "GET" && id === undefined) return json(catalog.coverage());
+      if (resource === "countries" && request.method === "GET" && id === undefined) return await countriesHandler(context, catalog);
+      if (resource === "weight-categories" && request.method === "GET" && id === undefined) return await weightCategoriesHandler(context, catalog);
+      if (resource === "version" && request.method === "GET" && id === undefined) return await versionHandler(context, catalog);
+      if (resource === "status" && request.method === "GET" && id === undefined) return await statusHandler(context, catalog);
+      if (resource === "coverage" && request.method === "GET" && id === undefined) return await coverageHandler(context, catalog);
       if (resource === "draw" && request.method === "POST" && id === undefined) {
-        if (!/^application\/json(?:\s*;|$)/i.test(request.headers.get("content-type") ?? "")) throw new TypeError("content-type must be application/json");
-        let body: DrawRequest; try { body = bodyValidator.validateDrawBody(await request.json()); } catch (error) { if (error instanceof SyntaxError) throw new TypeError("request body contains malformed JSON"); throw error; }
-        if (body.includeHidden && !authorizedInternal) return failure(403, "forbidden", "hidden records require internal authorization");
-        try { return json(draw.draw(body, { authorizedInternal })); }
-        catch (error) { if (error instanceof RangeError && /exceeds eligible pool size/.test(error.message)) return failure(409, "conflict", "requested count exceeds the eligible pool"); throw error; }
+        return await drawHandler(context, request, draw, authorizedInternal);
       }
       const known = new Set(["judoka", "techniques", "events", "countries", "weight-categories", "draw", "version", "status", "coverage"]);
       return known.has(resource ?? "") ? failure(405, "method_not_allowed", "method not allowed") : failure(404, "not_found", "route not found");

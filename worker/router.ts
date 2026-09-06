@@ -4,6 +4,7 @@ import { CatalogService } from "../src/domain/catalog-service.js";
 import { DrawService } from "../src/draw/draw-service.js";
 import { EventDrawService } from "../src/draw/event-draw-service.js";
 import { createRestRouter } from "../src/api/router.js";
+import { FILTERS_SCHEMA } from "../src/api/schemas.js";
 import { createMcpTools } from "../src/mcp/tools.js";
 import { JsonReadModelRepository } from "../src/repository/json-read-model-repository.js";
 import { authorized } from "./auth.js";
@@ -38,24 +39,12 @@ function mcpError(id: RpcRequest["id"], code: number, message: string) {
 }
 
 const stringOrStrings = { oneOf: [{ type: "string" }, { type: "array", items: { type: "string" }, minItems: 1 }] } as const;
-const filtersSchema = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    countryCode: stringOrStrings,
-    gender: stringOrStrings,
-    weightClass: stringOrStrings,
-    rarity: stringOrStrings,
-    personType: stringOrStrings,
-    signatureMoveIds: stringOrStrings,
-  },
-} as const;
 const stringArray = { type: "array", items: { type: "string" } } as const;
 
 const toolDefinitions = [
   ["get_judoka", "Get one judoka by immutable ID or slug.", { type: "object", additionalProperties: false, properties: { id: { type: "string" }, includeHidden: { type: "boolean" } }, required: ["id"] }],
-  ["search_judoka", "Search and filter judoka.", { type: "object", additionalProperties: false, properties: { query: { type: "string" }, q: { type: "string" }, filters: filtersSchema, exclude: stringArray, includeHidden: { type: "boolean" } } }],
-  ["draw_judoka", "Draw one or more judoka, optionally deterministically with a seed.", { type: "object", additionalProperties: false, properties: { count: { type: "integer", minimum: 1 }, seed: { type: "string" }, algorithm: { type: "string" }, filters: filtersSchema, exclude: stringArray, includeHidden: { type: "boolean" } } }],
+  ["search_judoka", "Search and filter judoka.", { type: "object", additionalProperties: false, properties: { query: { type: "string" }, q: { type: "string" }, filters: FILTERS_SCHEMA, exclude: stringArray, includeHidden: { type: "boolean" } } }],
+  ["draw_judoka", "Draw one or more judoka, optionally deterministically with a seed.", { type: "object", additionalProperties: false, properties: { count: { type: "integer", minimum: 1 }, seed: { type: "string" }, algorithm: { type: "string" }, filters: FILTERS_SCHEMA, exclude: stringArray, includeHidden: { type: "boolean" } } }],
   ["list_techniques", "List all techniques.", { type: "object", additionalProperties: false, properties: {} }],
   ["get_technique", "Get one technique by ID.", { type: "object", additionalProperties: false, properties: { id: { type: "string" } }, required: ["id"] }],
   ["list_events", "List ruleset-scoped gameplay events.", { type: "object", additionalProperties: false, properties: { ruleset: { type: "string" }, category: { type: "string" } } }],
