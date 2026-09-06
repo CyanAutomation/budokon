@@ -143,12 +143,12 @@ components:
       type: object
       additionalProperties: false
       properties:
-        countryCode: { oneOf: [ { type: string }, { type: array, items: { type: string } } ] }
-        gender: { oneOf: [ { type: string }, { type: array, items: { type: string } } ] }
-        weightClass: { oneOf: [ { type: string }, { type: array, items: { type: string } } ] }
-        rarity: { oneOf: [ { type: string }, { type: array, items: { type: string } } ] }
-        personType: { oneOf: [ { type: string }, { type: array, items: { type: string } } ] }
-        signatureMoveIds: { oneOf: [ { type: string }, { type: array, items: { type: string } } ] }
+        countryCode: { oneOf: [ { type: string }, { type: array, minItems: 1, items: { type: string } } ] }
+        gender: { oneOf: [ { type: string }, { type: array, minItems: 1, items: { type: string } } ] }
+        weightClass: { oneOf: [ { type: string }, { type: array, minItems: 1, items: { type: string } } ] }
+        rarity: { oneOf: [ { type: string }, { type: array, minItems: 1, items: { type: string } } ] }
+        personType: { oneOf: [ { type: string }, { type: array, minItems: 1, items: { type: string } } ] }
+        signatureMoveIds: { oneOf: [ { type: string }, { type: array, minItems: 1, items: { type: string } } ] }
     Error:
       type: object
       required: [error]
