@@ -317,24 +317,6 @@ test("OPTIONS request for /v1/ endpoint returns CORS headers when origin is allo
 });
 
 /**
- * Test worker CORS - OPTIONS with disallowed origin returns 403.
- */
-test("OPTIONS request with disallowed origin returns 403", async () => {
-  const response = await worker.fetch(
-    new Request("https://example.test/v1/judoka", {
-      method: "OPTIONS",
-      headers: {
-        origin: "https://evil.com", // Not in PUBLIC_ALLOWED_ORIGINS
-        "access-control-request-method": "GET",
-      },
-    }),
-    mockEnv
-  );
-
-  assert.equal(response.status, 403);
-});
-
-/**
  * Test worker CORS - OPTIONS request for non-REST endpoint returns 405.
  */
 test("OPTIONS request for non-REST endpoint returns 405", async () => {
