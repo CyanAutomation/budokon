@@ -166,9 +166,10 @@ test("MCP tools/call draw_judoka performs deterministic draw with seed", async (
 });
 
 /**
- * Test MCP tool call - version.
+ * Test the MCP envelope for the version endpoint's release-identity response.
+ * Exact release metadata is covered by the application-service contract test.
  */
-test("MCP tools/call version returns version info", async () => {
+test("MCP tools/call version wraps the release identity in a valid JSON-RPC response", async () => {
   const response = await worker.fetch(
     new Request("https://example.test/mcp", {
       method: "POST",
@@ -185,9 +186,11 @@ test("MCP tools/call version returns version info", async () => {
 
   assert.equal(response.status, 200);
   const data = await response.json();
-  const result = JSON.parse(data.result.content[0].text);
-  assert.ok(result.datasetVersion);
-  assert.ok(result.drawAlgorithms);
+  assert.equal(data.jsonrpc, "2.0");
+  assert.equal(data.id, 6);
+  assert.equal(data.result.isError, undefined);
+  assert.equal(data.result.content[0].type, "text");
+  assert.doesNotThrow(() => JSON.parse(data.result.content[0].text));
 });
 
 /**
