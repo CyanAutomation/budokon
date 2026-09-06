@@ -39,6 +39,9 @@ if (!(await contract.text()).includes("/v1/status:")) throw new Error("OpenAPI c
 const first = await request("/v1/judoka");
 const etag = first.headers.get("etag");
 if (!etag) throw new Error("public catalogue response is missing ETag");
+if (!first.headers.get("cache-control")?.includes("s-maxage=")) {
+  throw new Error("public catalogue response is missing its shared-cache policy");
+}
 await request("/v1/judoka", { headers: { "if-none-match": etag } }, 304);
 const search = await request("/v1/judoka?q=shozo&limit=1").then(response => response.json() as Promise<{ judoka?: unknown[] }>);
 if (!Array.isArray(search.judoka) || search.judoka.length === 0) throw new Error("catalogue search did not return the expected public record");

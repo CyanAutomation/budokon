@@ -23,21 +23,21 @@ export function meaningfulText(value: unknown, location: string): asserts value 
  * Ensure all values in a set of items are unique by a specific field or set of fields.
  * @throws Error if duplicate values are found
  */
-export function ensureUnique<T extends Record<string, unknown>>(
-  items: T[],
-  fieldName: string,
+export function ensureUnique<T extends { id: string; slug?: string }>(
+  items: readonly T[],
+  fieldName: keyof T | "handles",
   label: string,
-  getValues?: (item: T) => unknown[]
+  getValues?: (item: T) => readonly unknown[]
 ): void {
   const seen = new Map<unknown, string>();
   for (const item of items) {
-    const values = getValues ? getValues(item) : [item[fieldName]];
+    const values = getValues ? getValues(item) : [item[fieldName as keyof T]];
     for (const value of values) {
       const key = JSON.stringify(value);
       if (seen.has(key)) {
         throw new Error(`duplicate ${label} ${key} in ${seen.get(key)}`);
       }
-      seen.set(key, String((item as any).slug ?? (item as any).id));
+      seen.set(key, item.slug ?? item.id);
     }
   }
 }
