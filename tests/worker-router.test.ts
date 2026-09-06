@@ -253,16 +253,36 @@ test("MCP method not found for unknown tool", async () => {
 });
 
 /**
- * Test MCP POST requirement.
+ * The protected endpoint does not disclose its allowed methods to unauthenticated callers.
+ * @see ../README.md#mcp-authentication-and-allowed-methods
  */
-test("MCP GET request requires authorization before validating method", async () => {
-  const response = await worker.fetch(
+test("MCP GET rejects unauthenticated access without disclosing protected endpoint details", async () => {
+  const unauthenticatedResponse = await worker.fetch(
     new Request("https://example.test/mcp", { method: "GET" }),
     mockEnv
   );
 
-  // GET returns 401 (unauthorized) before 405 check because authorization is checked first
-  assert.equal(response.status, 401);
+  assert.equal(unauthenticatedResponse.status, 401);
+  assert.equal(unauthenticatedResponse.headers.get("content-type"), "application/json; charset=utf-8");
+  assert.equal(unauthenticatedResponse.headers.get("allow"), null);
+  assert.deepEqual(await unauthenticatedResponse.json(), {
+    error: { code: "unauthorized", message: "A valid API key is required" },
+  });
+
+  const authenticatedResponse = await worker.fetch(
+    new Request("https://example.test/mcp", {
+      method: "GET",
+      headers: { authorization: `Bearer ${mockEnv.API_KEY}` },
+    }),
+    mockEnv
+  );
+
+  assert.equal(authenticatedResponse.status, 405);
+  assert.equal(authenticatedResponse.headers.get("content-type"), "application/json; charset=utf-8");
+  assert.equal(authenticatedResponse.headers.get("allow"), "POST");
+  assert.deepEqual(await authenticatedResponse.json(), {
+    error: { code: "method_not_allowed", message: "Method not allowed" },
+  });
 });
 
 /**
