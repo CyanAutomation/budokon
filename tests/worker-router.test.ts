@@ -298,19 +298,6 @@ test("REST /v1/judoka endpoint is accessible without API key", async () => {
 });
 
 /**
- * Test worker routing - landing page.
- */
-test("Landing page at / returns documentation links in JSON", async () => {
-  const response = await worker.fetch(new Request("https://example.test/"), mockEnv);
-  assert.equal(response.status, 200);
-  assert.match(response.headers.get("content-type"), /^application\/json/);
-  const data = await response.json();
-  assert.equal(data.name, "BU-DO-KON public catalogue API");
-  assert.ok(data.documentation);
-  assert.ok(data.openapi);
-});
-
-/**
  * Test worker CORS - OPTIONS request for REST endpoint.
  */
 test("OPTIONS request for /v1/ endpoint returns CORS headers when origin is allowed", async () => {

@@ -5,17 +5,24 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
-import { landingResponse } from "../worker/discovery.js";
 import { createWorker } from "../worker/router.js";
 
+// Public-discovery requirement: README.md, "REST API" (the JSON document at /).
 test("landing document derives all links from the supplied origin", async () => {
   const origin = "https://budokon.example";
-  const landing = landingResponse(origin);
+  const landing = await createWorker("openapi: 3.1.0").fetch(
+    new Request(`${origin}/`),
+    { API_KEY: "test-key" },
+  );
+
   assert.equal(landing.status, 200);
+  assert.equal(landing.headers.get("content-type"), "application/json; charset=utf-8");
   assert.deepEqual(await landing.json(), {
     name: "BU-DO-KON public catalogue API",
-    documentation: `${origin}/docs`, openapi: `${origin}/openapi/v1.yaml`,
-    status: `${origin}/v1/status`, version: `${origin}/v1/version`
+    documentation: `${origin}/docs`,
+    openapi: `${origin}/openapi/v1.yaml`,
+    status: `${origin}/v1/status`,
+    version: `${origin}/v1/version`,
   });
 });
 
