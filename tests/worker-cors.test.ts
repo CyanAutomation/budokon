@@ -22,13 +22,16 @@ test("CORS permits every origin only when the deliberate public wildcard is conf
   assert.equal(headers.get("access-control-allow-origin"), "*");
 });
 
-test("CORS preflight allows the public REST methods without accepting API-key headers", () => {
+test("CORS preflight allows the public REST methods without accepting API-key headers", async () => {
   const allowed = preflightResponse(request("https://game.example", {
     method: "OPTIONS", headers: { "access-control-request-method": "POST", "access-control-request-headers": "content-type" }
   }), env);
   assert.equal(allowed.status, 204);
+  assert.equal(allowed.headers.get("access-control-allow-origin"), "https://game.example");
+  assert.equal(allowed.headers.get("vary"), "Origin");
   assert.equal(allowed.headers.get("access-control-allow-methods"), "GET, POST, OPTIONS");
   assert.equal(allowed.headers.get("access-control-allow-headers"), "content-type");
+  assert.equal(await allowed.text(), "");
 
   const disallowed = preflightResponse(request("https://game.example", {
     method: "OPTIONS", headers: { "access-control-request-method": "POST", "access-control-request-headers": "x-api-key" }

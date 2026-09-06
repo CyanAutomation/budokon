@@ -298,25 +298,6 @@ test("REST /v1/judoka endpoint is accessible without API key", async () => {
 });
 
 /**
- * Test worker CORS - OPTIONS request for REST endpoint.
- */
-test("OPTIONS request for /v1/ endpoint returns CORS headers when origin is allowed", async () => {
-  const response = await worker.fetch(
-    new Request("https://example.test/v1/judoka", {
-      method: "OPTIONS",
-      headers: {
-        origin: "https://example.com", // Must match PUBLIC_ALLOWED_ORIGINS
-        "access-control-request-method": "GET",
-      },
-    }),
-    mockEnv
-  );
-
-  assert.equal(response.status, 204);
-  assert.ok(response.headers.get("access-control-allow-origin"));
-});
-
-/**
  * Test worker CORS - OPTIONS request for non-REST endpoint returns 405.
  */
 test("OPTIONS request for non-REST endpoint returns 405", async () => {
