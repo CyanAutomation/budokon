@@ -37,16 +37,31 @@ function mcpError(id: RpcRequest["id"], code: number, message: string) {
   return json({ jsonrpc: "2.0", id: id ?? null, error: { code, message } });
 }
 
+const stringOrStrings = { oneOf: [{ type: "string" }, { type: "array", items: { type: "string" }, minItems: 1 }] } as const;
+const filtersSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    countryCode: stringOrStrings,
+    gender: stringOrStrings,
+    weightClass: stringOrStrings,
+    rarity: stringOrStrings,
+    personType: stringOrStrings,
+    signatureMoveIds: stringOrStrings,
+  },
+} as const;
+const stringArray = { type: "array", items: { type: "string" } } as const;
+
 const toolDefinitions = [
-  ["get_judoka", "Get one judoka by immutable ID or slug.", { type: "object", properties: { id: { type: "string" }, includeHidden: { type: "boolean" } }, required: ["id"] }],
-  ["search_judoka", "Search and filter judoka.", { type: "object", properties: { query: { type: "string" }, q: { type: "string" }, filters: { type: "object" }, exclude: { type: "array", items: { type: "string" } }, includeHidden: { type: "boolean" } } }],
-  ["draw_judoka", "Draw one or more judoka, optionally deterministically with a seed.", { type: "object", properties: { count: { type: "integer", minimum: 1 }, seed: { type: "string" }, algorithm: { type: "string" }, filters: { type: "object" }, exclude: { type: "array", items: { type: "string" } }, includeHidden: { type: "boolean" } } }],
-  ["list_techniques", "List all techniques.", { type: "object", properties: {} }],
-  ["get_technique", "Get one technique by ID.", { type: "object", properties: { id: { type: "string" } }, required: ["id"] }],
-  ["list_events", "List ruleset-scoped gameplay events.", { type: "object", properties: { ruleset: { type: "string" }, category: { type: "string" } } }],
-  ["get_event", "Get one gameplay event by ID.", { type: "object", properties: { id: { type: "string" } }, required: ["id"] }],
-  ["draw_event", "Draw one event for a required game ruleset, optionally deterministically with a seed.", { type: "object", properties: { ruleset: { type: "string" }, category: { type: "string" }, seed: { type: "string" }, exclude: { type: "array", items: { type: "string" } } }, required: ["ruleset"] }],
-  ["version", "Get dataset and draw-algorithm versions.", { type: "object", properties: {} }]
+  ["get_judoka", "Get one judoka by immutable ID or slug.", { type: "object", additionalProperties: false, properties: { id: { type: "string" }, includeHidden: { type: "boolean" } }, required: ["id"] }],
+  ["search_judoka", "Search and filter judoka.", { type: "object", additionalProperties: false, properties: { query: { type: "string" }, q: { type: "string" }, filters: filtersSchema, exclude: stringArray, includeHidden: { type: "boolean" } } }],
+  ["draw_judoka", "Draw one or more judoka, optionally deterministically with a seed.", { type: "object", additionalProperties: false, properties: { count: { type: "integer", minimum: 1 }, seed: { type: "string" }, algorithm: { type: "string" }, filters: filtersSchema, exclude: stringArray, includeHidden: { type: "boolean" } } }],
+  ["list_techniques", "List all techniques.", { type: "object", additionalProperties: false, properties: {} }],
+  ["get_technique", "Get one technique by ID.", { type: "object", additionalProperties: false, properties: { id: { type: "string" } }, required: ["id"] }],
+  ["list_events", "List ruleset-scoped gameplay events.", { type: "object", additionalProperties: false, properties: { ruleset: { type: "string" }, category: { type: "string" } } }],
+  ["get_event", "Get one gameplay event by ID.", { type: "object", additionalProperties: false, properties: { id: { type: "string" } }, required: ["id"] }],
+  ["draw_event", "Draw one event for a required game ruleset, optionally deterministically with a seed.", { type: "object", additionalProperties: false, properties: { ruleset: { type: "string" }, category: { type: "string" }, seed: { type: "string" }, exclude: stringArray }, required: ["ruleset"] }],
+  ["version", "Get dataset and draw-algorithm versions.", { type: "object", additionalProperties: false, properties: {} }]
 ] as const;
 
 async function handleMcp(request: Request, env: Env) {

@@ -59,19 +59,113 @@ test("MCP tools/list returns all available tools with schemas", async () => {
   assert.equal(data.jsonrpc, "2.0");
   assert.equal(data.id, 2);
   assert.ok(Array.isArray(data.result.tools));
-  assert.ok(data.result.tools.length > 0);
 
-  const toolNames = data.result.tools.map((t: { name: string }) => t.name);
-  assert.ok(toolNames.includes("get_judoka"));
-  assert.ok(toolNames.includes("search_judoka"));
-  assert.ok(toolNames.includes("draw_judoka"));
-  assert.ok(toolNames.includes("draw_event"));
-  assert.ok(toolNames.includes("version"));
+  type ListedTool = { name: string; inputSchema: unknown };
+  const listedTools = data.result.tools as ListedTool[];
+  const expectedNames = [
+    "draw_event",
+    "draw_judoka",
+    "get_event",
+    "get_judoka",
+    "get_technique",
+    "list_events",
+    "list_techniques",
+    "search_judoka",
+    "version",
+  ];
+  const actualNames = listedTools.map(tool => tool.name);
+  assert.deepEqual([...actualNames].sort(), expectedNames, "tools/list must expose exactly the public tool-name set");
+  assert.equal(new Set(actualNames).size, actualNames.length, "tool names must be unique");
 
-  // Verify tool has proper schema structure
-  const versionTool = data.result.tools.find((t: { name: string }) => t.name === "version");
-  assert.ok(versionTool.inputSchema);
-  assert.equal(versionTool.inputSchema.type, "object");
+  const toolsByName = new Map(listedTools.map(tool => [tool.name, tool]));
+  const stringArray = { type: "array", items: { type: "string" } };
+  const stringOrStrings = {
+    oneOf: [
+      { type: "string" },
+      { type: "array", items: { type: "string" }, minItems: 1 },
+    ],
+  };
+  const filters = {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      countryCode: stringOrStrings,
+      gender: stringOrStrings,
+      weightClass: stringOrStrings,
+      rarity: stringOrStrings,
+      personType: stringOrStrings,
+      signatureMoveIds: stringOrStrings,
+    },
+  };
+
+  // These contracts mirror the MCP tools contract and the equivalent request
+  // schemas in the generated API documentation: ../openapi/v1.yaml.
+  // MCP inputSchema is JSON Schema: https://modelcontextprotocol.io/specification/2025-06-18/server/tools#listing-tools
+  const expectedSchemas: Record<string, unknown> = {
+    get_judoka: {
+      type: "object",
+      additionalProperties: false,
+      properties: { id: { type: "string" }, includeHidden: { type: "boolean" } },
+      required: ["id"],
+    },
+    search_judoka: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        query: { type: "string" },
+        q: { type: "string" },
+        filters,
+        exclude: stringArray,
+        includeHidden: { type: "boolean" },
+      },
+    },
+    draw_judoka: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        count: { type: "integer", minimum: 1 },
+        seed: { type: "string" },
+        algorithm: { type: "string" },
+        filters,
+        exclude: stringArray,
+        includeHidden: { type: "boolean" },
+      },
+    },
+    list_techniques: { type: "object", additionalProperties: false, properties: {} },
+    get_technique: {
+      type: "object",
+      additionalProperties: false,
+      properties: { id: { type: "string" } },
+      required: ["id"],
+    },
+    list_events: {
+      type: "object",
+      additionalProperties: false,
+      properties: { ruleset: { type: "string" }, category: { type: "string" } },
+    },
+    get_event: {
+      type: "object",
+      additionalProperties: false,
+      properties: { id: { type: "string" } },
+      required: ["id"],
+    },
+    draw_event: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        ruleset: { type: "string" },
+        category: { type: "string" },
+        seed: { type: "string" },
+        exclude: stringArray,
+      },
+      required: ["ruleset"],
+    },
+    version: { type: "object", additionalProperties: false, properties: {} },
+  };
+
+  for (const name of expectedNames) {
+    assert.deepEqual(toolsByName.get(name)?.inputSchema, expectedSchemas[name], `${name} input contract`);
+  }
 });
 
 /**
