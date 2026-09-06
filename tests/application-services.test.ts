@@ -145,14 +145,20 @@ test("version, draw, and MCP results expose the canonical dataset version", () =
   assert.equal(mcp.version().datasetVersion, compiledModel.datasetVersion);
 });
 
-test("REST and MCP version metadata declare the supported and default draw algorithm", () => {
+test("version endpoint release identity matches repository metadata and the draw algorithm contract", () => {
   const restVersion = rest.version().body;
   const mcpVersion = mcp.version();
+  const expectedVersion = {
+    datasetVersion: repository.datasetVersion,
+    serviceVersion: repository.serviceVersion,
+    sourceGitCommit: repository.sourceGitCommit,
+    datasetChecksum: repository.datasetChecksum,
+    drawAlgorithms: [DRAW_ALGORITHM],
+    defaultDrawAlgorithm: DRAW_ALGORITHM,
+  };
 
-  assert.deepEqual(restVersion.drawAlgorithms, [DRAW_ALGORITHM]);
-  assert.equal(restVersion.defaultDrawAlgorithm, DRAW_ALGORITHM);
-  assert.deepEqual(mcpVersion.drawAlgorithms, [DRAW_ALGORITHM]);
-  assert.equal(mcpVersion.defaultDrawAlgorithm, DRAW_ALGORITHM);
+  assert.deepEqual(restVersion, expectedVersion);
+  assert.deepEqual(mcpVersion, expectedVersion);
 });
 
 test("search normalizes case, whitespace, punctuation, and diacritics across every text field", () => {
