@@ -3,7 +3,7 @@
 require "yaml"
 
 root = File.expand_path("..", __dir__)
-document = YAML.safe_load_file(File.join(root, "openapi/v1.yaml"), aliases: false)
+document = YAML.safe_load(File.read(File.join(root, "openapi/v1.yaml")), aliases: false)
 
 def assert_equal(actual, expected, context)
   return if actual == expected
@@ -35,12 +35,12 @@ expected_responses.each do |(path, method), responses|
 end
 
 visibility_operations = document.fetch("paths").flat_map do |path, path_item|
-  path_item.filter_map do |method, operation|
+  path_item.map do |method, operation|
     next unless operation.is_a?(Hash)
     next unless operation.fetch("parameters", []).any? { |parameter| parameter["$ref"] == "#/components/parameters/IncludeHidden" }
 
     [path, method]
-  end
+  end.compact
 end
 assert_equal(visibility_operations, [["/v1/judoka", "get"]], "operations using IncludeHidden")
 
