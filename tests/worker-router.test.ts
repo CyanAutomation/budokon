@@ -324,6 +324,33 @@ test("MCP unauthorized when API key is missing", async () => {
   assert.ok(data.error.message.includes("API key"));
 });
 
+test("MCP rejects an invalid API key before invoking the SDK handler", async () => {
+  const response = await worker.fetch(
+    new Request("https://example.test/mcp", {
+      method: "POST",
+      headers: {
+        host: "example.test",
+        authorization: "Bearer invalid-api-key",
+        "content-type": "application/json",
+        accept: "application/json, text/event-stream",
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 39,
+        method: "initialize",
+        params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "test", version: "1.0.0" } },
+      }),
+    }),
+    mockEnv
+  );
+
+  assert.equal(response.status, 401);
+  assert.equal(response.headers.get("www-authenticate"), "Bearer");
+  assert.deepEqual(await mcpJson(response), {
+    error: { code: "unauthorized", message: "A valid API key is required" },
+  });
+});
+
 test("MCP rejects requests for an unconfigured Host or Origin before invoking the SDK handler", async () => {
   const headers = {
     authorization: `Bearer ${mockEnv.API_KEY}`,
