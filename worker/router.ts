@@ -33,6 +33,14 @@ function json(value: unknown, status = 200, headers: HeadersInit = {}) {
   return new Response(JSON.stringify(value), { status, headers: { "content-type": "application/json; charset=utf-8", ...headers } });
 }
 
+function authenticateMcpRequest(request: Request, apiKey: string): Response | undefined {
+  if (authorized(request, apiKey)) return undefined;
+  return json(
+    { error: { code: "unauthorized", message: "A valid API key is required" } },
+    401,
+    { "www-authenticate": "Bearer" }
+  );
+}
 
 export function createWorker(openApiSpecification: string) {
   return {
@@ -48,12 +56,14 @@ export function createWorker(openApiSpecification: string) {
         const rateLimited = await rateLimitMcpRequest(request, env);
         if (rateLimited) return rateLimited;
         if (!env.MCP_ALLOWED_HOSTNAMES) return json({ error: { code: "not_configured", message: "MCP allowed hostnames are required" } }, 503);
-        if (!authorized(request, env.API_KEY)) return json({ error: { code: "unauthorized", message: "A valid API key is required" } }, 401, { "www-authenticate": "Bearer" });
+        const authenticationFailure = authenticateMcpRequest(request, env.API_KEY);
+        if (authenticationFailure) return authenticationFailure;
         const allowedHostnames = env.MCP_ALLOWED_HOSTNAMES.split(",").map(value => value.trim()).filter(Boolean);
         const rejected = hostHeaderValidationResponse(request, allowedHostnames)
           ?? originValidationResponse(request, allowedHostnames.map(hostname => `https://${hostname}`));
+        if (rejected) return rejected;
         const mcp = createBudokonMcpHandler({ catalog, draw, eventDraw, authorizeInternal: candidate => authorized(candidate, env.INTERNAL_API_KEY) });
-        response = rejected ?? await mcp.fetch(request);
+        response = await mcp.fetch(request);
       } else {
         // Catalogue reads and draws are public; hidden records still require INTERNAL_API_KEY.
         response = await rateLimitPublicRequest(request, env) ?? cachePublicGet(
