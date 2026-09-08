@@ -33,6 +33,7 @@
     "validate:openapi": "ruby scripts/validate-openapi.rb",
     "validate:deployment-target": "tsx scripts/validate-cloudflare-deployment-target.ts",
     "smoke:deployment": "tsx scripts/smoke-deployment.ts",
+    "vendor:swagger-ui": "mkdir -p public/swagger-ui && cp node_modules/swagger-ui-dist/swagger-ui.css node_modules/swagger-ui-dist/swagger-ui-bundle.js public/swagger-ui/",
     "test:validation:focused": "BUDOKON_SKIP_REPOSITORY_SMOKE=1 tsx --test tests/validation.test.ts",
     "test:validation:integration": "tsx --test --test-name-pattern='integration: canonical repository release gate' tests/validation.test.ts",
     "test": "npm run build && tsx --test scripts/*.test.ts tests/*.test.ts",
@@ -40,11 +41,14 @@
   },
   "devDependencies": {
     "@types/node": "^26.4.0",
+    "swagger-ui-dist": "^5.32.15",
     "tsx": "^4.23.12",
     "typescript": "^5.7.2",
     "wrangler": "^4.0.0"
   },
   "dependencies": {
-    "fallow": "^3.22.0"
+    "@modelcontextprotocol/server": "^2.0.0",
+    "fallow": "^3.22.0",
+    "zod": "^4.5.4"
   }
 }

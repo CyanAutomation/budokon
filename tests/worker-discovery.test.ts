@@ -45,8 +45,8 @@ test("documentation is user-visible and links to the OpenAPI contract", async ()
   );
   assert.deepEqual(directives, new Map([
     ["default-src", new Set(["'none'"])],
-    ["script-src", new Set(["'self'", "'unsafe-inline'", "https://unpkg.com"])],
-    ["style-src", new Set(["'self'", "'unsafe-inline'", "https://unpkg.com"])],
+    ["script-src", new Set(["'self'", "'unsafe-inline'"])],
+    ["style-src", new Set(["'self'", "'unsafe-inline'"])],
     ["img-src", new Set(["'self'", "data:", "https:"])],
     ["connect-src", new Set(["'self'"])],
     ["base-uri", new Set(["'none'"])],

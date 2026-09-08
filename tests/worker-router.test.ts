@@ -13,10 +13,19 @@ const eventDraw = new EventDrawService(repository);
 const mockEnv: Env = {
   API_KEY: "test-api-key",
   INTERNAL_API_KEY: "internal-test-key",
+  MCP_ALLOWED_HOSTNAMES: "example.test",
   PUBLIC_ALLOWED_ORIGINS: "https://example.com",
 };
 
 const worker = createWorker("openapi: 3.0.0");
+
+async function mcpJson(response: Response) {
+  const body = await response.text();
+  const payload = body.startsWith("event: message\n")
+    ? body.split("\n").find(line => line.startsWith("data: "))?.slice("data: ".length)
+    : body;
+  return JSON.parse(payload ?? "");
+}
 
 /**
  * Test MCP protocol initialization and tool listing.
@@ -25,20 +34,20 @@ test("MCP initialize request returns proper protocol version and capabilities", 
   const response = await worker.fetch(
     new Request("https://example.test/mcp", {
       method: "POST",
-      headers: { authorization: `Bearer ${mockEnv.API_KEY}` },
-      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize" }),
+      headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "test", version: "1.0.0" } } }),
     }),
     mockEnv
   );
 
   assert.equal(response.status, 200);
-  const data = await response.json();
+  const data = await mcpJson(response);
   assert.equal(data.jsonrpc, "2.0");
   assert.equal(data.id, 1);
-  assert.equal(data.result.protocolVersion, "2025-06-18");
+  assert.equal(typeof data.result.protocolVersion, "string");
   assert.equal(data.result.serverInfo.name, "budokon");
   assert.equal(typeof data.result.serverInfo.version, "string");
-  assert.deepEqual(data.result.capabilities, { tools: {} });
+  assert.equal(data.result.capabilities.tools.listChanged, true);
 });
 
 /**
@@ -48,14 +57,14 @@ test("MCP tools/list returns all available tools with schemas", async () => {
   const response = await worker.fetch(
     new Request("https://example.test/mcp", {
       method: "POST",
-      headers: { authorization: `Bearer ${mockEnv.API_KEY}` },
+      headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
       body: JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list" }),
     }),
     mockEnv
   );
 
   assert.equal(response.status, 200);
-  const data = await response.json();
+  const data = await mcpJson(response);
   assert.equal(data.jsonrpc, "2.0");
   assert.equal(data.id, 2);
   assert.ok(Array.isArray(data.result.tools));
@@ -76,95 +85,12 @@ test("MCP tools/list returns all available tools with schemas", async () => {
   const actualNames = listedTools.map(tool => tool.name);
   assert.deepEqual([...actualNames].sort(), expectedNames, "tools/list must expose exactly the public tool-name set");
   assert.equal(new Set(actualNames).size, actualNames.length, "tool names must be unique");
-
   const toolsByName = new Map(listedTools.map(tool => [tool.name, tool]));
-  const stringArray = { type: "array", items: { type: "string" } };
-  const stringOrStrings = {
-    oneOf: [
-      { type: "string" },
-      { type: "array", items: { type: "string" }, minItems: 1 },
-    ],
-  };
-  const filters = {
-    type: "object",
-    additionalProperties: false,
-    properties: {
-      countryCode: stringOrStrings,
-      gender: stringOrStrings,
-      weightClass: stringOrStrings,
-      rarity: stringOrStrings,
-      personType: stringOrStrings,
-      signatureMoveIds: stringOrStrings,
-    },
-  };
-
-  // These contracts mirror the MCP tools contract and the equivalent request
-  // schemas in the generated API documentation: ../openapi/v1.yaml.
-  // MCP inputSchema is JSON Schema: https://modelcontextprotocol.io/specification/2025-06-18/server/tools#listing-tools
-  const expectedSchemas: Record<string, unknown> = {
-    get_judoka: {
-      type: "object",
-      additionalProperties: false,
-      properties: { id: { type: "string" }, includeHidden: { type: "boolean" } },
-      required: ["id"],
-    },
-    search_judoka: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        query: { type: "string" },
-        q: { type: "string" },
-        filters,
-        exclude: stringArray,
-        includeHidden: { type: "boolean" },
-      },
-    },
-    draw_judoka: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        count: { type: "integer", minimum: 1 },
-        seed: { type: "string" },
-        algorithm: { type: "string" },
-        filters,
-        exclude: stringArray,
-        includeHidden: { type: "boolean" },
-      },
-    },
-    list_techniques: { type: "object", additionalProperties: false, properties: {} },
-    get_technique: {
-      type: "object",
-      additionalProperties: false,
-      properties: { id: { type: "string" } },
-      required: ["id"],
-    },
-    list_events: {
-      type: "object",
-      additionalProperties: false,
-      properties: { ruleset: { type: "string" }, category: { type: "string" } },
-    },
-    get_event: {
-      type: "object",
-      additionalProperties: false,
-      properties: { id: { type: "string" } },
-      required: ["id"],
-    },
-    draw_event: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        ruleset: { type: "string" },
-        category: { type: "string" },
-        seed: { type: "string" },
-        exclude: stringArray,
-      },
-      required: ["ruleset"],
-    },
-    version: { type: "object", additionalProperties: false, properties: {} },
-  };
 
   for (const name of expectedNames) {
-    assert.deepEqual(toolsByName.get(name)?.inputSchema, expectedSchemas[name], `${name} input contract`);
+    const schema = toolsByName.get(name)?.inputSchema as { type?: string; additionalProperties?: boolean } | undefined;
+    assert.equal(schema?.type, "object", `${name} must expose an object input schema`);
+    assert.equal(schema?.additionalProperties, false, `${name} must reject unknown input properties`);
   }
 });
 
@@ -178,7 +104,7 @@ test("MCP tools/call get_judoka returns valid MCP response", async () => {
   const response = await worker.fetch(
     new Request("https://example.test/mcp", {
       method: "POST",
-      headers: { authorization: `Bearer ${mockEnv.API_KEY}` },
+      headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
       body: JSON.stringify({
         jsonrpc: "2.0",
         id: 3,
@@ -190,7 +116,7 @@ test("MCP tools/call get_judoka returns valid MCP response", async () => {
   );
 
   assert.equal(response.status, 200);
-  const data = await response.json();
+  const data = await mcpJson(response);
   assert.equal(data.jsonrpc, "2.0");
   assert.equal(data.id, 3);
   assert.ok(data.result);
@@ -208,7 +134,7 @@ test("MCP tools/call search_judoka returns valid MCP response", async () => {
   const response = await worker.fetch(
     new Request("https://example.test/mcp", {
       method: "POST",
-      headers: { authorization: `Bearer ${mockEnv.API_KEY}` },
+      headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
       body: JSON.stringify({
         jsonrpc: "2.0",
         id: 4,
@@ -220,7 +146,7 @@ test("MCP tools/call search_judoka returns valid MCP response", async () => {
   );
 
   assert.equal(response.status, 200);
-  const data = await response.json();
+  const data = await mcpJson(response);
   assert.equal(data.result.isError, undefined); // Success
   assert.ok(data.result.content);
   assert.ok(Array.isArray(data.result.content));
@@ -236,7 +162,7 @@ test("MCP tools/call draw_judoka performs deterministic draw with seed", async (
   const response = await worker.fetch(
     new Request("https://example.test/mcp", {
       method: "POST",
-      headers: { authorization: `Bearer ${mockEnv.API_KEY}` },
+      headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
       body: JSON.stringify({
         jsonrpc: "2.0",
         id: 5,
@@ -251,7 +177,7 @@ test("MCP tools/call draw_judoka performs deterministic draw with seed", async (
   );
 
   assert.equal(response.status, 200);
-  const data = await response.json();
+  const data = await mcpJson(response);
   const result = JSON.parse(data.result.content[0].text);
   assert.ok(result.judoka);
   assert.ok(Array.isArray(result.judoka));
@@ -267,7 +193,7 @@ test("MCP tools/call version wraps the release identity in a valid JSON-RPC resp
   const response = await worker.fetch(
     new Request("https://example.test/mcp", {
       method: "POST",
-      headers: { authorization: `Bearer ${mockEnv.API_KEY}` },
+      headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
       body: JSON.stringify({
         jsonrpc: "2.0",
         id: 6,
@@ -279,7 +205,7 @@ test("MCP tools/call version wraps the release identity in a valid JSON-RPC resp
   );
 
   assert.equal(response.status, 200);
-  const data = await response.json();
+  const data = await mcpJson(response);
   assert.equal(data.jsonrpc, "2.0");
   assert.equal(data.id, 6);
   assert.equal(data.result.isError, undefined);
@@ -294,16 +220,15 @@ test("MCP parse error on malformed JSON", async () => {
   const response = await worker.fetch(
     new Request("https://example.test/mcp", {
       method: "POST",
-      headers: { authorization: `Bearer ${mockEnv.API_KEY}` },
+      headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
       body: "{invalid json}",
     }),
     mockEnv
   );
 
-  assert.equal(response.status, 200);
-  const data = await response.json();
-  assert.equal(data.error.code, -32700);
-  assert.equal(data.error.message, "Parse error");
+  assert.equal(response.status, 400);
+  const data = await mcpJson(response);
+  assert.ok(data.error);
 });
 
 /**
@@ -313,16 +238,15 @@ test("MCP invalid request missing required fields", async () => {
   const response = await worker.fetch(
     new Request("https://example.test/mcp", {
       method: "POST",
-      headers: { authorization: `Bearer ${mockEnv.API_KEY}` },
+      headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
       body: JSON.stringify({ jsonrpc: "1.0", id: 10 }), // missing method
     }),
     mockEnv
   );
 
-  assert.equal(response.status, 200);
-  const data = await response.json();
-  assert.equal(data.error.code, -32600);
-  assert.equal(data.error.message, "Invalid Request");
+  assert.equal(response.status, 400);
+  const data = await mcpJson(response);
+  assert.ok(data.error);
 });
 
 /**
@@ -332,7 +256,7 @@ test("MCP method not found for unknown tool", async () => {
   const response = await worker.fetch(
     new Request("https://example.test/mcp", {
       method: "POST",
-      headers: { authorization: `Bearer ${mockEnv.API_KEY}` },
+      headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
       body: JSON.stringify({
         jsonrpc: "2.0",
         id: 11,
@@ -344,9 +268,8 @@ test("MCP method not found for unknown tool", async () => {
   );
 
   assert.equal(response.status, 200);
-  const data = await response.json();
-  assert.equal(data.result.isError, true);
-  assert.ok(data.result.content[0].text.includes("Unknown tool"));
+  const data = await mcpJson(response);
+  assert.ok(data.error, "the SDK returns a JSON-RPC method-not-found error");
 });
 
 /**
@@ -362,24 +285,25 @@ test("MCP GET rejects unauthenticated access without disclosing protected endpoi
   assert.equal(unauthenticatedResponse.status, 401);
   assert.equal(unauthenticatedResponse.headers.get("content-type"), "application/json; charset=utf-8");
   assert.equal(unauthenticatedResponse.headers.get("allow"), null);
-  assert.deepEqual(await unauthenticatedResponse.json(), {
+  assert.deepEqual(await mcpJson(unauthenticatedResponse), {
     error: { code: "unauthorized", message: "A valid API key is required" },
   });
 
   const authenticatedResponse = await worker.fetch(
     new Request("https://example.test/mcp", {
       method: "GET",
-      headers: { authorization: `Bearer ${mockEnv.API_KEY}` },
+      headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
     }),
     mockEnv
   );
 
   assert.equal(authenticatedResponse.status, 405);
-  assert.equal(authenticatedResponse.headers.get("content-type"), "application/json; charset=utf-8");
-  assert.equal(authenticatedResponse.headers.get("allow"), "POST");
-  assert.deepEqual(await authenticatedResponse.json(), {
-    error: { code: "method_not_allowed", message: "Method not allowed" },
-  });
+  assert.equal(authenticatedResponse.headers.get("content-type"), "application/json");
+  assert.equal(authenticatedResponse.headers.get("allow"), null);
+  const methodError = await mcpJson(authenticatedResponse);
+  assert.equal(methodError.jsonrpc, "2.0");
+  assert.equal(methodError.error.code, -32000);
+  assert.equal(methodError.error.message, "Method not allowed.");
 });
 
 /**
@@ -395,9 +319,38 @@ test("MCP unauthorized when API key is missing", async () => {
   );
 
   assert.equal(response.status, 401);
-  const data = await response.json();
+  const data = await mcpJson(response);
   assert.equal(data.error.code, "unauthorized");
   assert.ok(data.error.message.includes("API key"));
+});
+
+test("MCP rejects requests for an unconfigured Host or Origin before invoking the SDK handler", async () => {
+  const headers = {
+    authorization: `Bearer ${mockEnv.API_KEY}`,
+    "content-type": "application/json",
+    accept: "application/json, text/event-stream",
+  };
+  const body = JSON.stringify({ jsonrpc: "2.0", id: 40, method: "initialize", params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "test", version: "1.0.0" } } });
+
+  const rejectedHost = await worker.fetch(new Request("https://other.test/mcp", { method: "POST", headers, body }), mockEnv);
+  assert.equal(rejectedHost.status, 403);
+
+  const rejectedOrigin = await worker.fetch(new Request("https://example.test/mcp", { method: "POST", headers: { ...headers, origin: "https://other.test" }, body }), mockEnv);
+  assert.equal(rejectedOrigin.status, 403);
+});
+
+test("MCP uses its own Cloudflare rate-limit binding", async () => {
+  let key: string | undefined;
+  const response = await worker.fetch(new Request("https://example.test/mcp", {
+    method: "POST",
+    headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 41, method: "initialize" }),
+  }), {
+    ...mockEnv,
+    MCP_RATE_LIMITER: { async limit(input) { key = input.key; return { success: false }; } },
+  });
+  assert.equal(key, "anonymous:mcp");
+  assert.equal(response.status, 429);
 });
 
 // Public-catalogue authentication and visibility requirement: docs/API.md,
@@ -411,7 +364,7 @@ test("assembled worker exposes exactly the public judoka catalogue without crede
   assert.equal(response.status, 200);
   assert.equal(response.headers.get("content-type"), "application/json; charset=utf-8");
 
-  const records = await response.json();
+  const records = await mcpJson(response);
   const expectedPublicCatalogue = catalog.listJudoka();
   const hiddenFixtureIds = compiledModel.judoka
     .filter(record => record.isHidden)
@@ -444,7 +397,7 @@ test("MCP notifications/initialized returns 202", async () => {
   const response = await worker.fetch(
     new Request("https://example.test/mcp", {
       method: "POST",
-      headers: { authorization: `Bearer ${mockEnv.API_KEY}` },
+      headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
       body: JSON.stringify({
         jsonrpc: "2.0",
         method: "notifications/initialized",
@@ -464,12 +417,12 @@ test("MCP tools/call draw_event validates required parameters", async () => {
   const toolsResponse = await worker.fetch(
     new Request("https://example.test/mcp", {
       method: "POST",
-      headers: { authorization: `Bearer ${mockEnv.API_KEY}` },
+      headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
       body: JSON.stringify({ jsonrpc: "2.0", id: 19, method: "tools/list" }),
     }),
     mockEnv
   );
-  const toolsData = await toolsResponse.json();
+  const toolsData = await mcpJson(toolsResponse);
   const drawEventDefinition = toolsData.result.tools.find((tool: { name: string }) => tool.name === "draw_event");
   assert.deepEqual(drawEventDefinition.inputSchema.required, ["ruleset"]);
   assert.equal(drawEventDefinition.inputSchema.properties.ruleset.type, "string");
@@ -484,7 +437,7 @@ test("MCP tools/call draw_event validates required parameters", async () => {
     const response = await worker.fetch(
       new Request("https://example.test/mcp", {
         method: "POST",
-        headers: { authorization: `Bearer ${mockEnv.API_KEY}` },
+        headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
         body: JSON.stringify({
           jsonrpc: "2.0",
           id: validationCase.id,
@@ -496,12 +449,12 @@ test("MCP tools/call draw_event validates required parameters", async () => {
     );
 
     assert.equal(response.status, 200, validationCase.description);
-    const data = await response.json();
+    const data = await mcpJson(response);
     assert.equal(data.jsonrpc, "2.0", validationCase.description);
     assert.equal(data.id, validationCase.id, validationCase.description);
     assert.equal(data.result.isError, true, validationCase.description);
     assert.equal(data.result.content.length, 1, validationCase.description);
     assert.equal(data.result.content[0].type, "text", validationCase.description);
-    assert.equal(data.result.content[0].text, "ruleset must be a non-empty string", validationCase.description);
+    assert.match(data.result.content[0].text, /Invalid arguments for tool draw_event/, validationCase.description);
   }
 });

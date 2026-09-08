@@ -251,29 +251,29 @@ regenerate the compiled dataset with `npm run build:data`.
 ### Cloudflare Worker deployment
 
 The included Worker exposes the public catalogue REST service at `/v1/*` and a
-separately API-key-protected remote MCP server at `/mcp`. Browser games must
+separately API-key-protected Streamable HTTP MCP server at `/mcp`. Browser games must
 use REST only; never embed `API_KEY` or `INTERNAL_API_KEY` in browser code.
 
 #### MCP authentication and allowed methods
 
-The `/mcp` endpoint accepts authenticated `POST` requests only. Supply the MCP
+The `/mcp` endpoint is served by the official MCP TypeScript SDK and accepts authenticated `POST` requests. Supply the MCP
 key using either `X-API-Key: <key>` or `Authorization: Bearer <key>`. Send
 exactly one of these credential headers: requests containing both are rejected,
 even when the two values are identical.
 
-An unauthenticated request receives a JSON `401` response with the stable error
-code `unauthorized`; the response does not disclose which methods the protected
-endpoint accepts. An authenticated request using a method other than `POST`
-receives a JSON `405` response with the stable error code
-`method_not_allowed` and an `Allow: POST` header.
+Set `MCP_ALLOWED_HOSTNAMES` to a comma-separated list of Worker or custom-domain
+hostnames (without scheme or path). The Worker validates `Host` and browser
+`Origin` before passing the request to the SDK. An unauthenticated request
+receives a JSON `401`; the response does not disclose endpoint methods. Other
+protocol and method errors use the SDK's standard JSON-RPC responses.
 
 #### Worker documentation security requirements
 
 The `/docs` response must be served as `text/html; charset=utf-8` with
 `X-Content-Type-Options: nosniff`. Its Content Security Policy must contain
 exactly these directives and source sets: `default-src 'none'`;
-`script-src 'self' 'unsafe-inline' https://unpkg.com`; `style-src 'self'
-'unsafe-inline' https://unpkg.com`; `img-src 'self' data: https:`;
+`script-src 'self' 'unsafe-inline'`; `style-src 'self' 'unsafe-inline'`;
+`img-src 'self' data: https:`;
 `connect-src 'self'`; `base-uri 'none'`; and `frame-ancestors 'none'`. Changes
 to the documentation renderer or its external assets must update this policy
 and its discovery test together.
@@ -283,6 +283,7 @@ Cloudflare configuration (once per account):
 ```sh
 npx wrangler login
 npx wrangler secret put API_KEY
+npx wrangler secret put MCP_ALLOWED_HOSTNAMES
 # Optional: a separate key for hidden records only.
 npx wrangler secret put INTERNAL_API_KEY
 npm run deploy
@@ -291,9 +292,9 @@ npm run deploy
 `PUBLIC_ALLOWED_ORIGINS` is a non-secret Worker variable. It is `*` by default
 because the non-hidden catalogue is intentionally public; replace it with a
 comma-separated list of exact origins to restrict browser reads. The deployed
-Worker also applies a best-effort Cloudflare rate limit of 120 requests per
-minute per client IP and route. Use Workers Logs or Analytics Engine to monitor
-429 responses and adjust it for actual game traffic.
+Worker applies a Cloudflare rate limit of 120 requests per minute per client IP
+and REST route, plus a separate 30-per-minute MCP limit. Use Workers Logs or
+Analytics Engine to monitor 429 responses and adjust them for actual game traffic.
 
 The deployed endpoint can be `https://budokon.<your-subdomain>.workers.dev` or
 an HTTPS custom-domain origin. For GitHub deployments, add repository secrets
