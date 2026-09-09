@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 const workflowRelativePath = ".github/workflows/deploy-cloudflare.yml";
 const packageRelativePath = "package.json";
 const requiredScriptNames = ["validate:deployment-target", "smoke:deployment"] as const;
-const releaseWorkflowRelativePath = ".github/workflows/release.yml";
+const releaseWorkflowRelativePath = ".github/workflows/dataset-release.yml";
 export const requiredReleaseArtifacts = [
   "budokon.json",
   "countries.json",
@@ -108,7 +108,7 @@ export async function checkDeploymentReleaseArtifacts(repositoryRoot: string): P
   if (!releaseJob) {
     throw new DeploymentWorkflowValidationError(
       "missing-artifact-check",
-      "Release job not found in release.yml",
+      `Release job not found in ${path.basename(releasePath)}`,
       { workflowPath: releasePath },
     );
   }
