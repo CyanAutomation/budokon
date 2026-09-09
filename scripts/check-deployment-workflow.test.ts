@@ -146,7 +146,7 @@ async function createArtifactWorkflowFixture(
   t.after(() => rm(repositoryRoot, { recursive: true, force: true }));
   await mkdir(path.join(repositoryRoot, ".github/workflows"), { recursive: true });
   await writeFile(path.join(repositoryRoot, ".github/workflows/deploy-cloudflare.yml"), deploymentWorkflow);
-  await writeFile(path.join(repositoryRoot, ".github/workflows/release.yml"), releaseWorkflow);
+  await writeFile(path.join(repositoryRoot, ".github/workflows/dataset-release.yml"), releaseWorkflow);
   return repositoryRoot;
 }
 
@@ -190,6 +190,8 @@ test("reports a validation error when the release job is missing", async t => {
     assert.ok(error instanceof DeploymentWorkflowValidationError);
     assert.equal(error.code, "missing-artifact-check");
     assert.match(error.message, /job release/);
+    assert.match(error.message, /dataset-release\.yml/);
+    assert.doesNotMatch(error.message, /(?:^|\/)release\.yml/);
     return true;
   });
 });
