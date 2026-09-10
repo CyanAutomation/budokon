@@ -27,6 +27,14 @@ async function mcpJson(response: Response) {
   return JSON.parse(payload ?? "");
 }
 
+async function successfulMcpToolJson(response: Response) {
+  assert.equal(response.status, 200);
+  const data = await mcpJson(response);
+  assert.equal(data.result.isError, undefined);
+  assert.equal(data.result.content[0].type, "text");
+  return JSON.parse(data.result.content[0].text);
+}
+
 /**
  * Test MCP protocol initialization and tool listing.
  */
@@ -95,9 +103,9 @@ test("MCP tools/list returns all available tools with schemas", async () => {
 });
 
 /**
- * Test MCP tool call - get_judoka.
+ * Public get_judoka tool contract: docs/API.md#MCP-tools.
  */
-test("MCP tools/call get_judoka returns valid MCP response", async () => {
+test("MCP tools/call get_judoka returns the requested public judoka", async () => {
   const judoka = catalog.listJudoka()[0];
   if (!judoka) throw new Error("No judoka in test data");
 
@@ -115,16 +123,12 @@ test("MCP tools/call get_judoka returns valid MCP response", async () => {
     mockEnv
   );
 
-  assert.equal(response.status, 200);
-  const data = await mcpJson(response);
-  assert.equal(data.jsonrpc, "2.0");
-  assert.equal(data.id, 3);
-  assert.ok(data.result);
-  assert.ok(data.result.content);
-  assert.ok(Array.isArray(data.result.content));
-  assert.ok(data.result.content.length > 0);
-  assert.equal(data.result.content[0].type, "text");
-  assert.ok(typeof data.result.content[0].text === "string");
+  const result = await successfulMcpToolJson(response);
+  assert.equal(result.datasetVersion, compiledModel.datasetVersion);
+  assert.ok(result.judoka, "get_judoka must return a judoka when valid id is provided");
+  assert.equal(result.datasetVersion, compiledModel.datasetVersion);
+  assert.equal(result.judoka.id, judoka.id, "get_judoka must return the exact requested fixture");
+  assert.deepEqual(result.judoka, judoka, "get_judoka must expose the fixture's public fields and values");
 });
 
 /**
@@ -145,14 +149,9 @@ test("MCP tools/call search_judoka returns valid MCP response", async () => {
     mockEnv
   );
 
-  assert.equal(response.status, 200);
-  const data = await mcpJson(response);
-  assert.equal(data.result.isError, undefined); // Success
-  assert.ok(data.result.content);
-  assert.ok(Array.isArray(data.result.content));
-  assert.ok(data.result.content.length > 0);
-  assert.equal(data.result.content[0].type, "text");
-  assert.ok(typeof data.result.content[0].text === "string");
+  const result = await successfulMcpToolJson(response);
+  assert.ok(result.judoka, "search_judoka must return a judoka field");
+  assert.ok(Array.isArray(result.judoka));
 });
 
 /**
@@ -186,10 +185,10 @@ test("MCP tools/call draw_judoka performs deterministic draw with seed", async (
 });
 
 /**
- * Test the MCP envelope for the version endpoint's release-identity response.
+ * Test the version endpoint's release-identity response over shared MCP transport.
  * Exact release metadata is covered by the application-service contract test.
  */
-test("MCP tools/call version wraps the release identity in a valid JSON-RPC response", async () => {
+test("MCP tools/call version returns the release identity over the shared tool transport", async () => {
   const response = await worker.fetch(
     new Request("https://example.test/mcp", {
       method: "POST",
@@ -204,13 +203,8 @@ test("MCP tools/call version wraps the release identity in a valid JSON-RPC resp
     mockEnv
   );
 
-  assert.equal(response.status, 200);
-  const data = await mcpJson(response);
-  assert.equal(data.jsonrpc, "2.0");
-  assert.equal(data.id, 6);
-  assert.equal(data.result.isError, undefined);
-  assert.equal(data.result.content[0].type, "text");
-  assert.doesNotThrow(() => JSON.parse(data.result.content[0].text));
+  const result = await successfulMcpToolJson(response);
+  assert.equal(typeof result.datasetVersion, "string");
 });
 
 /**
