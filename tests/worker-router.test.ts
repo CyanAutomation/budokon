@@ -220,21 +220,52 @@ test("MCP parse error on malformed JSON", async () => {
 });
 
 /**
- * Test MCP error handling - invalid request.
+ * MCP messages use JSON-RPC 2.0 request objects, whose `jsonrpc` and `method`
+ * members are required. Invalid requests use -32600, and an unidentifiable
+ * request ID is represented by null in the error response.
+ * @see https://modelcontextprotocol.io/specification/2025-06-18/basic#messages
+ * @see https://www.jsonrpc.org/specification#request_object
  */
-test("MCP invalid request missing required fields", async () => {
-  const response = await worker.fetch(
-    new Request("https://example.test/mcp", {
-      method: "POST",
-      headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
-      body: JSON.stringify({ jsonrpc: "1.0", id: 10 }), // missing method
-    }),
-    mockEnv
-  );
+test("MCP rejects each malformed JSON-RPC envelope property independently", async () => {
+  const cases = [
+    {
+      description: "missing method",
+      body: { jsonrpc: "2.0", id: 10 },
+      responseId: null,
+    },
+    {
+      description: "unsupported jsonrpc version",
+      body: { jsonrpc: "1.0", id: 11, method: "tools/list" },
+      responseId: 11,
+    },
+    {
+      description: "missing required jsonrpc version",
+      body: { id: 12, method: "tools/list" },
+      responseId: 12,
+    },
+  ] as const;
 
-  assert.equal(response.status, 400);
-  const data = await mcpJson(response);
-  assert.ok(data.error);
+  for (const invalidCase of cases) {
+    const response = await worker.fetch(
+      new Request("https://example.test/mcp", {
+        method: "POST",
+        headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
+        body: JSON.stringify(invalidCase.body),
+      }),
+      mockEnv
+    );
+
+    assert.equal(response.status, 400, invalidCase.description);
+    const data = await mcpJson(response);
+    assert.equal(data.jsonrpc, "2.0", invalidCase.description);
+    assert.equal(data.error.code, -32600, invalidCase.description);
+    assert.equal(data.id, invalidCase.responseId, invalidCase.description);
+    assert.equal(
+      data.error.message,
+      "Bad Request: the request body is not a valid JSON-RPC message",
+      invalidCase.description,
+    );
+  }
 });
 
 /**
