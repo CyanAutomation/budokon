@@ -124,7 +124,6 @@ test("MCP tools/call get_judoka returns the requested public judoka", async () =
   );
 
   const result = await successfulMcpToolJson(response);
-  assert.equal(result.datasetVersion, compiledModel.datasetVersion);
   assert.ok(result.judoka, "get_judoka must return a judoka when valid id is provided");
   assert.equal(result.datasetVersion, compiledModel.datasetVersion);
   assert.equal(result.judoka.id, judoka.id, "get_judoka must return the exact requested fixture");
