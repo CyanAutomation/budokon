@@ -49,3 +49,12 @@ should treat unknown response fields and enum values as forward-compatible.
 The exact release behind a response is available from `/v1/version` and
 `/v1/status`, including dataset version, source commit, checksum, and draw
 algorithm identifiers.
+
+## MCP tools
+
+The public `get_judoka` MCP tool accepts an immutable judoka `id` or `slug` in
+an `id` argument. Its text content is JSON with the shape
+`{ "datasetVersion": string, "judoka": Judoka | null }`. When a public record
+matches, `judoka` is the same public canonical record exposed by the REST
+catalogue, including its `id`, `slug`, name, classification, biography, stats,
+and signature-move fields. The value is `null` when no public record matches.
