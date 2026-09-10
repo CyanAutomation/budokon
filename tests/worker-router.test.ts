@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { CatalogService, DrawService, EventDrawService, JsonReadModelRepository } from "../build/runtime/index.js";
+import { DRAW_ALGORITHM } from "../build/runtime/draw/draw-service.js";
 import { createWorker } from "../worker/router.js";
 import type { Env } from "../worker/router.js";
 import compiledModel from "./fixtures/compiled-model.js";
@@ -103,54 +104,71 @@ test("MCP tools/list returns all available tools with schemas", async () => {
 });
 
 /**
- * Public get_judoka tool contract: docs/API.md#MCP-tools.
+ * Public tool result contracts: docs/API.md#MCP-tools. Search semantics are
+ * exercised in detail by the conformance test in application-services.test.ts.
  */
-test("MCP tools/call get_judoka returns the requested public judoka", async () => {
+test("MCP tools/call dispatches by tool name and serializes results as text content", async () => {
   const judoka = catalog.listJudoka()[0];
   if (!judoka) throw new Error("No judoka in test data");
 
-  const response = await worker.fetch(
-    new Request("https://example.test/mcp", {
-      method: "POST",
-      headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 3,
-        method: "tools/call",
-        params: { name: "get_judoka", arguments: { id: judoka.id } },
+  const shozoId = "57a86958-73c3-4dd3-b8b8-f0bbaab58b67";
+  const shozo = catalog.getJudoka(shozoId);
+  if (!shozo) throw new Error("Shozo fixture is missing");
+
+  const cases = [
+    {
+      id: 3,
+      name: "get_judoka",
+      arguments: { id: judoka.id },
+      expected: { datasetVersion: compiledModel.datasetVersion, judoka },
+    },
+    {
+      id: 4,
+      name: "search_judoka",
+      arguments: { query: "shozo" },
+      expected: { datasetVersion: compiledModel.datasetVersion, judoka: [shozo] },
+      expectedJudokaIds: [shozoId],
+    },
+    {
+      id: 6,
+      name: "version",
+      arguments: {},
+      expected: {
+        datasetVersion: repository.datasetVersion,
+        serviceVersion: repository.serviceVersion,
+        sourceGitCommit: repository.sourceGitCommit,
+        datasetChecksum: repository.datasetChecksum,
+        drawAlgorithms: [DRAW_ALGORITHM],
+        defaultDrawAlgorithm: DRAW_ALGORITHM,
+      },
+    },
+  ] as const;
+
+  for (const toolCase of cases) {
+    const response = await worker.fetch(
+      new Request("https://example.test/mcp", {
+        method: "POST",
+        headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: toolCase.id,
+          method: "tools/call",
+          params: { name: toolCase.name, arguments: toolCase.arguments },
+        }),
       }),
-    }),
-    mockEnv
-  );
+      mockEnv
+    );
 
-  const result = await successfulMcpToolJson(response);
-  assert.ok(result.judoka, "get_judoka must return a judoka when valid id is provided");
-  assert.equal(result.datasetVersion, compiledModel.datasetVersion);
-  assert.equal(result.judoka.id, judoka.id, "get_judoka must return the exact requested fixture");
-  assert.deepEqual(result.judoka, judoka, "get_judoka must expose the fixture's public fields and values");
-});
-
-/**
- * Test MCP tool call - search_judoka.
- */
-test("MCP tools/call search_judoka returns valid MCP response", async () => {
-  const response = await worker.fetch(
-    new Request("https://example.test/mcp", {
-      method: "POST",
-      headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 4,
-        method: "tools/call",
-        params: { name: "search_judoka", arguments: { query: "shozo" } },
-      }),
-    }),
-    mockEnv
-  );
-
-  const result = await successfulMcpToolJson(response);
-  assert.ok(result.judoka, "search_judoka must return a judoka field");
-  assert.ok(Array.isArray(result.judoka));
+    const result = await successfulMcpToolJson(response);
+    assert.deepEqual(result, toolCase.expected, `${toolCase.name} must serialize its exact application result`);
+    if ("expectedJudokaIds" in toolCase) {
+      assert.deepEqual(
+        result.judoka.map((record: { id: string }) => record.id),
+        toolCase.expectedJudokaIds,
+        "search_judoka must return only the matching public fixture IDs",
+      );
+    }
+  }
 });
 
 /**
@@ -181,29 +199,6 @@ test("MCP tools/call draw_judoka performs deterministic draw with seed", async (
   assert.ok(Array.isArray(result.judoka));
   assert.equal(result.judoka.length, 1);
   assert.ok(result.seed);
-});
-
-/**
- * Test the version endpoint's release-identity response over shared MCP transport.
- * Exact release metadata is covered by the application-service contract test.
- */
-test("MCP tools/call version returns the release identity over the shared tool transport", async () => {
-  const response = await worker.fetch(
-    new Request("https://example.test/mcp", {
-      method: "POST",
-      headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 6,
-        method: "tools/call",
-        params: { name: "version", arguments: {} },
-      }),
-    }),
-    mockEnv
-  );
-
-  const result = await successfulMcpToolJson(response);
-  assert.equal(typeof result.datasetVersion, "string");
 });
 
 /**
