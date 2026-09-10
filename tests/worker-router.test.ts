@@ -148,6 +148,7 @@ test("MCP tools/call search_judoka returns valid MCP response", async () => {
   );
 
   const result = await successfulMcpToolJson(response);
+  assert.ok(result.judoka, "search_judoka must return a judoka field");
   assert.ok(Array.isArray(result.judoka));
 });
 
