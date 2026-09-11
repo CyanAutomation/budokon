@@ -162,6 +162,7 @@ test("MCP tools/call dispatches by tool name and serializes results as text cont
     const result = await successfulMcpToolJson(response);
     assert.deepEqual(result, toolCase.expected, `${toolCase.name} must serialize its exact application result`);
     if ("expectedJudokaIds" in toolCase) {
+      assert.ok("judoka" in result && Array.isArray(result.judoka));
       assert.deepEqual(
         result.judoka.map((record: { id: string }) => record.id),
         toolCase.expectedJudokaIds,
@@ -172,10 +173,14 @@ test("MCP tools/call dispatches by tool name and serializes results as text cont
 });
 
 /**
- * Test MCP tool call - draw_judoka.
+ * This test is limited to the worker's MCP transport serialization. The draw
+ * contract and its golden selections are covered by draw-v1-golden.test.ts;
+ * REST/MCP application-adapter equivalence is covered by
+ * application-services.test.ts.
  */
 test("MCP tools/call draw_judoka performs deterministic draw with seed", async () => {
-  const response = await worker.fetch(
+  const input = { count: 1, seed: "test-seed" };
+  const callDrawJudoka = () => worker.fetch(
     new Request("https://example.test/mcp", {
       method: "POST",
       headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
@@ -185,20 +190,32 @@ test("MCP tools/call draw_judoka performs deterministic draw with seed", async (
         method: "tools/call",
         params: {
           name: "draw_judoka",
-          arguments: { count: 1, seed: "test-seed" },
+          arguments: input,
         },
       }),
     }),
     mockEnv
   );
 
-  assert.equal(response.status, 200);
-  const data = await mcpJson(response);
-  const result = JSON.parse(data.result.content[0].text);
-  assert.ok(result.judoka);
-  assert.ok(Array.isArray(result.judoka));
-  assert.equal(result.judoka.length, 1);
-  assert.ok(result.seed);
+  const [firstResult, secondResult] = await Promise.all([
+    callDrawJudoka().then(successfulMcpToolJson),
+    callDrawJudoka().then(successfulMcpToolJson),
+  ]);
+  const restResponse = await worker.fetch(
+    new Request("https://example.test/v1/draw", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(input),
+    }),
+    mockEnv,
+  );
+  assert.equal(restResponse.status, 200);
+  const restResult = await restResponse.json() as { judoka: unknown[] };
+
+  assert.equal(JSON.stringify(firstResult), JSON.stringify(secondResult));
+  assert.equal(firstResult.seed, "test-seed");
+  assert.equal(firstResult.algorithm, DRAW_ALGORITHM);
+  assert.deepEqual(firstResult.judoka, restResult.judoka);
 });
 
 /**
