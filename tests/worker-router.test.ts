@@ -162,9 +162,10 @@ test("MCP tools/call dispatches by tool name and serializes results as text cont
     const result = await successfulMcpToolJson(response);
     assert.deepEqual(result, toolCase.expected, `${toolCase.name} must serialize its exact application result`);
     if ("expectedJudokaIds" in toolCase) {
-      assert.ok("judoka" in result && Array.isArray(result.judoka));
+      const resultJudoka = "judoka" in result ? result.judoka : undefined;
+      assert.ok(Array.isArray(resultJudoka), `${toolCase.name} must return a judoka array`);
       assert.deepEqual(
-        result.judoka.map((record: { id: string }) => record.id),
+        resultJudoka.map((record: { id: string }) => record.id),
         toolCase.expectedJudokaIds,
         "search_judoka must return only the matching public fixture IDs",
       );
