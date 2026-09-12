@@ -297,6 +297,8 @@ test("MCP rejects each malformed JSON-RPC envelope property independently", asyn
 
 /**
  * Test MCP error handling - method not found.
+ * Protocol-level errors such as an unknown tool are returned as JSON-RPC errors.
+ * @see https://modelcontextprotocol.io/specification/2025-06-18/server/tools#error-handling
  */
 test("MCP method not found for unknown tool", async () => {
   const response = await worker.fetch(
@@ -307,15 +309,21 @@ test("MCP method not found for unknown tool", async () => {
         jsonrpc: "2.0",
         id: 11,
         method: "tools/call",
-        params: { name: "unknown_tool" },
+        params: { name: "unknown_tool", arguments: {} },
       }),
     }),
     mockEnv
   );
 
   assert.equal(response.status, 200);
-  const data = await mcpJson(response);
-  assert.ok(data.error, "the SDK returns a JSON-RPC method-not-found error");
+  assert.deepEqual(await mcpJson(response), {
+    jsonrpc: "2.0",
+    id: 11,
+    error: {
+      code: -32602,
+      message: "Tool unknown_tool not found",
+    },
+  });
 });
 
 /**
