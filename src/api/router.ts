@@ -50,7 +50,8 @@ type ErrorCode = "bad_request" | "forbidden" | "not_found" | "method_not_allowed
 const json = (body: unknown, status = 200, headers: HeadersInit = {}) => new Response(JSON.stringify(body), {
   status, headers: { "content-type": "application/json; charset=utf-8", ...headers }
 });
-const failure = (status: number, code: ErrorCode, message: string) => json({ error: { code, message } }, status);
+const failure = (status: number, code: ErrorCode, message: string, headers: HeadersInit = {}) => json({ error: { code, message } }, status, headers);
+const methodNotAllowed = (allow: "GET" | "POST") => failure(405, "method_not_allowed", "method not allowed", { allow });
 const badRequest = (message: string) => failure(400, "bad_request", message);
 
 function paginate<T extends { id: string }>(records: T[], limit: number | undefined, cursor: string | undefined) {
@@ -128,7 +129,7 @@ export function createRestRouter({ catalog, draw, eventDraw }: { catalog: RestCa
         if (id === "draw" && request.method === "POST") {
           return await eventsDrawHandler(context, request, eventDraw);
         }
-        if (id === "draw") return failure(405, "method_not_allowed", "method not allowed");
+        if (id === "draw") return methodNotAllowed("POST");
         if (request.method === "GET") {
           return id !== undefined
             ? await eventsGetHandler(context, url, id, catalog)
@@ -143,8 +144,11 @@ export function createRestRouter({ catalog, draw, eventDraw }: { catalog: RestCa
       if (resource === "draw" && request.method === "POST" && id === undefined) {
         return await drawHandler(context, request, draw, authorizedInternal);
       }
-      const known = new Set(["judoka", "techniques", "events", "countries", "weight-categories", "draw", "version", "status", "coverage"]);
-      return known.has(resource ?? "") ? failure(405, "method_not_allowed", "method not allowed") : failure(404, "not_found", "route not found");
+      const collectionRoute = resource === "judoka" || resource === "techniques" || resource === "events";
+      const getSingletonRoute = id === undefined && ["countries", "weight-categories", "version", "status", "coverage"].includes(resource ?? "");
+      if (collectionRoute || getSingletonRoute) return methodNotAllowed("GET");
+      if (resource === "draw" && id === undefined) return methodNotAllowed("POST");
+      return failure(404, "not_found", "route not found");
     } catch (error) {
       const expectedInputError = error instanceof Error && /^(unsupported (query parameter|body field|filter|draw algorithm)|filter .+ must |includeHidden must |q must |limit must |cursor (must|requires) |content-type must |request body |count must |seed must |algorithm must |ruleset must |category must |exclude must )/.test(error.message);
       if (expectedInputError) return badRequest(error.message);
