@@ -4,30 +4,9 @@ on:
   schedule:
     - cron: "0 6 * * 1"
   workflow_dispatch:
-    inputs:
-      ref:
-        description: Git ref to inspect
-        required: true
-        default: main
-        type: string
-      task_description:
-        description: What Kaseki should do
-        required: true
-        default: Keep README.md and docs/ accurate against the current implementation.
-        type: string
-      allowlist:
-        description: Permitted changed-file patterns, comma-separated
-        required: true
-        default: README.md,docs/**/*.md
-        type: string
-      validation_command:
-        description: Validation command to run (leave blank for none)
-        required: false
-        default: npm run check
-        type: string
 
 run-name: >-
-  Docs sweep · ${{ github.repository }}@${{ inputs.ref }}
+  Docs sweep · ${{ github.repository }}@${{ github.event.repository.default_branch }}
 
 permissions:
   contents: read
@@ -85,6 +64,9 @@ jobs:
     needs: readiness
     runs-on: ubuntu-latest
     timeout-minutes: 2
+    environment:
+      name: kaseki-docs
+      deployment: false
     env:
       KASEKI_BASE_URL: ${{ vars.KASEKI_BASE_URL || 'https://kaseki-tunnel.scheimann.xyz' }}
       KASEKI_API_TOKEN: ${{ secrets.KASEKI_API_TOKEN }}
@@ -111,18 +93,32 @@ jobs:
     needs: api_connection
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    environment:
+      # Store KASEKI_API_TOKEN as an environment secret and restrict this
+      # environment to the default branch in repository settings.
+      name: kaseki-docs
+      deployment: false
     env:
       # Create this as a repository or organization Actions variable.
       KASEKI_BASE_URL: ${{ vars.KASEKI_BASE_URL || 'https://kaseki-tunnel.scheimann.xyz' }}
 
       # Automatically targets the repository containing this workflow.
       REPO_URL: ${{ github.server_url }}/${{ github.repository }}
-      REF: ${{ inputs.ref }}
-      TASK_DESCRIPTION: ${{ inputs.task_description }}
-      ALLOWLIST: ${{ inputs.allowlist }}
-      VALIDATION_COMMAND: ${{ inputs.validation_command }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+      REF: ${{ github.event.repository.default_branch }}
+      TASK_DESCRIPTION: Keep README.md and docs/ accurate against the current implementation.
+      ALLOWLIST: README.md,docs/**/*.md
+      VALIDATION_COMMAND: npm run check
 
     steps:
+      - name: Restrict the sweep to the default branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$REF" = "$DEFAULT_BRANCH"
+          test "$ALLOWLIST" = "README.md,docs/**/*.md"
+          test "$VALIDATION_COMMAND" = "npm run check"
+
       - name: Check Kaseki availability
         run: |
           curl --fail --silent --show-error --max-time 20 \
