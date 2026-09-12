@@ -460,18 +460,6 @@ test("assembled worker exposes exactly the public judoka catalogue without crede
 });
 
 /**
- * Test worker CORS - OPTIONS request for non-REST endpoint returns 405.
- */
-test("OPTIONS request for non-REST endpoint returns 405", async () => {
-  const response = await worker.fetch(
-    new Request("https://example.test/unknown", { method: "OPTIONS" }),
-    mockEnv
-  );
-
-  assert.equal(response.status, 405);
-});
-
-/**
  * Test MCP notifications/initialized.
  */
 test("MCP notifications/initialized returns 202", async () => {

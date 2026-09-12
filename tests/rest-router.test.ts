@@ -4,6 +4,7 @@ import {
   CatalogService, DrawService, JsonReadModelRepository, createRestRouter, summarizeCoverage,
   type CoverageResponse, type Judoka, type RestCatalogDependency, type RestDrawDependency
 } from "../build/runtime/index.js";
+import { createWorker, type Env } from "../worker/router.js";
 import compiledModel from "./fixtures/compiled-model.js";
 
 const repository = new JsonReadModelRepository(compiledModel);
@@ -151,21 +152,70 @@ test("draw succeeds and impossible counts have the documented conflict response"
   assert.equal(response.status, 409); assert.deepEqual(await body(response), { error: { code: "conflict", message: "requested count exceeds the eligible pool" } });
 });
 
-test("missing resources, unsupported input, methods, and unexpected failures are stable", async () => {
-  for (const [path, message] of [
-    ["/v1/judoka/missing", "judoka not found"],
-    ["/v1/collections", "route not found"],
-    ["/v1/unknown", "route not found"],
-  ]) {
-    const response = await request(path);
-    assert.equal(response.status, 404, path);
-    assert.equal(response.headers.get("content-type"), "application/json; charset=utf-8", path);
-    assert.deepEqual(await body(response), { error: { code: "not_found", message } }, path);
+/** Routing and CORS contract: docs/API.md#routing-errors-and-cors. */
+test("unknown routes and unsupported methods have distinct routing contracts", async () => {
+  const env: Env = {
+    API_KEY: "test-api-key",
+    MCP_ALLOWED_HOSTNAMES: "example.test",
+    PUBLIC_ALLOWED_ORIGINS: "https://game.example",
+  };
+  const worker = createWorker("openapi: 3.0.0");
+  const cases = [
+    {
+      name: "unknown REST route",
+      path: "/v1/unknown",
+      method: "GET",
+      status: 404,
+      contentType: "application/json; charset=utf-8",
+      responseBody: JSON.stringify({ error: { code: "not_found", message: "route not found" } }),
+      corsOrigin: "https://game.example",
+      allow: null,
+    },
+    {
+      name: "unsupported method on known REST route",
+      path: "/v1/version",
+      method: "POST",
+      status: 405,
+      contentType: "application/json; charset=utf-8",
+      responseBody: JSON.stringify({ error: { code: "method_not_allowed", message: "method not allowed" } }),
+      corsOrigin: "https://game.example",
+      allow: "GET",
+    },
+    {
+      name: "OPTIONS request outside the REST namespace",
+      path: "/unknown",
+      method: "OPTIONS",
+      status: 405,
+      contentType: null,
+      responseBody: "",
+      corsOrigin: null,
+      allow: "POST",
+    },
+  ] as const;
+
+  for (const routeCase of cases) {
+    await test(routeCase.name, async () => {
+      const response = await worker.fetch(new Request(`https://example.test${routeCase.path}`, {
+        method: routeCase.method,
+        headers: { origin: "https://game.example" },
+      }), env);
+      assert.equal(response.status, routeCase.status);
+      assert.equal(response.headers.get("content-type"), routeCase.contentType);
+      assert.equal(await response.text(), routeCase.responseBody);
+      assert.equal(response.headers.get("access-control-allow-origin"), routeCase.corsOrigin);
+      assert.equal(response.headers.get("allow"), routeCase.allow);
+    });
   }
+});
+
+test("missing resources, unsupported input, and unexpected failures are stable", async () => {
+  const missingResponse = await request("/v1/judoka/missing");
+  assert.equal(missingResponse.status, 404);
+  assert.equal(missingResponse.headers.get("content-type"), "application/json; charset=utf-8");
+  assert.deepEqual(await body(missingResponse), { error: { code: "not_found", message: "judoka not found" } });
   assert.equal((await request("/v1/judoka?unknown=x")).status, 400);
   assert.equal((await request("/v1/judoka?collection=featured")).status, 400);
   assert.equal((await request("/v1/draw", { method: "POST", headers: { "content-type": "application/json" }, body: '{"collection":"featured"}' })).status, 400);
-  assert.equal((await request("/v1/version", { method: "POST" })).status, 405);
   const failingCatalog: RestCatalogDependency = {
     searchJudoka() { throw new Error("unexpected catalog call"); },
     getJudoka() { throw new Error("unexpected catalog call"); },
