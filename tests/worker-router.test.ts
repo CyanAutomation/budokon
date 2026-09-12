@@ -460,7 +460,11 @@ test("assembled worker exposes exactly the public judoka catalogue without crede
 });
 
 /**
- * Test MCP notifications/initialized.
+ * The initialized notification completes MCP initialization but, as a JSON-RPC
+ * notification, must not receive a JSON-RPC response. Budokon's tools are
+ * side-effect-free, so the absence of a response envelope is the observable
+ * assurance that this message was not dispatched as an unrelated tool call.
+ * @see https://modelcontextprotocol.io/specification/2025-06-18/basic/lifecycle#initialization
  */
 test("MCP notifications/initialized returns 202", async () => {
   const response = await worker.fetch(
@@ -476,6 +480,12 @@ test("MCP notifications/initialized returns 202", async () => {
   );
 
   assert.equal(response.status, 202);
+  assert.equal(response.headers.get("content-type"), null);
+
+  const body = await response.text();
+  assert.equal(body, "");
+  assert.equal(body.includes('"result"'), false, "notification must not return a JSON-RPC result envelope");
+  assert.equal(body.includes('"error"'), false, "notification must not return a JSON-RPC error envelope");
 });
 
 /**
