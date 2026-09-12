@@ -297,11 +297,13 @@ and REST route, plus a separate 30-per-minute MCP limit. Use Workers Logs or
 Analytics Engine to monitor 429 responses and adjust them for actual game traffic.
 
 The deployed endpoint can be `https://budokon.<your-subdomain>.workers.dev` or
-an HTTPS custom-domain origin. For GitHub deployments, add repository secrets
-`CLOUDFLARE_API_TOKEN` (a scoped Workers deployment token) and
-`CLOUDFLARE_ACCOUNT_ID`, plus the environment or repository variable
-`CLOUDFLARE_DEPLOYMENT_URL` containing that canonical origin (with no path), for
-example `https://budokon.<your-subdomain>.workers.dev`. Its workers.dev
+an HTTPS custom-domain origin. For GitHub deployments, create a protected
+`production` environment restricted to the `main` branch, and add its
+`CLOUDFLARE_API_TOKEN` (a scoped Workers deployment token),
+`CLOUDFLARE_ACCOUNT_ID` as environment secrets, and
+`CLOUDFLARE_DEPLOYMENT_URL` (the canonical origin with no path) as an
+environment variable, for example
+`https://budokon.<your-subdomain>.workers.dev`. Its workers.dev
 subdomain or custom-domain route must belong to the configured Cloudflare
 account and route to the production `name = "budokon"` Worker declared in
 `wrangler.toml`; the workflow verifies this through the Cloudflare API before
