@@ -27,6 +27,20 @@ All public GET responses include `ETag`. Send it as `If-None-Match` to receive
 `Retry-After` before retrying; that response also includes `RateLimit-Limit`
 and `RateLimit-Policy`.
 
+## Routing errors and CORS
+
+An unknown `/v1` route returns `404` with the JSON error envelope and no
+`Allow` header. An unsupported method on a known REST route instead returns
+`405` with error code `method_not_allowed`; its `Allow` header lists the method
+that route supports (`GET` or `POST`). Both responses include CORS headers when
+the request's `Origin` is configured in `PUBLIC_ALLOWED_ORIGINS`.
+
+`OPTIONS` is treated as CORS preflight only inside `/v1/`. Outside that
+namespace it returns an empty `405` response with `Allow: POST`, does not emit a
+content type, and does not emit REST CORS headers. This reserves non-REST POST
+routing for the MCP transport without exposing it through the public REST CORS
+policy.
+
 ## Data confidence
 
 Judoka can include legacy `sourceUrls` and/or structured `sources`. Structured
