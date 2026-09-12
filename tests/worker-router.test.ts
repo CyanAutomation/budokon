@@ -220,7 +220,12 @@ test("MCP tools/call draw_judoka performs deterministic draw with seed", async (
 });
 
 /**
- * Test MCP error handling - invalid JSON.
+ * MCP uses JSON-RPC's Parse error response for JSON that cannot be parsed. The
+ * response ID must be null because no request ID can be recovered. The detail
+ * after the standard public "Parse error" message is intentionally not tested:
+ * it is SDK-specific rather than part of the protocol contract.
+ * @see https://modelcontextprotocol.io/specification/2025-06-18/basic#messages
+ * @see https://www.jsonrpc.org/specification#response_object
  */
 test("MCP parse error on malformed JSON", async () => {
   const response = await worker.fetch(
@@ -233,8 +238,12 @@ test("MCP parse error on malformed JSON", async () => {
   );
 
   assert.equal(response.status, 400);
+  assert.equal(response.headers.get("content-type"), "application/json");
   const data = await mcpJson(response);
-  assert.ok(data.error);
+  assert.equal(data.jsonrpc, "2.0");
+  assert.equal(data.error.code, -32700);
+  assert.equal(data.id, null);
+  assert.match(data.error.message, /^Parse error(?:$|:)/);
 });
 
 /**
