@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { CatalogService, DrawService, EventDrawService, JsonReadModelRepository } from "../build/runtime/index.js";
 import { DRAW_ALGORITHM } from "../build/runtime/draw/draw-service.js";
+import { createMcpTools } from "../build/runtime/mcp/tools.js";
 import { createWorker } from "../worker/router.js";
 import type { Env } from "../worker/router.js";
 import compiledModel from "./fixtures/compiled-model.js";
@@ -129,19 +130,6 @@ test("MCP tools/call dispatches by tool name and serializes results as text cont
       expected: { datasetVersion: compiledModel.datasetVersion, judoka: [shozo] },
       expectedJudokaIds: [shozoId],
     },
-    {
-      id: 6,
-      name: "version",
-      arguments: {},
-      expected: {
-        datasetVersion: repository.datasetVersion,
-        serviceVersion: repository.serviceVersion,
-        sourceGitCommit: repository.sourceGitCommit,
-        datasetChecksum: repository.datasetChecksum,
-        drawAlgorithms: [DRAW_ALGORITHM],
-        defaultDrawAlgorithm: DRAW_ALGORITHM,
-      },
-    },
   ] as const;
 
   for (const toolCase of cases) {
@@ -171,6 +159,48 @@ test("MCP tools/call dispatches by tool name and serializes results as text cont
       );
     }
   }
+});
+
+/**
+ * Release-identity contract: application-services.test.ts, "version endpoint
+ * release identity matches repository metadata and the draw algorithm contract".
+ * This test adds only the MCP SDK's JSON-RPC and text-content serialization.
+ */
+test("MCP tools/call version wraps the release identity in a valid JSON-RPC response", async () => {
+  const response = await worker.fetch(
+    new Request("https://example.test/mcp", {
+      method: "POST",
+      headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 6,
+        method: "tools/call",
+        params: { name: "version", arguments: {} },
+      }),
+    }),
+    mockEnv,
+  );
+
+  assert.equal(response.status, 200);
+  const envelope = await mcpJson(response);
+  assert.equal(envelope.jsonrpc, "2.0");
+  assert.equal(envelope.id, 6);
+  assert.equal(envelope.result.isError, undefined);
+  assert.equal(envelope.result.content.length, 1);
+  assert.equal(envelope.result.content[0].type, "text");
+  assert.equal(typeof envelope.result.content[0].text, "string");
+
+  const releaseIdentity = JSON.parse(envelope.result.content[0].text);
+  assert.equal(typeof releaseIdentity.datasetVersion, "string");
+  assert.equal(typeof releaseIdentity.serviceVersion, "string");
+  assert.equal(typeof releaseIdentity.sourceGitCommit, "string");
+  assert.equal(typeof releaseIdentity.datasetChecksum, "string");
+  assert.ok(Array.isArray(releaseIdentity.drawAlgorithms));
+  assert.ok(releaseIdentity.drawAlgorithms.every((algorithm: unknown) => typeof algorithm === "string"));
+  assert.equal(typeof releaseIdentity.defaultDrawAlgorithm, "string");
+
+  const applicationVersion = createMcpTools({ catalog, draw, eventDraw }).version();
+  assert.deepEqual(releaseIdentity, applicationVersion);
 });
 
 /**
