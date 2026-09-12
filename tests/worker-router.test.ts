@@ -330,18 +330,30 @@ test("MCP method not found for unknown tool", async () => {
  * The protected endpoint does not disclose its allowed methods to unauthenticated callers.
  * @see ../README.md#mcp-authentication-and-allowed-methods
  */
-test("MCP GET rejects unauthenticated access without disclosing protected endpoint details", async () => {
-  const unauthenticatedResponse = await worker.fetch(
-    new Request("https://example.test/mcp", { method: "GET" }),
-    mockEnv
-  );
-
-  assert.equal(unauthenticatedResponse.status, 401);
-  assert.equal(unauthenticatedResponse.headers.get("content-type"), "application/json; charset=utf-8");
-  assert.equal(unauthenticatedResponse.headers.get("allow"), null);
-  assert.deepEqual(await mcpJson(unauthenticatedResponse), {
+test("MCP authentication boundary rejects unauthenticated GET and POST without disclosing protected endpoint details", async () => {
+  const cases = [
+    { method: "GET" },
+    {
+      method: "POST",
+      body: JSON.stringify({ jsonrpc: "2.0", method: "initialize" }),
+    },
+  ] as const;
+  const unauthorizedBody = JSON.stringify({
     error: { code: "unauthorized", message: "A valid API key is required" },
   });
+
+  for (const requestCase of cases) {
+    const unauthenticatedResponse = await worker.fetch(
+      new Request("https://example.test/mcp", requestCase),
+      mockEnv
+    );
+
+    assert.equal(unauthenticatedResponse.status, 401, requestCase.method);
+    assert.equal(unauthenticatedResponse.headers.get("www-authenticate"), "Bearer", requestCase.method);
+    assert.equal(unauthenticatedResponse.headers.get("content-type"), "application/json; charset=utf-8", requestCase.method);
+    assert.equal(unauthenticatedResponse.headers.get("allow"), null, requestCase.method);
+    assert.equal(await unauthenticatedResponse.text(), unauthorizedBody, requestCase.method);
+  }
 
   const authenticatedResponse = await worker.fetch(
     new Request("https://example.test/mcp", {
@@ -358,24 +370,6 @@ test("MCP GET rejects unauthenticated access without disclosing protected endpoi
   assert.equal(methodError.jsonrpc, "2.0");
   assert.equal(methodError.error.code, -32000);
   assert.equal(methodError.error.message, "Method not allowed.");
-});
-
-/**
- * Test worker authorization - MCP path requires API key.
- */
-test("MCP unauthorized when API key is missing", async () => {
-  const response = await worker.fetch(
-    new Request("https://example.test/mcp", {
-      method: "POST",
-      body: JSON.stringify({ jsonrpc: "2.0", method: "initialize" }),
-    }),
-    mockEnv
-  );
-
-  assert.equal(response.status, 401);
-  const data = await mcpJson(response);
-  assert.equal(data.error.code, "unauthorized");
-  assert.ok(data.error.message.includes("API key"));
 });
 
 test("MCP rejects an invalid API key before invoking the SDK handler", async () => {
