@@ -1,4 +1,4 @@
-[![Deploy Cloudflare Worker](https://github.com/CyanAutomation/budokon/actions/workflows/deploy-cloudflare.yml/badge.svg?branch=main)](https://github.com/CyanAutomation/budokon/actions/workflows/deploy-cloudflare.yml)
+[![Deploy Cloudflare Worker](https://github.com/CyanAutomation/budokon/actions/workflows/deploy-cloudflare.yml/badge.svg?branch=main)](https://github.com/CyanAutomation/budokon/actions/workflows/deploy-cloudflare.yml) [![.github/workflows/validate.yml](https://github.com/CyanAutomation/budokon/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/CyanAutomation/budokon/actions/workflows/validate.yml)
 
 I’ve updated the README to incorporate the architectural recommendations: TypeScript rather than plain JavaScript, Cloudflare/Vercel portability, compiled immutable runtime data, Web API–friendly core logic, bundled JSON as the initial runtime strategy, stronger deterministic draw guarantees, clearer separation of canonical/editing/build/runtime concerns, and delaying SQLite/D1 until justified.
 
