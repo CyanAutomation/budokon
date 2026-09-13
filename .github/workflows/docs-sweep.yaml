@@ -66,7 +66,6 @@ jobs:
     timeout-minutes: 2
     environment:
       name: kaseki-docs
-      deployment: false
     env:
       KASEKI_BASE_URL: ${{ vars.KASEKI_BASE_URL || 'https://kaseki-tunnel.scheimann.xyz' }}
       KASEKI_API_TOKEN: ${{ secrets.KASEKI_API_TOKEN }}
@@ -97,7 +96,6 @@ jobs:
       # Store KASEKI_API_TOKEN as an environment secret and restrict this
       # environment to the default branch in repository settings.
       name: kaseki-docs
-      deployment: false
     env:
       # Create this as a repository or organization Actions variable.
       KASEKI_BASE_URL: ${{ vars.KASEKI_BASE_URL || 'https://kaseki-tunnel.scheimann.xyz' }}
