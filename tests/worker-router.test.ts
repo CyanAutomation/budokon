@@ -483,6 +483,25 @@ test("assembled worker exposes exactly the public judoka catalogue without crede
   );
 });
 
+test("an authorized hidden-record representation cannot contaminate the public cache", async () => {
+  const url = "https://example.test/v1/judoka?includeHidden=true";
+  const internalResponse = await worker.fetch(new Request(url, {
+    headers: { authorization: `Bearer ${mockEnv.INTERNAL_API_KEY}` },
+  }), mockEnv);
+  assert.equal(internalResponse.status, 200);
+  assert.equal(internalResponse.headers.get("cache-control"), "private, no-store");
+  assert.equal(internalResponse.headers.get("etag"), null);
+  const internalRecords = await internalResponse.json() as Array<{ isHidden?: boolean }>;
+  assert.equal(internalRecords.some(record => record.isHidden === true), true);
+
+  const publicResponse = await worker.fetch(new Request(url), mockEnv);
+  assert.equal(publicResponse.status, 403);
+  assert.equal(publicResponse.headers.get("cache-control"), "private, no-store");
+  assert.equal(publicResponse.headers.get("etag"), null);
+  const publicBody = await publicResponse.json() as { error?: unknown; judoka?: Array<{ isHidden?: boolean }> };
+  assert.equal(publicBody.judoka?.some(record => record.isHidden === true) ?? false, false);
+});
+
 /**
  * The initialized notification completes MCP initialization but, as a JSON-RPC
  * notification, must not receive a JSON-RPC response. Budokon's tools are
