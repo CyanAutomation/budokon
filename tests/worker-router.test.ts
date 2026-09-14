@@ -468,6 +468,8 @@ test("assembled worker exposes exactly the public judoka catalogue without crede
   const response = await worker.fetch(request, mockEnv);
   assert.equal(response.status, 200);
   assert.equal(response.headers.get("content-type"), "application/json; charset=utf-8");
+  assert.equal(response.headers.get("cache-control"), "public, max-age=300, s-maxage=86400, stale-while-revalidate=86400");
+  assert.match(response.headers.get("etag") ?? "", /^"budokon-/);
 
   const records = await mcpJson(response);
   const expectedPublicCatalogue = catalog.listJudoka();
