@@ -105,3 +105,21 @@ test("public GET responses receive a versioned cache validator and honour If-Non
     assert.equal(await fresh.text(), "catalogue");
   }
 });
+
+test("authorization-sensitive responses are private and never reuse public validators", async () => {
+  const publicResponse = cachePublicGet(new Response("public"), request(), "2026.08.1");
+  const publicEtag = publicResponse.headers.get("etag");
+  assert.ok(publicEtag);
+
+  for (const sensitiveRequest of [
+    request(undefined, { headers: { authorization: "Bearer internal", "if-none-match": publicEtag } }),
+    request(undefined, { headers: { "x-api-key": "internal", "if-none-match": publicEtag } }),
+    new Request("https://api.example/v1/judoka?includeHidden=true", { headers: { "if-none-match": publicEtag } }),
+  ]) {
+    const response = cachePublicGet(new Response("private"), sensitiveRequest, "2026.08.1");
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("cache-control"), "private, no-store");
+    assert.equal(response.headers.get("etag"), null);
+    assert.equal(await response.text(), "private");
+  }
+});

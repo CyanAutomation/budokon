@@ -44,6 +44,8 @@ export interface RestEventDrawDependency {
 export interface RestRouterOptions {
   /** Resolve deployment-specific credentials without coupling the router to a platform. */
   authorizeInternal?: (request: Request) => boolean | Promise<boolean>;
+  /** Report whether this request can produce an internal-only representation. */
+  onRepresentation?: (metadata: { cacheablePublicly: boolean }) => void;
 }
 
 type ErrorCode = "bad_request" | "forbidden" | "not_found" | "method_not_allowed" | "conflict" | "internal_error";
@@ -110,6 +112,9 @@ export function createRestRouter({ catalog, draw, eventDraw }: { catalog: RestCa
       let authorizedInternal = false;
       try { authorizedInternal = await authority.isAuthorizedInternal(request); }
       catch { return failure(500, "internal_error", "internal server error"); }
+      options.onRepresentation?.({
+        cacheablePublicly: !authorizedInternal && !url.searchParams.getAll("includeHidden").includes("true"),
+      });
       const resource = segments[1]; const id = segments[2];
       if (segments.length > 3) return failure(404, "not_found", "route not found");
 

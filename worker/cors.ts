@@ -60,8 +60,31 @@ function weaklyMatchesEtag(ifNoneMatch: string | null, etag: string): boolean {
   });
 }
 
+export interface RepresentationCacheability {
+  /** Explicit REST-layer assurance that the response is independent of internal visibility. */
+  cacheablePublicly: boolean;
+}
+
+function isAuthorizationSensitive(request: Request, metadata?: RepresentationCacheability): boolean {
+  const requestsHiddenRecords = new URL(request.url).searchParams.getAll("includeHidden").includes("true");
+  return metadata?.cacheablePublicly === false
+    || requestsHiddenRecords
+    || request.headers.has("authorization")
+    || request.headers.has("x-api-key");
+}
+
+function privateResponse(response: Response): Response {
+  const headers = new Headers(response.headers);
+  headers.set("cache-control", "private, no-store");
+  headers.delete("etag");
+  headers.delete("cdn-cache-control");
+  headers.delete("surrogate-control");
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
 /** Cache immutable catalogue GET representations at the edge and validate them cheaply in browsers. */
-export function cachePublicGet(response: Response, request: Request, datasetVersion: string): Response {
+export function cachePublicGet(response: Response, request: Request, datasetVersion: string, metadata?: RepresentationCacheability): Response {
+  if (isAuthorizationSensitive(request, metadata)) return privateResponse(response);
   if (request.method !== "GET" || response.status !== 200) return response;
   const url = new URL(request.url);
   const etag = `"budokon-${datasetVersion}-${encodeURIComponent(`${url.pathname}${url.search}`)}"`;
