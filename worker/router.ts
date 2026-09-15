@@ -66,10 +66,12 @@ export function createWorker(openApiSpecification: string) {
         response = await mcp.fetch(request);
       } else {
         // Catalogue reads and draws are public; hidden records still require INTERNAL_API_KEY.
-        let cacheability = { cacheablePublicly: false };
+        // Keep a stable metadata object so cachePublicGet observes the value reported
+        // while the awaited REST request is being routed.
+        const cacheability = { cacheablePublicly: false };
         const rest = createRestRouter({ catalog, draw, eventDraw }, {
           authorizeInternal: candidate => authorized(candidate, env.INTERNAL_API_KEY),
-          onRepresentation: metadata => { cacheability = metadata; },
+          onRepresentation: metadata => { cacheability.cacheablePublicly = metadata.cacheablePublicly; },
         });
         response = await rateLimitPublicRequest(request, env) ?? cachePublicGet(
           await rest(request),
