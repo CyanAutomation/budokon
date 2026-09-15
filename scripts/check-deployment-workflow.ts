@@ -1,4 +1,4 @@
-import { access, readFile } from "node:fs/promises";
+import { access, readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -26,14 +26,15 @@ export type DeploymentWorkflowValidationErrorCode =
   | "missing-entry-point"
   | "missing-artifact-check"
   | "missing-release-upload"
-  | "missing-release-artifact";
+  | "missing-release-artifact"
+  | "missing-workflow-script";
 
 export class DeploymentWorkflowValidationError extends Error {
   constructor(
     readonly code: DeploymentWorkflowValidationErrorCode,
     message: string,
     readonly details: {
-      scriptName?: RequiredScriptName;
+      scriptName?: string;
       entryPoint?: string;
       staleHelpers?: string[];
       workflowPath?: string;
@@ -42,6 +43,34 @@ export class DeploymentWorkflowValidationError extends Error {
   ) {
     super(message);
     this.name = "DeploymentWorkflowValidationError";
+  }
+}
+
+/** Ensure every `npm run <script>` command embedded in a workflow remains a package contract. */
+export async function checkWorkflowNpmScripts(repositoryRoot: string): Promise<void> {
+  const workflowDirectory = path.resolve(repositoryRoot, ".github/workflows");
+  const packagePath = path.resolve(repositoryRoot, packageRelativePath);
+  const [entries, packageContents] = await Promise.all([
+    readdir(workflowDirectory, { withFileTypes: true }),
+    readFile(packagePath, "utf8"),
+  ]);
+  const packageJson = JSON.parse(packageContents) as { scripts?: Record<string, string> };
+  const workflowPaths = entries
+    .filter(entry => entry.isFile() && /\.ya?ml$/i.test(entry.name))
+    .map(entry => path.join(workflowDirectory, entry.name));
+
+  for (const workflowPath of workflowPaths) {
+    const workflow = await readFile(workflowPath, "utf8");
+    const referencedScripts = [...workflow.matchAll(/\bnpm\s+run\s+([A-Za-z0-9:_-]+)/g)].map(match => match[1]);
+    for (const scriptName of new Set(referencedScripts)) {
+      if (!packageJson.scripts?.[scriptName]) {
+        throw new DeploymentWorkflowValidationError(
+          "missing-workflow-script",
+          `${path.basename(workflowPath)} references missing npm script: ${scriptName}`,
+          { workflowPath, scriptName },
+        );
+      }
+    }
   }
 }
 
@@ -92,7 +121,7 @@ export async function checkDeploymentReleaseArtifacts(repositoryRoot: string): P
 
   for (const [workflowPath, jobName, workflow] of [
     [deploymentPath, "deploy", deploymentWorkflow],
-    [releasePath, "release", releaseWorkflow],
+    [releasePath, "build", releaseWorkflow],
   ] as const) {
     const job = jobBody(workflow, jobName);
     if (!job || !invokesNpmScript(job, "check-artifacts")) {
@@ -107,8 +136,8 @@ export async function checkDeploymentReleaseArtifacts(repositoryRoot: string): P
   const releaseJob = jobBody(releaseWorkflow, "release");
   if (!releaseJob) {
     throw new DeploymentWorkflowValidationError(
-      "missing-artifact-check",
-      `Release job not found in ${path.basename(releasePath)}`,
+      "missing-release-upload",
+      `Release publication job not found in ${path.basename(releasePath)}`,
       { workflowPath: releasePath },
     );
   }
@@ -204,6 +233,7 @@ async function runCli(): Promise<void> {
   try {
     await checkDeploymentWorkflow(process.cwd());
     await checkDeploymentReleaseArtifacts(process.cwd());
+    await checkWorkflowNpmScripts(process.cwd());
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);
     process.exitCode = 1;

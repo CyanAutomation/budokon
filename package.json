@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": "^22.14.0 || >=24.10.0"
+  },
   "exports": {
     ".": {
       "types": "./build/runtime/index.d.ts",
@@ -27,6 +30,7 @@
     "check-artifacts": "tsx scripts/check-artifacts.ts",
     "check:typescript-only": "tsx scripts/check-typescript-only.ts",
     "check:deployment-workflow": "tsx scripts/check-deployment-workflow.ts",
+    "check": "npm run typecheck && npm run check:typescript-only && npm run test && npm run validate",
     "coverage": "tsx scripts/coverage-report.ts",
     "verify-release": "tsx scripts/verify-release.ts",
     "validate": "tsx src/validation/validate-canonical.ts",
@@ -37,10 +41,13 @@
     "test:validation:focused": "BUDOKON_SKIP_REPOSITORY_SMOKE=1 tsx --test tests/validation.test.ts",
     "test:validation:integration": "tsx --test --test-name-pattern='integration: canonical repository release gate' tests/validation.test.ts",
     "test": "npm run build && tsx --test scripts/*.test.ts tests/*.test.ts",
+    "release": "semantic-release",
+    "release:dry": "semantic-release --dry-run",
     "deploy": "wrangler deploy"
   },
   "devDependencies": {
     "@types/node": "^26.4.0",
+    "semantic-release": "^25.0.9",
     "swagger-ui-dist": "^5.32.15",
     "tsx": "^4.23.12",
     "typescript": "^5.7.2",
