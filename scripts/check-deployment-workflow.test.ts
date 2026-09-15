@@ -6,6 +6,7 @@ import test, { type TestContext } from "node:test";
 import {
   checkDeploymentReleaseArtifacts,
   checkDeploymentWorkflow,
+  checkWorkflowNpmScripts,
   DeploymentWorkflowValidationError,
   type DeploymentWorkflowValidationErrorCode,
 } from "./check-deployment-workflow.js";
@@ -122,9 +123,12 @@ const artifactCheckingDeploymentWorkflow = `jobs:
 `;
 
 const completeReleaseWorkflow = `jobs:
-  release:
+  build:
     steps:
       - run: npm run check-artifacts
+  release:
+    needs: build
+    steps:
       - uses: softprops/action-gh-release@v2
         with:
           files: |
@@ -150,9 +154,40 @@ async function createArtifactWorkflowFixture(
   return repositoryRoot;
 }
 
-test("accepts artifact checks in deployment and release jobs with a complete release upload", async t => {
+test("accepts artifact checks in deployment and release build jobs with a complete release upload", async t => {
   const root = await createArtifactWorkflowFixture(t, artifactCheckingDeploymentWorkflow, completeReleaseWorkflow);
   await assert.doesNotReject(checkDeploymentReleaseArtifacts(root));
+});
+
+test("accepts workflow commands that exist in package scripts", async t => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "budokon-workflow-scripts-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await mkdir(path.join(root, ".github/workflows"), { recursive: true });
+  await writeFile(
+    path.join(root, ".github/workflows/validate.yml"),
+    "jobs:\n  validate:\n    steps:\n      - run: npm run check && npm run test\n",
+  );
+  await writeFile(path.join(root, "package.json"), JSON.stringify({ scripts: { check: "echo check", test: "echo test" } }));
+
+  await assert.doesNotReject(checkWorkflowNpmScripts(root));
+});
+
+test("rejects a workflow command that is absent from package scripts", async t => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "budokon-workflow-scripts-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await mkdir(path.join(root, ".github/workflows"), { recursive: true });
+  await writeFile(
+    path.join(root, ".github/workflows/docs.yml"),
+    "jobs:\n  docs:\n    steps:\n      - run: npm run check\n",
+  );
+  await writeFile(path.join(root, "package.json"), JSON.stringify({ scripts: {} }));
+
+  await assert.rejects(checkWorkflowNpmScripts(root), (error: unknown) => {
+    assert.ok(error instanceof DeploymentWorkflowValidationError);
+    assert.equal(error.code, "missing-workflow-script");
+    assert.equal(error.details.scriptName, "check");
+    return true;
+  });
 });
 
 test("rejects an artifact check outside the deployment job", async t => {
@@ -169,27 +204,27 @@ test("rejects an artifact check outside the deployment job", async t => {
   });
 });
 
-test("rejects an artifact check outside the release job", async t => {
+test("rejects an artifact check outside the release build job", async t => {
   const workflow = completeReleaseWorkflow.replace(
-    "  release:\n",
-    "  checks:\n    steps:\n      - run: npm run check-artifacts\n  release:\n",
-  ).replace("      - run: npm run check-artifacts\n      - uses:", "      - run: echo no artifact check\n      - uses:");
+    "  build:\n",
+    "  checks:\n    steps:\n      - run: npm run check-artifacts\n  build:\n",
+  ).replace("      - run: npm run check-artifacts\n  release:", "      - run: echo no artifact check\n  release:");
   const root = await createArtifactWorkflowFixture(t, artifactCheckingDeploymentWorkflow, workflow);
   await assert.rejects(checkDeploymentReleaseArtifacts(root), (error: unknown) => {
     assert.ok(error instanceof DeploymentWorkflowValidationError);
     assert.equal(error.code, "missing-artifact-check");
-    assert.match(error.message, /job release/);
+    assert.match(error.message, /job build/);
     return true;
   });
 });
 
-test("reports a validation error when the release job is missing", async t => {
-  const workflow = completeReleaseWorkflow.replace("  release:\n", "  publish:\n");
+test("reports a validation error when the release build job is missing", async t => {
+  const workflow = completeReleaseWorkflow.replace("  build:\n", "  checks:\n");
   const root = await createArtifactWorkflowFixture(t, artifactCheckingDeploymentWorkflow, workflow);
   await assert.rejects(checkDeploymentReleaseArtifacts(root), (error: unknown) => {
     assert.ok(error instanceof DeploymentWorkflowValidationError);
     assert.equal(error.code, "missing-artifact-check");
-    assert.match(error.message, /job release/);
+    assert.match(error.message, /job build does not invoke/);
     assert.match(error.message, /dataset-release\.yml/);
     assert.doesNotMatch(error.message, /(?:^|\/)release\.yml/);
     return true;

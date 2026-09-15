@@ -14,6 +14,9 @@ concurrency:
 
 jobs:
   deploy:
+    # A manual dispatch may select any ref. Production secrets must only be
+    # available when the workflow is running from the protected default branch.
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment:
