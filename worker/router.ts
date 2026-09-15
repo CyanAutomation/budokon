@@ -33,8 +33,19 @@ function json(value: unknown, status = 200, headers: HeadersInit = {}) {
   return new Response(JSON.stringify(value), { status, headers: { "content-type": "application/json; charset=utf-8", ...headers } });
 }
 
-function authenticateMcpRequest(request: Request, apiKey: string): Response | undefined {
-  if (authorized(request, apiKey)) return undefined;
+type McpAuthentication = { authorizedInternal: boolean };
+
+/**
+ * Authenticate the single credential selected by auth.ts for MCP access.
+ *
+ * A configured internal key is both an MCP credential and an elevation signal.
+ * When it is unset, only API_KEY authenticates and no request is elevated. If
+ * both configured secrets have the same value, that value is treated as the
+ * internal key and therefore elevates the request.
+ */
+function authenticateMcpRequest(request: Request, env: Pick<Env, "API_KEY" | "INTERNAL_API_KEY">): McpAuthentication | Response {
+  const authorizedInternal = authorized(request, env.INTERNAL_API_KEY);
+  if (authorizedInternal || authorized(request, env.API_KEY)) return { authorizedInternal };
   return json(
     { error: { code: "unauthorized", message: "A valid API key is required" } },
     401,
@@ -56,13 +67,13 @@ export function createWorker(openApiSpecification: string) {
         const rateLimited = await rateLimitMcpRequest(request, env);
         if (rateLimited) return rateLimited;
         if (!env.MCP_ALLOWED_HOSTNAMES) return json({ error: { code: "not_configured", message: "MCP allowed hostnames are required" } }, 503);
-        const authenticationFailure = authenticateMcpRequest(request, env.API_KEY);
-        if (authenticationFailure) return authenticationFailure;
+        const authentication = authenticateMcpRequest(request, env);
+        if (authentication instanceof Response) return authentication;
         const allowedHostnames = env.MCP_ALLOWED_HOSTNAMES.split(",").map(value => value.trim()).filter(Boolean);
         const rejected = hostHeaderValidationResponse(request, allowedHostnames)
           ?? originValidationResponse(request, allowedHostnames.map(hostname => `https://${hostname}`));
         if (rejected) return rejected;
-        const mcp = createBudokonMcpHandler({ catalog, draw, eventDraw, authorizeInternal: candidate => authorized(candidate, env.INTERNAL_API_KEY) });
+        const mcp = createBudokonMcpHandler({ catalog, draw, eventDraw, authorizeInternal: () => authentication.authorizedInternal });
         response = await mcp.fetch(request);
       } else {
         // Catalogue reads and draws are public; hidden records still require INTERNAL_API_KEY.
