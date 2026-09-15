@@ -429,6 +429,66 @@ test("MCP rejects an invalid API key before invoking the SDK handler", async () 
   });
 });
 
+test("regular MCP key can call public tools but cannot retrieve hidden records", async () => {
+  const hidden = compiledModel.judoka.find(record => record.isHidden);
+  assert.ok(hidden, "fixture must contain a hidden judoka");
+
+  const publicResponse = await worker.fetch(new Request("https://example.test/mcp", {
+    method: "POST",
+    headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 42, method: "tools/call", params: { name: "version", arguments: {} } }),
+  }), mockEnv);
+  const version = await successfulMcpToolJson(publicResponse);
+  assert.equal(version.datasetVersion, compiledModel.datasetVersion);
+
+  const hiddenResponse = await worker.fetch(new Request("https://example.test/mcp", {
+    method: "POST",
+    headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 43, method: "tools/call", params: { name: "get_judoka", arguments: { id: hidden.id, includeHidden: true } } }),
+  }), mockEnv);
+  assert.equal((await successfulMcpToolJson(hiddenResponse)).judoka, null);
+});
+
+test("separate internal MCP key authenticates and retrieves hidden records", async () => {
+  const hidden = compiledModel.judoka.find(record => record.isHidden);
+  assert.ok(hidden, "fixture must contain a hidden judoka");
+
+  const response = await worker.fetch(new Request("https://example.test/mcp", {
+    method: "POST",
+    headers: { host: "example.test", authorization: `Bearer ${mockEnv.INTERNAL_API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 44, method: "tools/call", params: { name: "get_judoka", arguments: { id: hidden.id, includeHidden: true } } }),
+  }), mockEnv);
+
+  assert.deepEqual((await successfulMcpToolJson(response)).judoka, hidden);
+});
+
+test("unrelated MCP key remains rejected when regular and internal keys are configured", async () => {
+  const response = await worker.fetch(new Request("https://example.test/mcp", {
+    method: "POST",
+    headers: { host: "example.test", authorization: "Bearer unrelated-key", "content-type": "application/json", accept: "application/json, text/event-stream" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 45, method: "tools/list" }),
+  }), mockEnv);
+
+  assert.equal(response.status, 401);
+  assert.deepEqual(await mcpJson(response), { error: { code: "unauthorized", message: "A valid API key is required" } });
+});
+
+test("MCP internal authentication handles an unset key and equal configured secrets", async () => {
+  const hidden = compiledModel.judoka.find(record => record.isHidden);
+  assert.ok(hidden, "fixture must contain a hidden judoka");
+  const request = (credential: string) => new Request("https://example.test/mcp", {
+    method: "POST",
+    headers: { host: "example.test", authorization: `Bearer ${credential}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 46, method: "tools/call", params: { name: "get_judoka", arguments: { id: hidden.id, includeHidden: true } } }),
+  });
+
+  const withoutInternal = await worker.fetch(request(mockEnv.API_KEY), { ...mockEnv, INTERNAL_API_KEY: undefined });
+  assert.equal((await successfulMcpToolJson(withoutInternal)).judoka, null, "an unset internal key must not elevate the regular key");
+
+  const equalSecrets = await worker.fetch(request(mockEnv.API_KEY), { ...mockEnv, INTERNAL_API_KEY: mockEnv.API_KEY });
+  assert.deepEqual((await successfulMcpToolJson(equalSecrets)).judoka, hidden, "equal secrets must confer internal authorization");
+});
+
 test("MCP rejects requests for an unconfigured Host or Origin before invoking the SDK handler", async () => {
   const headers = {
     authorization: `Bearer ${mockEnv.API_KEY}`,
