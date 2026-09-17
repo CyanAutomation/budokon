@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
-import { readFile, readdir } from "node:fs/promises";
+import { readFile, readdir, stat } from "node:fs/promises";
 import { builtinModules } from "node:module";
-import { basename, join } from "node:path";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import test from "node:test";
 import ts from "typescript";
 import packageBoundaries from "../package-boundaries.json" with { type: "json" };
@@ -48,12 +48,45 @@ test("runtime-neutral core does not import Node built-ins", async () => {
 });
 
 test("every source package has an explicit runtime boundary", async () => {
-  const configuredRoots = new Set([
-    ...packageBoundaries.runtimeNeutralRoots,
-    ...packageBoundaries.runtimeSpecificRoots,
-  ].map(root => basename(root)));
+  const repositoryRoot = resolve(".");
+  const sourceRoot = resolve(repositoryRoot, "src");
+  const repositoryRelative = (root: string) => relative(repositoryRoot, resolve(repositoryRoot, root)).split(sep).join("/");
+  const neutralRoots = packageBoundaries.runtimeNeutralRoots.map(repositoryRelative);
+  const specificRoots = packageBoundaries.runtimeSpecificRoots.map(repositoryRelative);
+  const configuredRoots = [...neutralRoots, ...specificRoots];
+  const rule = `${packageBoundaries.sourcePackageRule} (package-boundaries.json#sourcePackageRule)`;
+
+  for (const root of configuredRoots) {
+    const relativeToSource = relative(sourceRoot, resolve(repositoryRoot, root));
+    assert.ok(
+      relativeToSource !== ".." && !relativeToSource.startsWith(`..${sep}`) && !isAbsolute(relativeToSource),
+      `${root} points outside src/. ${rule}`,
+    );
+    assert.ok((await stat(resolve(repositoryRoot, root))).isDirectory(), `${root} is not a directory. ${rule}`);
+  }
+
+  const specificRootSet = new Set(specificRoots);
+  assert.deepEqual(
+    [...new Set(neutralRoots.filter(root => specificRootSet.has(root)))],
+    [],
+    `A root cannot be both runtime-neutral and runtime-specific. ${rule}`,
+  );
+
   const sourcePackages = (await readdir("src", { withFileTypes: true }))
     .filter(entry => entry.isDirectory())
-    .map(entry => entry.name);
-  assert.deepEqual(sourcePackages.filter(name => !configuredRoots.has(name)), []);
+    .map(entry => repositoryRelative(join("src", entry.name)))
+    .sort();
+  const configuredRootCounts = new Map<string, number>();
+  for (const root of configuredRoots) configuredRootCounts.set(root, (configuredRootCounts.get(root) ?? 0) + 1);
+
+  assert.deepEqual(
+    sourcePackages.map(root => [root, configuredRootCounts.get(root) ?? 0]),
+    sourcePackages.map(root => [root, 1]),
+    `Every immediate source package must be configured exactly once. ${rule}`,
+  );
+  assert.deepEqual(
+    [...configuredRootCounts.keys()].filter(root => !sourcePackages.includes(root)).sort(),
+    [],
+    `Configured roots must be immediate source packages. ${rule}`,
+  );
 });

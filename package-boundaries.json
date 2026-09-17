@@ -1,4 +1,5 @@
 {
+  "sourcePackageRule": "Each immediate directory under src/ is one source package and must appear exactly once in either runtimeNeutralRoots or runtimeSpecificRoots.",
   "runtimeNeutralRoots": [
     "src/api",
     "src/contracts",
@@ -9,5 +10,5 @@
     "src/repository"
   ],
   "runtimeNeutralFiles": ["src/index.ts"],
-  "runtimeSpecificRoots": ["src/node", "src/validation"]
+  "runtimeSpecificRoots": ["src/validation"]
 }
