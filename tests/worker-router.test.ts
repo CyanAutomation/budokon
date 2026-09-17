@@ -505,17 +505,48 @@ test("MCP rejects requests for an unconfigured Host or Origin before invoking th
 });
 
 test("MCP uses its own Cloudflare rate-limit binding", async () => {
-  let key: string | undefined;
-  const response = await worker.fetch(new Request("https://example.test/mcp", {
-    method: "POST",
-    headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: 41, method: "initialize" }),
-  }), {
-    ...mockEnv,
-    MCP_RATE_LIMITER: { async limit(input) { key = input.key; return { success: false }; } },
-  });
-  assert.equal(key, "anonymous:mcp");
-  assert.equal(response.status, 429);
+  const clientIp = "203.0.113.41";
+
+  for (const allowed of [true, false]) {
+    const mcpCalls: Array<{ key: string }> = [];
+    const publicCalls: Array<{ key: string }> = [];
+    const response = await worker.fetch(new Request("https://example.test/mcp", {
+      method: "POST",
+      headers: {
+        host: "example.test",
+        authorization: `Bearer ${mockEnv.API_KEY}`,
+        "cf-connecting-ip": clientIp,
+        "content-type": "application/json",
+        accept: "application/json, text/event-stream",
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: allowed ? 41 : 42,
+        method: "initialize",
+        params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "rate-limit-test", version: "1.0.0" } },
+      }),
+    }), {
+      ...mockEnv,
+      MCP_RATE_LIMITER: { async limit(input) { mcpCalls.push(input); return { success: allowed }; } },
+      PUBLIC_RATE_LIMITER: { async limit(input) { publicCalls.push(input); return { success: true }; } },
+    });
+
+    assert.equal(mcpCalls.length, 1, "the MCP binding must be invoked exactly once");
+    assert.equal(publicCalls.length, 0, "the public binding must not receive MCP traffic");
+    assert.ok(mcpCalls[0]?.key.startsWith(`${clientIp}:`), "the limiter key must isolate clients");
+    assert.ok(mcpCalls[0]?.key.endsWith(":mcp"), "the limiter key must isolate the MCP route");
+
+    if (allowed) {
+      assert.equal(response.status, 200);
+    } else {
+      assert.equal(response.status, 429);
+      assert.deepEqual(await response.json(), { error: { code: "rate_limited", message: "too many requests" } });
+      assert.equal(response.headers.get("content-type"), "application/json; charset=utf-8");
+      assert.equal(response.headers.get("retry-after"), "60");
+      assert.equal(response.headers.get("ratelimit-limit"), "30");
+      assert.equal(response.headers.get("ratelimit-policy"), "30;w=60");
+    }
+  }
 });
 
 // Public-catalogue authentication and visibility requirement: docs/API.md,
