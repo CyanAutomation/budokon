@@ -94,12 +94,18 @@ test("event REST handler validates an omitted body as empty input", () => {
   );
 });
 
-test("compiled models from before event support expose an empty event collection", () => {
-  const { events: _events, ...legacyCompiledModel } = compiledModel;
+test("dataset versions 2026.08.1-2026.08.6 retain pre-events compiled-model compatibility", () => {
+  const { events: _events, ...currentModelWithoutEvents } = compiledModel;
+  const legacyCompiledModel = { ...currentModelWithoutEvents, datasetVersion: "2026.08.6" };
   const legacyRepository = new JsonReadModelRepository(legacyCompiledModel);
 
   assert.deepEqual(legacyRepository.listEvents(), []);
   assert.equal(legacyRepository.getEvent("great-warmup"), undefined);
+
+  assert.throws(
+    () => new JsonReadModelRepository(currentModelWithoutEvents),
+    { name: "TypeError", message: "invalid compiled dataset: events" }
+  );
 });
 
 test("event draw rejects an empty optional category as a bad request", async () => {

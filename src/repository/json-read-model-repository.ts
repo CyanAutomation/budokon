@@ -4,6 +4,8 @@ import { normalizeSearchText } from "../domain/catalog-filters.js";
 
 const byId = (a: { id: string }, b: { id: string }) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
 
+const LEGACY_EVENTLESS_DATASET_VERSIONS = /^2026\.08\.[1-6]$/;
+
 const validateCompiledDataset = (model: CompiledDataset): void => {
   if (typeof model.datasetVersion !== "string" || model.datasetVersion.trim() === "" || !Array.isArray(model.judoka) || !Array.isArray(model.techniques) || !model.countries || typeof model.countries !== "object" || Array.isArray(model.countries) || !Array.isArray(model.weightCategories)) {
     throw new TypeError("invalid compiled dataset");
@@ -36,6 +38,9 @@ export class JsonReadModelRepository extends ReadModelRepository {
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new TypeError("compiled dataset must be an object");
     const model = parsed as CompiledDataset;
     validateCompiledDataset(model);
+    if (!Array.isArray(model.events) && !LEGACY_EVENTLESS_DATASET_VERSIONS.test(model.datasetVersion)) {
+      throw new TypeError("invalid compiled dataset: events");
+    }
     this.model = { ...model, judoka: [...model.judoka].sort(byId), techniques: [...model.techniques].sort(byId), events: [...(model.events ?? [])].sort(byId) };
   }
   get datasetVersion() { return this.model.datasetVersion; }
