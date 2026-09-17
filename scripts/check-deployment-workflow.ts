@@ -46,8 +46,22 @@ export class DeploymentWorkflowValidationError extends Error {
   }
 }
 
+export interface WorkflowNpmScriptsValidationResult {
+  repositoryRoot: string;
+  packagePath: string;
+  workflows: Array<{
+    workflowPath: string;
+    scripts: Array<{
+      name: string;
+      command: string;
+    }>;
+  }>;
+}
+
 /** Ensure every `npm run <script>` command embedded in a workflow remains a package contract. */
-export async function checkWorkflowNpmScripts(repositoryRoot: string): Promise<void> {
+export async function checkWorkflowNpmScripts(
+  repositoryRoot: string,
+): Promise<WorkflowNpmScriptsValidationResult> {
   const workflowDirectory = path.resolve(repositoryRoot, ".github/workflows");
   const packagePath = path.resolve(repositoryRoot, packageRelativePath);
   const [entries, packageContents] = await Promise.all([
@@ -58,20 +72,31 @@ export async function checkWorkflowNpmScripts(repositoryRoot: string): Promise<v
   const workflowPaths = entries
     .filter(entry => entry.isFile() && /\.ya?ml$/i.test(entry.name))
     .map(entry => path.join(workflowDirectory, entry.name));
+  const workflows: WorkflowNpmScriptsValidationResult["workflows"] = [];
 
   for (const workflowPath of workflowPaths) {
     const workflow = await readFile(workflowPath, "utf8");
     const referencedScripts = [...workflow.matchAll(/\bnpm\s+run\s+([A-Za-z0-9:_-]+)/g)].map(match => match[1]);
+    const scripts: WorkflowNpmScriptsValidationResult["workflows"][number]["scripts"] = [];
     for (const scriptName of new Set(referencedScripts)) {
-      if (!packageJson.scripts?.[scriptName]) {
+      const command = packageJson.scripts?.[scriptName];
+      if (!command) {
         throw new DeploymentWorkflowValidationError(
           "missing-workflow-script",
           `${path.basename(workflowPath)} references missing npm script: ${scriptName}`,
           { workflowPath, scriptName },
         );
       }
+      scripts.push({ name: scriptName, command });
     }
+    workflows.push({ workflowPath, scripts });
   }
+
+  return {
+    repositoryRoot: path.resolve(repositoryRoot),
+    packagePath,
+    workflows,
+  };
 }
 
 function jobBody(workflow: string, jobName: string): string | undefined {
