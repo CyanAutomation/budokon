@@ -21,6 +21,15 @@ metadata, discovery/OpenAPI, cache revalidation, pagination, validation errors,
 CORS preflight, and deterministic judoka and event draws. If it fails, treat
 the deployment as unhealthy and investigate before relying on the new release.
 
+## Rate-limit binding separation
+
+The Worker intentionally routes authenticated `/mcp` traffic through the
+`MCP_RATE_LIMITER` Cloudflare binding and public REST traffic through
+`PUBLIC_RATE_LIMITER`. Keep these as distinct bindings when changing or cloning
+an environment: they have independent policies and prevent public catalogue
+traffic from consuming the MCP quota (or MCP clients from consuming the public
+quota). Monitor and tune `429` rates for each binding separately.
+
 The compiled `dist/manifest.json` identifies the canonical data commit used to
 create that artifact. It need not equal a later application-only commit in the
 repository. The production workflow recompiles artifacts with the deployment
