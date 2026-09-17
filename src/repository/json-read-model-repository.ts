@@ -4,6 +4,22 @@ import { normalizeSearchText } from "../domain/catalog-filters.js";
 
 const byId = (a: { id: string }, b: { id: string }) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
 
+const validateCompiledDataset = (model: CompiledDataset): void => {
+  if (typeof model.datasetVersion !== "string" || model.datasetVersion.trim() === "" || !Array.isArray(model.judoka) || !Array.isArray(model.techniques) || !model.countries || !Array.isArray(model.weightCategories)) {
+    throw new TypeError("invalid compiled dataset");
+  }
+
+  for (const [path, value] of [
+    ["manifest.serviceVersion", model.manifest?.serviceVersion],
+    ["manifest.sourceGitCommit", model.manifest?.sourceGitCommit],
+    ['manifest.checksums["budokon.json"]', model.manifest?.checksums?.["budokon.json"]],
+  ] as const) {
+    if (typeof value !== "string" || value.length === 0) {
+      throw new TypeError(`invalid compiled dataset: ${path}`);
+    }
+  }
+};
+
 /** In-memory repository with no filesystem or runtime-specific dependencies. */
 export class JsonReadModelRepository extends ReadModelRepository {
   readonly model: CompiledDataset;
@@ -19,19 +35,13 @@ export class JsonReadModelRepository extends ReadModelRepository {
     })() : value;
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new TypeError("compiled dataset must be an object");
     const model = parsed as CompiledDataset;
-    if (typeof model.datasetVersion !== "string" || model.datasetVersion.trim() === "" || !Array.isArray(model.judoka) || !Array.isArray(model.techniques) || !model.countries || !Array.isArray(model.weightCategories)) {
-      throw new TypeError("invalid compiled dataset");
-    }
+    validateCompiledDataset(model);
     this.model = { ...model, judoka: [...model.judoka].sort(byId), techniques: [...model.techniques].sort(byId), events: [...(model.events ?? [])].sort(byId) };
   }
   get datasetVersion() { return this.model.datasetVersion; }
-  get serviceVersion() { if (!this.model.manifest?.serviceVersion) throw new Error("Invalid manifest: missing serviceVersion"); return this.model.manifest.serviceVersion; }
-  get sourceGitCommit() { if (!this.model.manifest?.sourceGitCommit) throw new Error("Invalid manifest: missing sourceGitCommit"); return this.model.manifest.sourceGitCommit; }
-  get datasetChecksum() {
-    const value = this.model.manifest?.checksums?.["budokon.json"];
-    if (!value) throw new Error("Invalid manifest: missing budokon.json checksum");
-    return value;
-  }
+  get serviceVersion() { return this.model.manifest!.serviceVersion; }
+  get sourceGitCommit() { return this.model.manifest!.sourceGitCommit; }
+  get datasetChecksum() { return this.model.manifest!.checksums["budokon.json"]; }
   listJudoka() { return this.model.judoka.slice(); }
   getJudoka(key: string | undefined) {
     if (key === undefined) return undefined;
