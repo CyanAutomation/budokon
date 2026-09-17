@@ -10,7 +10,8 @@ export function credential(request: Request): string {
   // credential as authoritative would make conflicting dual-header requests
   // ambiguous to clients and intermediaries.
   if (apiKey !== null && authorization !== null) return "";
-  return apiKey ?? authorization?.replace(/^Bearer\s+/i, "") ?? "";
+  if (apiKey !== null) return apiKey;
+  return authorization?.match(/^Bearer ([^\s]+)$/i)?.[1] ?? "";
 }
 
 /**

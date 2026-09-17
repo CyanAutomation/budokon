@@ -261,7 +261,10 @@ use REST only; never embed `API_KEY` or `INTERNAL_API_KEY` in browser code.
 The `/mcp` endpoint is served by the official MCP TypeScript SDK and accepts authenticated `POST` requests. Supply the MCP
 key using either `X-API-Key: <key>` or `Authorization: Bearer <key>`. Send
 exactly one of these credential headers: requests containing both are rejected,
-even when the two values are identical.
+even when the two values are identical. The `Bearer` scheme is case-insensitive,
+but it must be followed by exactly one ASCII space and a non-empty key containing
+no whitespace. Normal HTTP optional whitespace surrounding a header value is
+accepted because the Worker runtime removes it before credential parsing.
 
 Set `MCP_ALLOWED_HOSTNAMES` to a comma-separated list of Worker or custom-domain
 hostnames (without scheme or path). The Worker validates `Host` and browser
