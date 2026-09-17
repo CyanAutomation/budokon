@@ -24,9 +24,22 @@ async function change(file, mutate) {
   const value = JSON.parse(await readFile(file, 'utf8')); mutate(value); await writeFile(file, `${JSON.stringify(value, null, 2)}\n`);
 }
 
-test('schema references fail clearly for unsupported or missing targets', () => {
-  assert.throws(() => validateSchema('value', { $ref: 'other.json#/value' }), /unsupported \$ref format/);
-  assert.throws(() => validateSchema('value', { $ref: '#\/$defs\/missing', $defs: {} }), /invalid \$ref path/);
+test('validateCanonical reports stable categories and affected paths for unsupported or missing schema references', async (t) => {
+  for (const fixture of [
+    { name: 'unsupported external reference', ref: 'other.json#/$defs/text', category: /unsupported \$ref/ },
+    { name: 'missing local $defs target', ref: '#/$defs/missing', category: /invalid \$ref path/ },
+  ]) await t.test(fixture.name, async () => {
+    const root = await fixtureSandbox();
+    await change(path.join(root, 'schema/judoka.schema.json'), (schema) => {
+      schema.properties.firstname = { $ref: fixture.ref };
+    });
+
+    await assert.rejects(validateCanonical(root), (error: Error) => {
+      assert.match(error.message, fixture.category);
+      assert.match(error.message, /data\/judoka\/fixture-judoka\.json\.firstname/);
+      return true;
+    });
+  });
 });
 
 describe('integration: canonical repository release gate', {
