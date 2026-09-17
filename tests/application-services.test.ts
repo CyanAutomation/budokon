@@ -137,6 +137,8 @@ test("repository rejects invalid compiled dataset structure", () => {
     ["judoka", { ...compiledModel, judoka: undefined }, "invalid compiled dataset"],
     ["techniques", { ...compiledModel, techniques: undefined }, "invalid compiled dataset"],
     ["countries", { ...compiledModel, countries: undefined }, "invalid compiled dataset"],
+    ["countries string", { ...compiledModel, countries: "JP" }, "invalid compiled dataset"],
+    ["countries array", { ...compiledModel, countries: [] }, "invalid compiled dataset"],
     ["weightCategories", { ...compiledModel, weightCategories: undefined }, "invalid compiled dataset"],
     ["manifest.serviceVersion", { ...compiledModel, manifest: { ...compiledModel.manifest, serviceVersion: undefined } }, "invalid compiled dataset: manifest.serviceVersion"],
     ["manifest.sourceGitCommit", { ...compiledModel, manifest: { ...compiledModel.manifest, sourceGitCommit: undefined } }, "invalid compiled dataset: manifest.sourceGitCommit"],
