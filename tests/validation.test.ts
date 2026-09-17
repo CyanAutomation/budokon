@@ -13,6 +13,7 @@ const textCases = JSON.parse(await readFile(new URL('./fixtures/semantic-text-ca
 const judokaSchema = JSON.parse(await readFile(new URL('../schema/judoka.schema.json', import.meta.url), 'utf8'));
 const publicProfileFixture = JSON.parse(await readFile(new URL('./fixtures/canonical-minimal/data/judoka/fixture-judoka.json', import.meta.url), 'utf8'));
 const canonicalDataset = JSON.parse(await readFile(new URL('../data/dataset.json', import.meta.url), 'utf8'));
+const generatedManifest = JSON.parse(await readFile(new URL('../dist/manifest.json', import.meta.url), 'utf8'));
 async function fixtureSandbox() {
   const root = await mkdtemp(path.join(os.tmpdir(), 'budokon-validation-fixture-'));
   await cp(path.join(repository, 'schema'), path.join(root, 'schema'), { recursive: true });
@@ -31,15 +32,26 @@ test('schema references fail clearly for unsupported or missing targets', () => 
 describe('integration: canonical repository release gate', {
   skip: process.env.BUDOKON_SKIP_REPOSITORY_SMOKE === '1',
 }, () => {
-  test('aggregate smoke check returns populated collections with the canonical dataset identity', async () => {
+  test('canonical records match the generated manifest and resolve judoka references', async () => {
     const result = await validateCanonical(repository);
 
-    assert.ok(result.judoka.length > 0);
-    assert.ok(result.techniques.length > 0);
-    assert.ok(result.events.length > 0);
-    assert.ok(Object.keys(result.countries).length > 0);
-    assert.ok(result.weights.length > 0);
+    assert.deepEqual({
+      judoka: result.judoka.length,
+      techniques: result.techniques.length,
+      events: result.events.length,
+      countries: Object.keys(result.countries).length,
+      weightCategories: result.weights.reduce((total, group) => total + group.categories.length, 0),
+    }, generatedManifest.recordCounts);
     assert.equal(result.dataset.datasetVersion, canonicalDataset.datasetVersion);
+    assert.equal(result.dataset.datasetVersion, generatedManifest.datasetVersion);
+
+    const techniqueIds = new Set(result.techniques.map(({ id }) => id));
+    for (const judoka of result.judoka) {
+      assert.ok(result.countries[judoka.countryCode], `${judoka.slug} country reference must resolve`);
+      for (const techniqueId of judoka.signatureMoveIds) {
+        assert.ok(techniqueIds.has(techniqueId), `${judoka.slug} technique reference ${techniqueId} must resolve`);
+      }
+    }
   });
 });
 
