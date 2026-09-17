@@ -133,42 +133,23 @@ test("repository rejects an empty dataset version", () => {
 });
 
 test("repository rejects invalid compiled dataset structure", () => {
-  assert.throws(
-    () => new JsonReadModelRepository({ ...compiledModel, judoka: undefined }),
-    /invalid compiled dataset/,
-  );
-  assert.throws(
-    () => new JsonReadModelRepository({ ...compiledModel, techniques: undefined }),
-    /invalid compiled dataset/,
-  );
-  assert.throws(
-    () => new JsonReadModelRepository({ ...compiledModel, countries: undefined }),
-    /invalid compiled dataset/,
-  );
-  assert.throws(
-    () => new JsonReadModelRepository({ ...compiledModel, weightCategories: undefined }),
-    /invalid compiled dataset/,
-  );
-});
+  const cases = [
+    ["judoka", { ...compiledModel, judoka: undefined }, "invalid compiled dataset"],
+    ["techniques", { ...compiledModel, techniques: undefined }, "invalid compiled dataset"],
+    ["countries", { ...compiledModel, countries: undefined }, "invalid compiled dataset"],
+    ["weightCategories", { ...compiledModel, weightCategories: undefined }, "invalid compiled dataset"],
+    ["manifest.serviceVersion", { ...compiledModel, manifest: { ...compiledModel.manifest, serviceVersion: undefined } }, "invalid compiled dataset: manifest.serviceVersion"],
+    ["manifest.sourceGitCommit", { ...compiledModel, manifest: { ...compiledModel.manifest, sourceGitCommit: undefined } }, "invalid compiled dataset: manifest.sourceGitCommit"],
+    ['manifest.checksums["budokon.json"]', { ...compiledModel, manifest: { ...compiledModel.manifest, checksums: { ...compiledModel.manifest.checksums, "budokon.json": undefined } } }, 'invalid compiled dataset: manifest.checksums["budokon.json"]'],
+  ] as const;
 
-test("repository getter methods require valid manifest fields", () => {
-  const repoMissingServiceVersion = new JsonReadModelRepository({ ...compiledModel, manifest: { ...compiledModel.manifest, serviceVersion: undefined } });
-  assert.throws(
-    () => repoMissingServiceVersion.serviceVersion,
-    /Invalid manifest: missing serviceVersion/,
-  );
-
-  const repoMissingCommit = new JsonReadModelRepository({ ...compiledModel, manifest: { ...compiledModel.manifest, sourceGitCommit: undefined } });
-  assert.throws(
-    () => repoMissingCommit.sourceGitCommit,
-    /Invalid manifest: missing sourceGitCommit/,
-  );
-
-  const repoMissingChecksum = new JsonReadModelRepository({ ...compiledModel, manifest: { ...compiledModel.manifest, checksums: undefined } });
-  assert.throws(
-    () => repoMissingChecksum.datasetChecksum,
-    /Invalid manifest: missing budokon.json checksum/,
-  );
+  for (const [field, malformedModel, expectedMessage] of cases) {
+    assert.throws(
+      () => new JsonReadModelRepository(malformedModel),
+      error => error instanceof TypeError && error.message === expectedMessage,
+      field,
+    );
+  }
 });
 test("REST and MCP seeded selections are byte-for-byte equivalent", () => {
   const input = { count: 1, filters: { gender: ["male"], countryCode: ["JP", "GE"] }, exclude: ["ilia-sulamanidze"], seed: "match-472-round-3" };
