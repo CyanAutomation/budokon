@@ -54,6 +54,11 @@ export function coverageViolations(summary: CoverageSummary, weightCategories, p
   return violations;
 }
 
+/** Format policy violations as one actionable diagnostic. */
+export function formatCoverageViolations(violations: readonly string[]) {
+  return `Coverage policy violations (${coveragePolicyId}):\n${violations.map(message => `  - ${message}`).join('\n')}`;
+}
+
 /** Fail a gate with every policy violation included in one actionable diagnostic. */
 export function assertCoveragePolicySatisfied(
   summary: CoverageSummary,
@@ -62,6 +67,6 @@ export function assertCoveragePolicySatisfied(
 ) {
   const violations = coverageViolations(summary, weightCategories, policy);
   if (violations.length) {
-    throw new Error(`Coverage policy violations (${coveragePolicyId}):\n${violations.map(message => `  - ${message}`).join('\n')}`);
+    throw new Error(formatCoverageViolations(violations));
   }
 }
