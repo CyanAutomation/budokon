@@ -1485,6 +1485,14 @@ the numeric targets `power`, `speed`, `technique`, `kumikata`, `newaza`,
 `shido`, `waza_ari`, and `score`; `set` supports those numeric state targets
 with non-negative integers and `match_result` with the value `forfeit`.
 
+Compiled-model compatibility is intentionally limited by dataset version.
+Pre-events compiled models from `2026.08.1` through `2026.08.6` are supported;
+when one of those models omits `events`, the runtime treats it as an empty
+collection. Events became part of the compiled model in dataset `2026.08.7`, so
+that version and every later version must include an `events` array (which may
+itself be empty). Omitting the property from a current-version model is invalid
+input rather than another spelling of an empty collection.
+
 Browser games should draw an event with `POST /v1/events/draw`, rather than a
 random GET, so HTTP caches cannot accidentally turn a random draw into a shared
 cached response:
