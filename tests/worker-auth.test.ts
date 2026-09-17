@@ -6,17 +6,29 @@ function request(headers = {}) {
   return new Request("https://example.test/v1/judoka", { headers });
 }
 
-test("credential accepts bearer tokens case-insensitively", () => {
-  assert.equal(credential(request({ authorization: "bEaReR bearer-secret" })), "bearer-secret");
-});
+/** @see ../README.md#mcp-authentication-and-allowed-methods */
+test("credential parses only documented worker/API authentication syntax", () => {
+  const cases = [
+    { name: "X-API-Key", headers: { "x-api-key": "api-secret" }, expected: "api-secret" },
+    { name: "canonical Bearer scheme", headers: { authorization: "Bearer bearer-secret" }, expected: "bearer-secret" },
+    { name: "mixed-case Bearer scheme", headers: { authorization: "bEaReR bearer-secret" }, expected: "bearer-secret" },
+    { name: "unsupported scheme", headers: { authorization: "Basic bearer-secret" }, expected: "" },
+    { name: "malformed Bearer scheme", headers: { authorization: "Bearer-bearer-secret" }, expected: "" },
+    { name: "empty Bearer token", headers: { authorization: "Bearer " }, expected: "" },
+    { name: "leading HTTP field whitespace", headers: { authorization: " Bearer bearer-secret" }, expected: "bearer-secret" },
+    { name: "trailing HTTP field whitespace", headers: { authorization: "Bearer bearer-secret " }, expected: "bearer-secret" },
+    { name: "whitespace within the token", headers: { authorization: "Bearer bearer secret" }, expected: "" },
+    {
+      name: "simultaneous Authorization and X-API-Key headers",
+      headers: { authorization: "Bearer bearer-secret", "x-api-key": "api-secret" },
+      expected: ""
+    },
+    { name: "missing credential", headers: {}, expected: "" }
+  ];
 
-test("authorized rejects both credential headers as required by the worker/API security documentation", () => {
-  const expected = "correct-secret";
-
-  assert.equal(authorized(request({ "x-api-key": "api-secret", authorization: "Bearer bearer-secret" }), expected), false);
-  assert.equal(authorized(request({ "x-api-key": expected, authorization: `Bearer ${expected}` }), expected), false);
-  assert.equal(authorized(request({ "x-api-key": expected, authorization: "Bearer wrong-secret" }), expected), false);
-  assert.equal(authorized(request({ "x-api-key": "wrong-secret", authorization: `Bearer ${expected}` }), expected), false);
+  for (const requestCase of cases) {
+    assert.equal(credential(request(requestCase.headers)), requestCase.expected, requestCase.name);
+  }
 });
 
 test("authorized accepts only an exact credential match", () => {
@@ -24,9 +36,6 @@ test("authorized accepts only an exact credential match", () => {
   assert.equal(authorized(request({ "x-api-key": "wrong--secret" }), "correct-secret"), false);
   assert.equal(authorized(request({ "x-api-key": "short" }), "correct-secret"), false);
   assert.equal(authorized(request({ "x-api-key": "correct-secret-with-extra" }), "correct-secret"), false);
-});
-
-test("authorized rejects missing configured and supplied secrets", () => {
   assert.equal(authorized(request({ "x-api-key": "secret" }), undefined), false);
   assert.equal(authorized(request(), "secret"), false);
 });
