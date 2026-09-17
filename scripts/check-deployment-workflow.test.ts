@@ -169,7 +169,16 @@ test("accepts workflow commands that exist in package scripts", async t => {
   );
   await writeFile(path.join(root, "package.json"), JSON.stringify({ scripts: { check: "echo check", test: "echo test" } }));
 
-  await assert.doesNotReject(checkWorkflowNpmScripts(root));
+  const result = await checkWorkflowNpmScripts(root);
+  assert.deepEqual(result.workflows, [
+    {
+      workflowPath: path.join(root, ".github/workflows/validate.yml"),
+      scripts: [
+        { name: "check", command: "echo check" },
+        { name: "test", command: "echo test" },
+      ],
+    },
+  ]);
 });
 
 test("rejects a workflow command that is absent from package scripts", async t => {
