@@ -5,7 +5,7 @@ import { normalizeSearchText } from "../domain/catalog-filters.js";
 const byId = (a: { id: string }, b: { id: string }) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
 
 const validateCompiledDataset = (model: CompiledDataset): void => {
-  if (typeof model.datasetVersion !== "string" || model.datasetVersion.trim() === "" || !Array.isArray(model.judoka) || !Array.isArray(model.techniques) || !Array.isArray(model.countries) || !Array.isArray(model.weightCategories)) {
+  if (typeof model.datasetVersion !== "string" || model.datasetVersion.trim() === "" || !Array.isArray(model.judoka) || !Array.isArray(model.techniques) || !model.countries || typeof model.countries !== "object" || Array.isArray(model.countries) || !Array.isArray(model.weightCategories)) {
     throw new TypeError("invalid compiled dataset");
   }
 
