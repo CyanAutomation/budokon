@@ -5,7 +5,7 @@ import { DRAW_ALGORITHM, DrawService } from "../build/runtime/draw/draw-service.
 import { JsonReadModelRepository } from "../build/runtime/repository/json-read-model-repository.js";
 import { createRestHandlers } from "../build/runtime/api/handlers.js";
 import { createMcpTools } from "../build/runtime/mcp/tools.js";
-import type { Judoka } from "../build/runtime/domain/types.js";
+import type { JsonValue, Judoka } from "../build/runtime/domain/types.js";
 import type { ReadModelRepository } from "../build/runtime/repository/read-model-repository.js";
 import compiledModel from "./fixtures/compiled-model.js";
 
@@ -146,8 +146,9 @@ test("repository rejects invalid compiled dataset structure", () => {
   ] as const;
 
   for (const [field, malformedModel, expectedMessage] of cases) {
+    // These deliberately malformed values bypass compile-time validation to exercise runtime guards.
     assert.throws(
-      () => new JsonReadModelRepository(malformedModel),
+      () => new JsonReadModelRepository(malformedModel as unknown as JsonValue),
       error => error instanceof TypeError && error.message === expectedMessage,
       field,
     );
