@@ -91,31 +91,101 @@ test("filters do not coerce missing field values into matches", () => {
   assert.deepEqual(sparseCatalog.listJudoka({ filters: { countryCode: "undefined" } }), []);
 });
 test("repository preserves the compiled dataset contract across object and serialized inputs", () => {
-  const fromObject = new JsonReadModelRepository(compiledModel);
-  const fromSerialized = new JsonReadModelRepository(JSON.stringify(compiledModel));
+  const inputs = [
+    ["object", compiledModel],
+    ["JSON string", JSON.stringify(compiledModel)],
+  ] as const;
 
-  assert.deepEqual(
-    {
-      datasetVersion: fromSerialized.datasetVersion,
-      serviceVersion: fromSerialized.serviceVersion,
-      sourceGitCommit: fromSerialized.sourceGitCommit,
-      datasetChecksum: fromSerialized.datasetChecksum
-    },
-    {
-      datasetVersion: fromObject.datasetVersion,
-      serviceVersion: fromObject.serviceVersion,
-      sourceGitCommit: fromObject.sourceGitCommit,
-      datasetChecksum: fromObject.datasetChecksum
-    }
-  );
-  assert.deepEqual(fromSerialized.getJudoka("shozo-fujii"), fromObject.getJudoka("shozo-fujii"));
-  assert.deepEqual(fromSerialized.getTechnique("seoi-nage"), fromObject.getTechnique("seoi-nage"));
-  assert.deepEqual(fromSerialized.listJudoka(), fromObject.listJudoka());
-  assert.deepEqual(fromSerialized.listTechniques(), fromObject.listTechniques());
-  assert.deepEqual(fromSerialized.listEvents(), fromObject.listEvents());
-  assert.deepEqual(fromSerialized.getEvent("failed-judogi-control"), fromObject.getEvent("failed-judogi-control"));
-  assert.deepEqual(fromSerialized.listCountries(), fromObject.listCountries());
-  assert.deepEqual(fromSerialized.listWeightCategories(), fromObject.listWeightCategories());
+  for (const [inputForm, input] of inputs) {
+    const subject = new JsonReadModelRepository(input);
+
+    assert.deepEqual({
+      datasetVersion: subject.datasetVersion,
+      serviceVersion: subject.serviceVersion,
+      sourceGitCommit: subject.sourceGitCommit,
+      datasetChecksum: subject.datasetChecksum,
+    }, {
+      datasetVersion: "2026.08.7",
+      serviceVersion: "0.1.0",
+      sourceGitCommit: "3a808d5c7d732d1f4e9ea41e97aa77f0522abc05",
+      datasetChecksum: "sha256:870328b35375aaeede9b95df969325b8641105890d82dfc5a8b3996c90f6e8da",
+    }, `${inputForm}: release metadata`);
+    assert.deepEqual(subject.getJudoka("shozo-fujii"), {
+      id: "57a86958-73c3-4dd3-b8b8-f0bbaab58b67",
+      slug: "shozo-fujii",
+      firstname: "Shōzō",
+      surname: "Fujii",
+      personType: "real",
+      countryCode: "JP",
+      weightClass: "-81",
+      category: "Judo",
+      stats: { power: 8, speed: 8, technique: 8, kumikata: 7, newaza: 8 },
+      lastUpdated: "2026-08-14T00:00:00Z",
+      profileUrl: "https://en.wikipedia.org/wiki/Sh%C5%8Dz%C5%8D_Fujii",
+      bio: "Japanese judoka Shōzō Fujii won four consecutive world titles during the 1970s in the divisions now represented by 81 kg.",
+      gender: "male",
+      isHidden: false,
+      rarity: "Legendary",
+      signatureMoveIds: ["seoi-nage"],
+      aliases: ["Shozo Fujii"],
+      country: "Japan",
+    }, `${inputForm}: judoka`);
+    assert.deepEqual(subject.getTechnique("seoi-nage"), {
+      id: "seoi-nage",
+      name: "Seoi-nage",
+      japanese: "背負投",
+      style: "Judo",
+      category: "Nage-waza",
+      subCategory: "Te-waza",
+      description: "A shoulder throw where the opponent is lifted and thrown over the shoulder.",
+      link: "https://en.wikipedia.org/wiki/Seoi_nage",
+    }, `${inputForm}: technique`);
+    assert.deepEqual(subject.getEvent("failed-judogi-control"), {
+      id: "failed-judogi-control",
+      ruleset: "ju-do-kon-v1",
+      category: "shiai",
+      description: "The judoka fails judogi control and forfeits the contest.",
+      effects: [{ action: "set", target: "match_result", value: "forfeit" }],
+    }, `${inputForm}: event`);
+    assert.deepEqual(Object.keys(subject.listCountries()), [
+      "AT", "AU", "AZ", "BE", "BG", "BR", "BT", "CA", "CL", "CN", "CZ", "DE", "ES", "FR", "GB", "GE", "GR", "HR", "HU", "IT", "JM", "JP", "KR", "KZ", "MA", "MD", "MN", "MX", "NL", "PT", "RU", "SE", "TJ", "TR", "US", "UZ", "VU",
+    ], `${inputForm}: countries`);
+    assert.deepEqual(subject.listCountries().JP, {
+      country: "Japan", code: "JP", lastUpdated: "2025-04-23T10:00:00Z", active: true,
+    }, `${inputForm}: country details`);
+    assert.deepEqual(subject.listWeightCategories(), [
+      {
+        gender: "female",
+        description: "Women’s weight categories",
+        categories: [
+          { weight: "+78", descriptor: "Heavyweight" },
+          { weight: "-48", descriptor: "Extra Lightweight" },
+          { weight: "-52", descriptor: "Half Lightweight" },
+          { weight: "-57", descriptor: "Lightweight" },
+          { weight: "-63", descriptor: "Half Middleweight" },
+          { weight: "-70", descriptor: "Middleweight" },
+          { weight: "-78", descriptor: "Half Heavyweight" },
+        ],
+      },
+      {
+        gender: "male",
+        description: "Men’s weight categories",
+        categories: [
+          { weight: "+100", descriptor: "Heavyweight" },
+          { weight: "-100", descriptor: "Half Heavyweight" },
+          { weight: "-60", descriptor: "Extra Lightweight" },
+          { weight: "-66", descriptor: "Half Lightweight" },
+          { weight: "-73", descriptor: "Lightweight" },
+          { weight: "-81", descriptor: "Half Middleweight" },
+          { weight: "-90", descriptor: "Middleweight" },
+        ],
+      },
+    ], `${inputForm}: weight categories`);
+  }
+
+  const objectRecordCount = new JsonReadModelRepository(compiledModel).listJudoka().length;
+  const serializedRecordCount = new JsonReadModelRepository(JSON.stringify(compiledModel)).listJudoka().length;
+  assert.equal(serializedRecordCount, objectRecordCount, "serialization preserves the record count");
 });
 test("repository reports malformed serialized data with parse context", () => {
   assert.throws(
