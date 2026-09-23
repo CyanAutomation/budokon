@@ -5,6 +5,7 @@
     "src/contracts",
     "src/domain",
     "src/draw",
+    "src/jev",
     "src/mcp",
     "src/platform",
     "src/repository"

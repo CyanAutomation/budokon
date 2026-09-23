@@ -12,3 +12,7 @@ export * from "./domain/coverage.js";
 export * from "./platform/cloudflare.js";
 export * from "./platform/vercel.js";
 export * from "./mcp/tools.js";
+export * from "./jev/types.js";
+export * from "./jev/client.js";
+export * from "./jev/editorial-review.js";
+export * from "./jev/semantic-search.js";

@@ -104,6 +104,26 @@ test("MCP tools/list returns all available tools with schemas", async () => {
   }
 });
 
+test("JEV MCP tools are discoverable only to the internal credential when configured", async () => {
+  const env: Env = { ...mockEnv, JEV_OPENROUTER_API_KEY: "test-key" };
+  const listTools = async (credential: string, id: number) => {
+    const response = await worker.fetch(new Request("https://example.test/mcp", {
+      method: "POST",
+      headers: { host: "example.test", authorization: `Bearer ${credential}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
+      body: JSON.stringify({ jsonrpc: "2.0", id, method: "tools/list" }),
+    }), env);
+    const body = await mcpJson(response) as { result: { tools: Array<{ name: string }> } };
+    return body.result.tools.map(tool => tool.name);
+  };
+
+  const regularNames = await listTools(env.API_KEY, 20);
+  const internalNames = await listTools(env.INTERNAL_API_KEY!, 21);
+  assert.ok(!regularNames.includes("semantic_search_judoka"));
+  assert.ok(!regularNames.includes("review_proposed_judoka"));
+  assert.ok(internalNames.includes("semantic_search_judoka"));
+  assert.ok(internalNames.includes("review_proposed_judoka"));
+});
+
 /**
  * Public tool result contracts: docs/API.md#MCP-tools. Search semantics are
  * exercised in detail by the conformance test in application-services.test.ts.
