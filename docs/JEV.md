@@ -1,28 +1,39 @@
-# JEV editorial assistance
+# JEV assistance
 
-JEV is an optional, internal-only assistant for bounded semantic judgements. It is not part of canonical validation, compilation, REST search, deterministic draws, or release generation. Git review and the existing validators remain authoritative.
+JEV is an optional, internal-only assistant for bounded semantic judgements. It is not part of canonical validation, compilation, REST search, deterministic draws, or release generation. Existing validators and human Git review remain authoritative. JEV never writes catalogue data or fetches source pages.
 
 ## Enablement
 
-Configure the following Worker secrets; never commit their values or place them in `wrangler.toml`:
+Configure Worker secrets; never commit their values or put them in `wrangler.toml`:
 
 ```sh
 npx wrangler secret put JEV_OPENROUTER_API_KEY
-# Optional aliases with conservative defaults:
-npx wrangler secret put JEV_MODEL       # defaults to ~typesafe/jev-latest
-npx wrangler secret put JEV_TIMEOUT_MS  # defaults to 15000
+npx wrangler secret put JEV_MODEL       # optional; defaults to ~typesafe/jev-latest
+npx wrangler secret put JEV_TIMEOUT_MS  # optional; defaults to 15000
 ```
 
-The AI tools are absent unless `JEV_OPENROUTER_API_KEY` is configured. They are also registered only for an MCP request authenticated with `INTERNAL_API_KEY`; a regular `API_KEY` cannot discover or call them. The Worker does not log the credential. The client validates every returned answer against the question types it submitted, retries only transient failures, and applies a timeout.
+The JEV MCP tools are absent unless `JEV_OPENROUTER_API_KEY` is configured. They are registered only for MCP requests authenticated with `INTERNAL_API_KEY`; a regular `API_KEY` cannot discover or call them. The Worker does not log the credential. Responses are checked against the requested answer types and candidate options. Network errors, timeouts, HTTP 429, 502, 503, 504, and 529 are retried a bounded number of times, honoring `Retry-After` up to a 10-second delay.
 
-## MCP tools
+## Internal MCP tools
 
-`review_proposed_judoka` accepts a proposed record, source URLs, and excerpts. It evaluates biography publishability, support for factual claims, potential duplicate candidates, and whether game attributes such as rarity, stats, and signature techniques are internally coherent. The latter is an editorial suggestion, never an objective ranking. Its result is advisory and always has `requiresHumanApproval: true`; it never writes data or retrieves sources.
+`semantic_search_judoka` ranks at most 20 judoka from an already-filtered candidate pool, with a 1,000-character query and 64 KB serialized-input cap. Ordinary catalogue filters should narrow broad requests first. JEV complements, but never changes, deterministic catalogue search.
 
-`semantic_search_judoka` ranks a query against an already-filtered candidate pool. It has a hard limit of 20 candidates, so callers must use ordinary catalogue filters to narrow broad requests. This protects cost and latency and means the tool supplements, rather than replaces, the deterministic `search_judoka` API.
+`interpret_judoka_query` maps a natural-language query onto the catalogue's existing country, gender, weight, rarity, and person-type filters. Only choices meeting the confidence threshold (0.7 by default) are applied; lower-confidence choices are returned as suggestions. The caller should show or retain those suggestions rather than silently narrowing results. The final lookup still uses Budokon's deterministic catalogue filters.
 
-Both tools return the resolved JEV model, typed answers or relevance probabilities, and provider usage metadata. They must be treated as review signals, not as factual sources.
+`review_proposed_judoka` reviews a proposed canonical-shaped record against supplied source excerpts and up to ten duplicate candidates. It returns separate editorial signals for biography quality, factual support, stats, rarity, signature techniques, duplicates, and human review. Inputs are bounded and schema-checked. A URL without an excerpt is not evidence. Its recommendation is advisory and always has `requiresHumanApproval: true`.
 
-## Operating guidance
+All tools return the resolved model and provider usage metadata. Treat answers as review signals, not facts. Review low-confidence, duplicate, unsupported-claim, and attribute-fit results manually.
 
-Use supplied source excerpts rather than allowing model-driven web fetching. Review low-confidence, duplicate, and unsupported-claim results manually. Do not use JEV to create or modify canonical records, select draws, calculate game outcomes, or make release decisions.
+## Manual GitHub advisory and evaluation
+
+The manually dispatched [JEV Advisory Review workflow](../.github/workflows/jev-advisory.yaml) can review up to 10 changed judoka JSON records in an open PR targeting the default branch, or run the small semantic-search evaluation. It checks out trusted default-branch code, reads PR metadata and proposed JSON through GitHub's read-only API, and writes only to the Actions step summary. It does not execute PR code, post comments, approve/merge PRs, or alter repository data. PR review intentionally supplies no source excerpts, so factual-support scores are explicitly reported as an evidence gap; it is not a fact-check.
+
+To enable it, add `JEV_OPENROUTER_API_KEY` as a repository Actions secret. Optionally set the Actions variable `JEV_MODEL` to select a model. Then choose Actions → JEV Advisory Review → Run workflow on the default branch and select `review-pr` (with a PR number) or `evaluate-search`.
+
+The three hand-labeled search cases live in `tests/fixtures/jev-evaluation.json`. Run the same live evaluation locally with:
+
+```sh
+JEV_OPENROUTER_API_KEY=… npm run jev:evaluate
+```
+
+It reports precision, recall, model IDs, ranking scores, and provider usage. The fixture is intentionally small and non-gating: use its results for regression visibility and threshold comparison, not as a statistically robust accuracy claim. Keep the model alias configurable until repeated, labeled evaluation supports pinning it. Do not use JEV to create or modify canonical records, select draws, calculate game outcomes, or make release decisions.

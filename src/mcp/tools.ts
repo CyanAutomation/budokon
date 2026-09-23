@@ -4,8 +4,9 @@ import type { DrawService } from "../draw/draw-service.js";
 import type { EventDrawService } from "../draw/event-draw-service.js";
 import type { EditorialReviewInput, EditorialReviewer } from "../jev/editorial-review.js";
 import type { SemanticJudokaSearcher } from "../jev/semantic-search.js";
+import type { JudokaQueryInterpreter } from "../jev/query-interpreter.js";
 interface SearchToolRequest extends DrawRequest { query?: string; q?: string; filters?: Filters; }
-export function createMcpTools({ catalog, draw, eventDraw, semanticSearch, editorialReview }: { catalog: CatalogService; draw: DrawService; eventDraw?: EventDrawService; semanticSearch?: SemanticJudokaSearcher; editorialReview?: EditorialReviewer }) {
+export function createMcpTools({ catalog, draw, eventDraw, semanticSearch, editorialReview, queryInterpreter }: { catalog: CatalogService; draw: DrawService; eventDraw?: EventDrawService; semanticSearch?: SemanticJudokaSearcher; editorialReview?: EditorialReviewer; queryInterpreter?: JudokaQueryInterpreter }) {
   const versioned = <T extends object>(body: T) => ({ datasetVersion: catalog.repository.datasetVersion, ...body });
   const requireInternal = (context: RequestContext) => {
     if (context.authorizedInternal !== true) throw new Error("internal authorization is required for JEV tools");
@@ -28,7 +29,18 @@ export function createMcpTools({ catalog, draw, eventDraw, semanticSearch, edito
     async review_proposed_judoka(input: EditorialReviewInput, context: RequestContext = {}) {
       requireInternal(context);
       if (!editorialReview) throw new Error("JEV editorial review is not configured");
-      return editorialReview.review(input);
+      const signatureMoveIds = Array.isArray(input.record?.signatureMoveIds) ? input.record.signatureMoveIds : [];
+      const techniques = catalog.listTechniques().filter(technique => signatureMoveIds.includes(technique.id));
+      return editorialReview.review({ ...input, techniques });
+    },
+    async interpret_judoka_query({ query }: { query: string }, context: RequestContext = {}) {
+      requireInternal(context);
+      if (!queryInterpreter) throw new Error("JEV judoka query interpretation is not configured");
+      const interpretation = await queryInterpreter.interpret(query, {
+        countries: catalog.listCountries(),
+        weightCategories: catalog.listWeightCategories(),
+      });
+      return versioned(interpretation);
     },
   };
 }

@@ -1139,11 +1139,11 @@ contract remains [openapi/v1.yaml](openapi/v1.yaml)).
 
 BU-DO-KON may expose the same core capabilities through MCP for AI agents and conversational applications.
 
-Optional JEV-backed editorial review and bounded semantic candidate ranking are
-available only to an internally authenticated MCP client. They are advisory,
-never mutate canonical data, and do not affect deterministic search, drawing,
-validation, or releases. See [docs/JEV.md](docs/JEV.md) for configuration and
-operational constraints.
+Optional JEV-backed query interpretation, editorial review, and bounded
+semantic candidate ranking are available only to an internally authenticated
+MCP client. They are advisory, never mutate canonical data, and do not affect
+deterministic search, drawing, validation, or releases. See [docs/JEV.md](docs/JEV.md)
+for configuration, evaluation, and operational constraints.
 
 Potential MCP tools include:
 
@@ -1153,6 +1153,9 @@ search_judoka
 draw_judoka
 list_techniques
 get_technique
+interpret_judoka_query (internal JEV tool)
+semantic_search_judoka (internal JEV tool)
+review_proposed_judoka (internal JEV tool)
 ```
 
 Example:
