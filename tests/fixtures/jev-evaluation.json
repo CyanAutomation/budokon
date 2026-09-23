@@ -1,0 +1,20 @@
+[
+  {
+    "id": "jp-male-uchi-mata",
+    "query": "Japanese male judoka known for the uchi-mata throw",
+    "candidateSlugs": ["shohei-ono", "lasha-bekauri", "shozo-fujii", "teddy-riner", "uta-abe"],
+    "relevantSlugs": ["shohei-ono"]
+  },
+  {
+    "id": "french-female-63kg",
+    "query": "French woman in the 63 kg division",
+    "candidateSlugs": ["clarisse-agbegnenou", "uta-abe", "anna-maria-wagner", "hifumi-abe"],
+    "relevantSlugs": ["clarisse-agbegnenou"]
+  },
+  {
+    "id": "japanese-female-52kg",
+    "query": "Japanese woman who competes at 52 kg",
+    "candidateSlugs": ["uta-abe", "ryoko-tani", "clarisse-agbegnenou", "teddy-riner", "tara-babulfath"],
+    "relevantSlugs": ["uta-abe"]
+  }
+]

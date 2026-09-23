@@ -16,3 +16,4 @@ export * from "./jev/types.js";
 export * from "./jev/client.js";
 export * from "./jev/editorial-review.js";
 export * from "./jev/semantic-search.js";
+export * from "./jev/query-interpreter.js";
