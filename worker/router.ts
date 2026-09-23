@@ -5,6 +5,9 @@ import { DrawService } from "../src/draw/draw-service.js";
 import { EventDrawService } from "../src/draw/event-draw-service.js";
 import { createRestRouter } from "../src/api/router.js";
 import { createBudokonMcpHandler } from "../src/mcp/server.js";
+import { EditorialReviewService } from "../src/jev/editorial-review.js";
+import { OpenRouterJevClient } from "../src/jev/client.js";
+import { SemanticJudokaSearchService } from "../src/jev/semantic-search.js";
 import { JsonReadModelRepository } from "../src/repository/json-read-model-repository.js";
 import { authorized } from "./auth.js";
 import { cachePublicGet, preflightResponse, withCors } from "./cors.js";
@@ -22,6 +25,10 @@ export interface Env {
   PUBLIC_ALLOWED_ORIGINS?: string;
   PUBLIC_RATE_LIMITER?: { limit(options: { key: string }): Promise<{ success: boolean }> };
   MCP_RATE_LIMITER?: { limit(options: { key: string }): Promise<{ success: boolean }> };
+  /** Optional secret enabling internal-only JEV editorial review and semantic MCP tools. */
+  JEV_OPENROUTER_API_KEY?: string;
+  JEV_MODEL?: string;
+  JEV_TIMEOUT_MS?: string;
 }
 
 const repository = new JsonReadModelRepository({ ...dataset, manifest });
@@ -73,7 +80,16 @@ export function createWorker(openApiSpecification: string) {
         const rejected = hostHeaderValidationResponse(request, allowedHostnames)
           ?? originValidationResponse(request, allowedHostnames.map(hostname => `https://${hostname}`));
         if (rejected) return rejected;
-        const mcp = createBudokonMcpHandler({ catalog, draw, eventDraw, authorizeInternal: () => authentication.authorizedInternal });
+        const client = env.JEV_OPENROUTER_API_KEY ? new OpenRouterJevClient({
+          apiKey: env.JEV_OPENROUTER_API_KEY,
+          model: env.JEV_MODEL,
+          timeoutMs: Number(env.JEV_TIMEOUT_MS),
+        }) : undefined;
+        const mcp = createBudokonMcpHandler({
+          catalog, draw, eventDraw, authorizeInternal: () => authentication.authorizedInternal,
+          semanticSearch: client ? new SemanticJudokaSearchService(client) : undefined,
+          editorialReview: client ? new EditorialReviewService(client) : undefined,
+        });
         response = await mcp.fetch(request);
       } else {
         // Catalogue reads and draws are public; hidden records still require INTERNAL_API_KEY.
