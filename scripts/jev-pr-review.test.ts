@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import type { Judoka } from "../src/domain/types.js";
-import { findCanonicalIdentityConflicts, rankDuplicateCandidates, renderPullRequestReviewSummary } from "./jev-pr-review.js";
+import { findCanonicalIdentityConflicts, hasTrustedRepositoryPermission, rankDuplicateCandidates, renderPullRequestReviewSummary } from "./jev-pr-review.js";
 
 const workflow = await readFile(new URL("../.github/workflows/jev-advisory.yaml", import.meta.url), "utf8");
 
@@ -36,6 +36,13 @@ test("JEV workflow is manually dispatched, read-only, and gated to the default b
   assert.doesNotMatch(workflow, /contents: write|pull-requests: write/);
   assert.match(workflow, /github\.event\.repository\.default_branch/);
   assert.match(workflow, /persist-credentials: false/);
+});
+
+test("PR review trusts only repository permissions that can write", () => {
+  for (const permission of ["admin", "maintain", "write"]) assert.equal(hasTrustedRepositoryPermission(permission), true);
+  for (const permission of ["triage", "read", "none", "", null, undefined]) {
+    assert.equal(hasTrustedRepositoryPermission(permission), false);
+  }
 });
 
 test("PR review report marks missing source excerpts as an evidence gap", () => {
