@@ -42,7 +42,6 @@
     "test:validation:integration": "tsx --test --test-name-pattern='integration: canonical repository release gate' tests/validation.test.ts",
     "test": "npm run build && tsx --test scripts/*.test.ts tests/*.test.ts",
     "jev:evaluate": "tsx scripts/evaluate-jev.ts",
-    "jev:review-pr": "tsx scripts/jev-pr-review.ts",
     "release": "semantic-release",
     "release:dry": "semantic-release --dry-run",
     "deploy": "wrangler deploy"
