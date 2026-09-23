@@ -4,12 +4,14 @@ import type { JevDecisionClient } from "./types.js";
 export interface SemanticSearchResult { judoka: Judoka; relevance: number; }
 export interface SemanticSearchResponse { model: string; usage: Record<string, unknown>; results: SemanticSearchResult[]; }
 export interface SemanticJudokaSearcher { search(query: string, candidates: Judoka[]): Promise<SemanticSearchResponse>; }
+export const MAX_SEMANTIC_SEARCH_CANDIDATES = 100;
+export const DEFAULT_SEMANTIC_SEARCH_MAX_CANDIDATES = MAX_SEMANTIC_SEARCH_CANDIDATES;
 
-/** Ranks a deliberately bounded, already-filtered candidate pool; it does not replace catalogue search. */
+/** Ranks a bounded candidate pool, including the complete current catalogue; it does not replace deterministic search. */
 export class SemanticJudokaSearchService implements SemanticJudokaSearcher {
   constructor(private readonly client: JevDecisionClient, private readonly options: { maxCandidates?: number; minimumRelevance?: number } = {}) {
-    if (options.maxCandidates !== undefined && (!Number.isInteger(options.maxCandidates) || options.maxCandidates < 1)) {
-      throw new RangeError("maxCandidates must be a positive integer");
+    if (options.maxCandidates !== undefined && (!Number.isInteger(options.maxCandidates) || options.maxCandidates < 1 || options.maxCandidates > MAX_SEMANTIC_SEARCH_CANDIDATES)) {
+      throw new RangeError(`maxCandidates must be an integer between 1 and ${MAX_SEMANTIC_SEARCH_CANDIDATES}`);
     }
     if (options.minimumRelevance !== undefined && (!Number.isFinite(options.minimumRelevance) || options.minimumRelevance < 0 || options.minimumRelevance > 1)) {
       throw new RangeError("minimumRelevance must be between 0 and 1");
@@ -17,7 +19,7 @@ export class SemanticJudokaSearchService implements SemanticJudokaSearcher {
   }
 
   async search(query: string, candidates: Judoka[]): Promise<SemanticSearchResponse> {
-    const maxCandidates = this.options.maxCandidates ?? 20;
+    const maxCandidates = this.options.maxCandidates ?? DEFAULT_SEMANTIC_SEARCH_MAX_CANDIDATES;
     if (!query.trim()) throw new TypeError("query must be non-empty");
     if (query.length > 1_000) throw new RangeError("semantic search query must not exceed 1000 characters");
     if (candidates.length > maxCandidates) throw new RangeError(`semantic search accepts at most ${maxCandidates} candidates; narrow with catalogue filters first`);

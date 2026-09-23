@@ -4,7 +4,9 @@ import type { DrawService } from "../draw/draw-service.js";
 import type { EventDrawService } from "../draw/event-draw-service.js";
 import type { EditorialReviewInput, EditorialReviewer } from "../jev/editorial-review.js";
 import type { SemanticJudokaSearcher } from "../jev/semantic-search.js";
+import { DEFAULT_SEMANTIC_SEARCH_MAX_CANDIDATES } from "../jev/semantic-search.js";
 import type { JudokaQueryInterpreter } from "../jev/query-interpreter.js";
+import { rankDuplicateCandidates } from "../jev/duplicate-shortlist.js";
 interface SearchToolRequest extends DrawRequest { query?: string; q?: string; filters?: Filters; }
 export function createMcpTools({ catalog, draw, eventDraw, semanticSearch, editorialReview, queryInterpreter }: { catalog: CatalogService; draw: DrawService; eventDraw?: EventDrawService; semanticSearch?: SemanticJudokaSearcher; editorialReview?: EditorialReviewer; queryInterpreter?: JudokaQueryInterpreter }) {
   const versioned = <T extends object>(body: T) => ({ datasetVersion: catalog.repository.datasetVersion, ...body });
@@ -19,7 +21,7 @@ export function createMcpTools({ catalog, draw, eventDraw, semanticSearch, edito
     list_events: ({ ruleset, category }: { ruleset?: string; category?: string } = {}) => versioned({ events: catalog.listEvents({ ruleset, category }) }),
     get_event: ({ id }: { id: string }) => versioned({ event: catalog.getEvent(id) ?? null }),
     draw_event: (input: import("../domain/types.js").EventDrawRequest) => { if (!eventDraw) throw new Error("eventDraw service not configured"); return eventDraw.draw(input); }, version: () => catalog.version(),
-    async semantic_search_judoka({ query, q, filters = {}, exclude = [], includeHidden, maxCandidates = 20 }: SearchToolRequest & { maxCandidates?: number }, context: RequestContext = {}) {
+    async semantic_search_judoka({ query, q, filters = {}, exclude = [], includeHidden, maxCandidates = DEFAULT_SEMANTIC_SEARCH_MAX_CANDIDATES }: SearchToolRequest & { maxCandidates?: number }, context: RequestContext = {}) {
       requireInternal(context);
       if (!semanticSearch) throw new Error("JEV semantic search is not configured");
       const candidates = catalog.listJudoka({ filters, exclude, includeHidden, authorizedInternal: context.authorizedInternal });
@@ -31,7 +33,25 @@ export function createMcpTools({ catalog, draw, eventDraw, semanticSearch, edito
       if (!editorialReview) throw new Error("JEV editorial review is not configured");
       const signatureMoveIds = Array.isArray(input.record?.signatureMoveIds) ? input.record.signatureMoveIds : [];
       const techniques = catalog.listTechniques().filter(technique => signatureMoveIds.includes(technique.id));
-      return editorialReview.review({ ...input, techniques });
+      const duplicateCandidates = input.duplicateCandidates ?? rankDuplicateCandidates(
+        input.record,
+        catalog.listJudoka({ includeHidden: true, authorizedInternal: context.authorizedInternal }),
+      );
+      return editorialReview.review({ ...input, duplicateCandidates, techniques });
+    },
+    async review_proposed_judoka_batch({ proposals }: { proposals: EditorialReviewInput[] }, context: RequestContext = {}) {
+      requireInternal(context);
+      if (!editorialReview) throw new Error("JEV editorial review is not configured");
+      if (!editorialReview.reviewMany) throw new Error("JEV batch editorial review is not configured");
+      const canonical = catalog.listJudoka({ includeHidden: true, authorizedInternal: context.authorizedInternal });
+      const candidatePool = [...canonical, ...proposals.map(proposal => proposal.record)];
+      const techniques = catalog.listTechniques();
+      const prepared = proposals.map(proposal => ({
+        ...proposal,
+        duplicateCandidates: proposal.duplicateCandidates ?? rankDuplicateCandidates(proposal.record, candidatePool),
+        techniques: techniques.filter(technique => proposal.record.signatureMoveIds.includes(technique.id)),
+      }));
+      return editorialReview.reviewMany(prepared);
     },
     async interpret_judoka_query({ query }: { query: string }, context: RequestContext = {}) {
       requireInternal(context);
