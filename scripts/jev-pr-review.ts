@@ -96,8 +96,15 @@ export function renderPullRequestReviewSummary(prNumber: number, rows: Array<{ r
   return lines.join("\n");
 }
 
-interface PullRequestInfo { number: number; state: string; base: { ref: string; sha: string }; head: { sha: string }; }
+interface PullRequestInfo { number: number; state: string; user: { login: string } | null; base: { ref: string; sha: string }; head: { sha: string }; }
 interface PullRequestFile { filename: string; status: string; }
+
+const trustedRepositoryPermissions = new Set(["admin", "maintain", "write"]);
+
+/** Only repository writers may submit records to the external JEV service. */
+export function hasTrustedRepositoryPermission(permission: unknown): boolean {
+  return typeof permission === "string" && trustedRepositoryPermissions.has(permission);
+}
 
 async function githubJson<T>(route: string, token: string, apiUrl: string): Promise<T> {
   const response = await fetch(`${apiUrl.replace(/\/$/u, "")}${route}`, {
@@ -151,6 +158,13 @@ async function runPullRequestReview(): Promise<void> {
   const pr = await githubJson<PullRequestInfo>(`/repos/${repository}/pulls/${prNumber}`, token, apiUrl);
   if (pr.state !== "open") throw new Error(`PR #${prNumber} is not open`);
   if (pr.base.ref !== (process.env.GITHUB_DEFAULT_BRANCH ?? "main")) throw new Error("JEV review only supports pull requests targeting the default branch");
+  if (!pr.user?.login) throw new Error(`PR #${prNumber} has no identifiable author`);
+  const authorAccess = await githubJson<{ permission: unknown }>(
+    `/repos/${repository}/collaborators/${encodeURIComponent(pr.user.login)}/permission`, token, apiUrl,
+  );
+  if (!hasTrustedRepositoryPermission(authorAccess.permission)) {
+    throw new Error(`PR #${prNumber} author is not trusted to submit content for JEV review`);
+  }
 
   const changedFiles = (await fetchPullRequestFiles(repository, prNumber, token, apiUrl))
     .filter(file => file.status !== "removed" && /^data\/judoka\/[a-z0-9]+(?:-[a-z0-9]+)*\.json$/u.test(file.filename));
