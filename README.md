@@ -1139,6 +1139,12 @@ contract remains [openapi/v1.yaml](openapi/v1.yaml)).
 
 BU-DO-KON may expose the same core capabilities through MCP for AI agents and conversational applications.
 
+Optional JEV-backed editorial review and bounded semantic candidate ranking are
+available only to an internally authenticated MCP client. They are advisory,
+never mutate canonical data, and do not affect deterministic search, drawing,
+validation, or releases. See [docs/JEV.md](docs/JEV.md) for configuration and
+operational constraints.
+
 Potential MCP tools include:
 
 ```text
