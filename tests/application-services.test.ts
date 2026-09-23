@@ -107,7 +107,7 @@ test("repository preserves the compiled dataset contract across object and seria
     }, {
       datasetVersion: "2026.08.7",
       serviceVersion: "0.1.0",
-      sourceGitCommit: "3a808d5c7d732d1f4e9ea41e97aa77f0522abc05",
+      sourceGitCommit: compiledModel.manifest.sourceGitCommit,
       datasetChecksum: "sha256:870328b35375aaeede9b95df969325b8641105890d82dfc5a8b3996c90f6e8da",
     }, `${inputForm}: release metadata`);
     assert.deepEqual(subject.getJudoka("shozo-fujii"), {
