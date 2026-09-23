@@ -120,9 +120,11 @@ test("JEV MCP tools are discoverable only to the internal credential when config
   const internalNames = await listTools(env.INTERNAL_API_KEY!, 21);
   assert.ok(!regularNames.includes("semantic_search_judoka"));
   assert.ok(!regularNames.includes("review_proposed_judoka"));
+  assert.ok(!regularNames.includes("review_proposed_judoka_batch"));
   assert.ok(!regularNames.includes("interpret_judoka_query"));
   assert.ok(internalNames.includes("semantic_search_judoka"));
   assert.ok(internalNames.includes("review_proposed_judoka"));
+  assert.ok(internalNames.includes("review_proposed_judoka_batch"));
   assert.ok(internalNames.includes("interpret_judoka_query"));
 });
 

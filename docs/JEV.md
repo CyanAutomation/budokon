@@ -12,23 +12,25 @@ npx wrangler secret put JEV_MODEL       # optional; defaults to ~typesafe/jev-la
 npx wrangler secret put JEV_TIMEOUT_MS  # optional; defaults to 15000
 ```
 
+Optional Worker variables tune the advisory thresholds: `JEV_MINIMUM_RELEVANCE` (default `0.5`), `JEV_EDITORIAL_THRESHOLD` (default `0.8`), and `JEV_QUERY_MINIMUM_CONFIDENCE` (default `0.7`). Each must be between 0 and 1; invalid values fall back to the documented default. Calibrate them against labeled Budokon examples before relying on an automatic recommendation.
+
 The JEV MCP tools are absent unless `JEV_OPENROUTER_API_KEY` is configured. They are registered only for MCP requests authenticated with `INTERNAL_API_KEY`; a regular `API_KEY` cannot discover or call them. The Worker does not log the credential. Responses are checked against the requested answer types and candidate options. Network errors, timeouts, HTTP 429, 502, 503, 504, and 529 are retried a bounded number of times, honoring `Retry-After` up to a 10-second delay.
 
 ## Internal MCP tools
 
-`semantic_search_judoka` ranks at most 20 judoka from an already-filtered candidate pool, with a 1,000-character query and 64 KB serialized-input cap. Ordinary catalogue filters should narrow broad requests first. JEV complements, but never changes, deterministic catalogue search.
+`semantic_search_judoka` ranks up to 100 judoka in one JEV request, with a 1,000-character query and 64 KB serialized-input cap. The current catalogue fits in one request; if it grows beyond the limit, use ordinary catalogue filters to narrow the candidate pool. JEV complements, but never changes, deterministic catalogue search.
 
 `interpret_judoka_query` maps a natural-language query onto the catalogue's existing country, gender, weight, rarity, and person-type filters. Only choices meeting the confidence threshold (0.7 by default) are applied; lower-confidence choices are returned as suggestions. The caller should show or retain those suggestions rather than silently narrowing results. The final lookup still uses Budokon's deterministic catalogue filters.
 
-`review_proposed_judoka` reviews a proposed canonical-shaped record against supplied source excerpts and up to ten duplicate candidates. It returns separate editorial signals for biography quality, factual support, stats, rarity, signature techniques, duplicates, and human review. Inputs are bounded and schema-checked. A URL without an excerpt is not evidence. Its recommendation is advisory and always has `requiresHumanApproval: true`.
+`review_proposed_judoka` reviews a proposed canonical-shaped record against supplied source excerpts and a deterministic shortlist of likely catalogue duplicates. It returns separate signals for biography quality, identity, nationality, weight class, biography claim support, stats, rarity, signature techniques, duplicates, and human review. `review_proposed_judoka_batch` applies the same review to up to 10 proposals in one JEV request. Inputs are bounded and schema-checked. A URL without an excerpt is not evidence. Recommendations are advisory and always require human approval.
 
 All tools return the resolved model and provider usage metadata. Treat answers as review signals, not facts. Review low-confidence, duplicate, unsupported-claim, and attribute-fit results manually.
 
-## Manual GitHub advisory and evaluation
+## Manual GitHub evaluation
 
-The manually dispatched [JEV Advisory Review workflow](../.github/workflows/jev-advisory.yaml) can review up to 10 changed judoka JSON records in an open PR targeting the default branch, or run the small semantic-search evaluation. It checks out trusted default-branch code, reads PR metadata and proposed JSON through GitHub's read-only API, and writes only to the Actions step summary. It does not execute PR code, post comments, approve/merge PRs, or alter repository data. PR review intentionally supplies no source excerpts, so factual-support scores are explicitly reported as an evidence gap; it is not a fact-check.
+The manually dispatched [JEV Search Evaluation workflow](../.github/workflows/jev-advisory.yaml) runs only the small semantic-search evaluation on the default branch and writes its report to the Actions step summary. It does not inspect or review pull requests.
 
-To enable it, add `JEV_OPENROUTER_API_KEY` as a repository Actions secret. Optionally set the Actions variable `JEV_MODEL` to select a model. Then choose Actions → JEV Advisory Review → Run workflow on the default branch and select `review-pr` (with a PR number) or `evaluate-search`.
+To enable it, add `JEV_OPENROUTER_API_KEY` as a repository Actions secret. Optionally set the Actions variable `JEV_MODEL` to select a model. Then choose Actions → JEV Search Evaluation → Run workflow on the default branch.
 
 The three hand-labeled search cases live in `tests/fixtures/jev-evaluation.json`. Run the same live evaluation locally with:
 

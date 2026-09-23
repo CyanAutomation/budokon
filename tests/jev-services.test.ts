@@ -5,11 +5,12 @@ import { EditorialReviewService } from "../src/jev/editorial-review.js";
 import { JevClientError, OpenRouterJevClient, retryDelayMilliseconds } from "../src/jev/client.js";
 import { SemanticJudokaSearchService } from "../src/jev/semantic-search.js";
 import { JevJudokaQueryInterpreter } from "../src/jev/query-interpreter.js";
+import { rankDuplicateCandidates } from "../src/jev/duplicate-shortlist.js";
 import { CatalogService } from "../src/domain/catalog-service.js";
 import { DrawService } from "../src/draw/draw-service.js";
 import { createMcpTools } from "../src/mcp/tools.js";
 import { JsonReadModelRepository } from "../src/repository/json-read-model-repository.js";
-import { editorialReviewInputSchema } from "../src/mcp/server.js";
+import { editorialReviewBatchInputSchema, editorialReviewInputSchema, semanticSearchInputSchema } from "../src/mcp/server.js";
 import { validateCanonical } from "../src/validation/validate-canonical.js";
 
 const candidate = (id: string, bio = "A complete editorial biography for testing purposes."): Judoka => ({
@@ -145,15 +146,10 @@ test("editorial reviews always require a human and derive a conservative recomme
   const service = new EditorialReviewService({
     async decide(state, questions) {
       requests.push({ state, questions });
-      return { model: "typesafe/jev-test", usage: {}, answers: {
-        biography_publishable: { type: "noul", noul: 0.95 },
-        factual_claims_supported: { type: "noul", noul: 0.93 },
-        stats_coherent: { type: "noul", noul: 0.9 },
-        rarity_appropriate: { type: "noul", noul: 0.9 },
-        signature_techniques_plausible: { type: "noul", noul: 0.9 },
-        duplicate_candidate: { type: "choice", choice: "none", probabilities: { none: 0.92, uncertain: 0.08 }, confidence: 0.92 },
-        human_review_recommended: { type: "noul", noul: 0.1 },
-      }};
+      return { model: "typesafe/jev-test", usage: {}, answers: Object.fromEntries(Object.entries(questions).map(([id, question]) => {
+        if (question.type === "choice") return [id, { type: "choice", choice: "none", probabilities: { none: 0.92, uncertain: 0.08 }, confidence: 0.92 }];
+        return [id, { type: "noul", noul: id === "human_review_recommended" ? 0.1 : 0.95 }];
+      })) };
     },
   });
   const result = await service.review({
@@ -168,6 +164,7 @@ test("editorial reviews always require a human and derive a conservative recomme
   assert.ok(Object.hasOwn(questions, "stats_coherent"));
   assert.ok(Object.hasOwn(questions, "rarity_appropriate"));
   assert.ok(Object.hasOwn(questions, "signature_techniques_plausible"));
+  assert.equal(Object.hasOwn(questions, "duplicate_candidate"), false);
 });
 
 test("editorial review uses every editorial answer and escalates when source excerpts are missing", async () => {
@@ -191,6 +188,81 @@ test("editorial review uses every editorial answer and escalates when source exc
   assert.equal(withEvidence.requiresHumanApproval, true);
   const withoutEvidence = await service.review({ record, evidence: [] });
   assert.equal(withoutEvidence.recommendation, "needs_human_review");
+});
+
+test("editorial review asks for claim-level support and escalates uncertain duplicate matches", async () => {
+  let requestedQuestions: Record<string, unknown> = {};
+  const service = new EditorialReviewService({
+    async decide(_state, questions) {
+      requestedQuestions = questions;
+      const answers = Object.fromEntries(Object.entries(questions).map(([id, question]) => {
+        if (question.type === "choice") return [id, {
+          type: "choice", choice: "none", probabilities: { none: 0.55, uncertain: 0.1, possible: 0.35 }, confidence: 0.4,
+        }];
+        return [id, { type: "noul", noul: id === "human_review_recommended" ? 0.1 : 0.95 }];
+      }));
+      return { model: "test", usage: {}, answers };
+    },
+  });
+  const result = await service.review({
+    record: candidate("proposed"),
+    evidence: [{ url: "https://example.test/source", excerpt: "Evidence supporting each field." }],
+    duplicateCandidates: [candidate("possible")],
+    techniques: [{ id: "uchi-mata", name: "Uchi Mata", japanese: "Uchi Mata", style: "Judo", category: "Nage-waza", subCategory: "Ashi-waza", description: "A hip throw.", link: "https://example.test/uchi-mata" }],
+  });
+  for (const question of ["identity_supported", "nationality_supported", "weight_class_supported", "biography_claims_supported"]) {
+    assert.ok(Object.hasOwn(requestedQuestions, question), `${question} should be asked separately`);
+  }
+  assert.equal(result.recommendation, "needs_human_review");
+});
+
+test("editorial recommendation does not let aggregate factual support mask one unsupported field", async () => {
+  const service = new EditorialReviewService({
+    async decide(_state, questions) {
+      const answers = Object.fromEntries(Object.keys(questions).map(id => [id, {
+        type: "noul" as const, noul: id === "nationality_supported" ? 0.1 : id === "human_review_recommended" ? 0.1 : 0.99,
+      }]));
+      return { model: "test", usage: {}, answers };
+    },
+  });
+  const result = await service.review({
+    record: { ...candidate("proposed"), signatureMoveIds: [] },
+    evidence: [{ url: "https://example.test/source", excerpt: "Evidence for most of this record." }],
+  });
+  assert.equal(result.answers.factual_claims_supported?.type, "noul");
+  assert.equal(result.recommendation, "needs_revision");
+});
+
+test("editorial batch review evaluates multiple proposals in one JEV request", async () => {
+  let calls = 0;
+  let questionCount = 0;
+  const service = new EditorialReviewService({
+    async decide(_state, questions) {
+      calls += 1;
+      questionCount = Object.keys(questions).length;
+      const answers = Object.fromEntries(Object.entries(questions).map(([id, question]) => {
+        if (question.type === "choice") {
+          const options = Object.keys(question.criteria);
+          const none = options.includes("none") ? "none" : options[0];
+          return [id, { type: "choice", choice: none, probabilities: Object.fromEntries(options.map(option => [option, option === none ? 1 : 0])), confidence: 1 }];
+        }
+        return [id, { type: "noul", noul: id.endsWith("human_review_recommended") ? 0.1 : 0.95 }];
+      }));
+      return { model: "test", usage: { input_tokens: 50 }, answers };
+    },
+  });
+  const input = (id: string) => ({
+    record: { ...candidate(id), signatureMoveIds: [] },
+    evidence: [{ url: "https://example.test/source", excerpt: "Evidence for this proposal." }],
+  });
+  const result = await service.reviewMany([input("one"), input("two")]);
+  assert.equal(calls, 1);
+  assert.equal(questionCount, 20);
+  assert.equal(result.reviews.length, 2);
+  assert.equal(result.model, "test");
+  assert.equal(result.usage.input_tokens, 50);
+  assert.equal(result.reviews[0].recommendation, "ready_for_human_approval");
+  assert.equal(result.reviews[1].recommendation, "ready_for_human_approval");
 });
 
 test("editorial reviewer enforces a total request size cap before calling JEV", async () => {
@@ -219,6 +291,54 @@ test("semantic search sends bounded candidate questions and ranks by relevance d
     service.search("too broad", [candidate("a"), candidate("b"), candidate("c")]),
     /at most 2 candidates/,
   );
+});
+
+test("semantic search supports the current full catalogue in one JEV request", async () => {
+  const candidates = Array.from({ length: 74 }, (_, index) => candidate(`person-${String(index).padStart(3, "0")}`));
+  let questionCount = 0;
+  const service = new SemanticJudokaSearchService({
+    async decide(_state, questions) {
+      questionCount = Object.keys(questions).length;
+      return {
+        model: "test", usage: {},
+        answers: Object.fromEntries(Object.keys(questions).map(id => [id, { type: "noul", noul: 0.9 }])),
+      };
+    },
+  });
+  const result = await service.search("grappling specialist", candidates);
+  assert.equal(questionCount, 74);
+  assert.equal(result.results.length, 74);
+});
+
+test("the complete current public catalogue fits the bounded semantic request", async () => {
+  const canonical = await validateCanonical();
+  const candidates = canonical.judoka.filter(record => record.isHidden !== true) as unknown as Judoka[];
+  assert.ok(candidates.length > 20);
+  let stateBytes = 0;
+  let questionCount = 0;
+  const service = new SemanticJudokaSearchService({
+    async decide(state, questions) {
+      stateBytes = new TextEncoder().encode(JSON.stringify(state)).byteLength;
+      questionCount = Object.keys(questions).length;
+      return { model: "test", usage: {}, answers: Object.fromEntries(Object.keys(questions).map(id => [id, { type: "noul", noul: 0.9 }])) };
+    },
+  });
+  const result = await service.search("grappling specialist", candidates);
+  assert.ok(stateBytes < 64_000);
+  assert.equal(questionCount, candidates.length);
+  assert.equal(result.results.length, candidates.length);
+});
+
+test("semantic search keeps a hard maximum even when a caller configures its own limit", () => {
+  const client = { async decide() { return { model: "test", usage: {}, answers: {} }; } };
+  assert.throws(() => new SemanticJudokaSearchService(client, { maxCandidates: 101 }), /between 1 and 100/);
+});
+
+test("duplicate shortlist matches accents and legacy slugs with deterministic ordering", () => {
+  const proposed = { ...candidate("proposal"), firstname: "Kōsei", surname: "Inoue", legacySlugs: ["old-handle-z"] };
+  const matchByLegacySlug = { ...candidate("b"), slug: "old-handle-z", firstname: "Unknown", surname: "Person" };
+  const matchByName = { ...candidate("a"), firstname: "Kosei", surname: "Inoue" };
+  assert.deepEqual(rankDuplicateCandidates(proposed, [matchByName, proposed, matchByLegacySlug]).map(person => person.id), ["a", "b"]);
 });
 
 test("semantic search uses code-unit ordering for equal relevance scores", async () => {
@@ -311,6 +431,51 @@ test("JEV MCP tools require internal authorization and use an already-filtered c
   assert.deepEqual(interpretation.filters, { countryCode: "JP" });
 });
 
+test("semantic MCP search defaults to the complete current catalogue pool", async () => {
+  const judoka = Array.from({ length: 74 }, (_, index) => candidate(`person-${String(index).padStart(3, "0")}`));
+  const catalog = new CatalogService(new JsonReadModelRepository({
+    datasetVersion: "test", judoka, techniques: [], events: [], countries: {}, weightCategories: [],
+    manifest: { datasetVersion: "test", serviceVersion: "test", drawAlgorithms: [], defaultDrawAlgorithm: "test", sourceGitCommit: "test", checksums: { "budokon.json": "test" } },
+  }));
+  let candidateCount = 0;
+  const mcp = createMcpTools({
+    catalog, draw: new DrawService(catalog),
+    semanticSearch: { async search(_query, candidates) { candidateCount = candidates.length; return { model: "test", usage: {}, results: [] }; } },
+  });
+  await mcp.semantic_search_judoka({ query: "grappling specialist" }, { authorizedInternal: true });
+  assert.equal(candidateCount, 74);
+});
+
+test("editorial MCP tools shortlist likely duplicates and batch proposals through one reviewer call", async () => {
+  const existing = { ...candidate("existing"), firstname: "Keiko", surname: "Tachimoto", slug: "keiko-tachimoto" };
+  const catalog = new CatalogService(new JsonReadModelRepository({
+    datasetVersion: "test", judoka: [existing], techniques: [], events: [], countries: {}, weightCategories: [],
+    manifest: { datasetVersion: "test", serviceVersion: "test", drawAlgorithms: [], defaultDrawAlgorithm: "test", sourceGitCommit: "test", checksums: { "budokon.json": "test" } },
+  }));
+  let singleInput: { duplicateCandidates?: Judoka[] } | undefined;
+  let batchInputs: Array<{ duplicateCandidates?: Judoka[] }> = [];
+  const editorialReview = {
+    async review(input: { duplicateCandidates?: Judoka[] }) {
+      singleInput = input;
+      return { model: "test", usage: {}, answers: {}, recommendation: "needs_human_review" as const, requiresHumanApproval: true as const };
+    },
+    async reviewMany(inputs: Array<{ duplicateCandidates?: Judoka[] }>) {
+      batchInputs = inputs;
+      return { model: "test", usage: {}, reviews: inputs.map(() => ({ answers: {}, recommendation: "needs_human_review" as const, requiresHumanApproval: true as const })) };
+    },
+  };
+  const mcp = createMcpTools({ catalog, draw: new DrawService(catalog), editorialReview });
+  const proposed = { ...existing, id: "proposed", slug: "proposed-keiko" };
+  await mcp.review_proposed_judoka({ record: proposed, evidence: [] }, { authorizedInternal: true });
+  assert.deepEqual(singleInput?.duplicateCandidates?.map(record => record.id), ["existing"]);
+  const batch = await mcp.review_proposed_judoka_batch({ proposals: [
+    { record: proposed, evidence: [] },
+    { record: { ...candidate("second"), firstname: "Keiko", surname: "Tachimoto" }, evidence: [] },
+  ] }, { authorizedInternal: true });
+  assert.deepEqual(batchInputs.map(input => input.duplicateCandidates?.map(record => record.id)), [["existing", "second"], ["existing", "proposed"]]);
+  assert.equal(batch.reviews.length, 2);
+});
+
 test("JEV MCP editorial review accepts bounded canonical records and rejects malformed or oversized input", () => {
   const record = {
     id: "57a86958-73c3-4dd3-b8b8-f0bbaab58b67", slug: "test-judoka", firstname: "Test", surname: "Judoka",
@@ -331,4 +496,25 @@ test("JEV MCP review schema accepts every current canonical judoka record", asyn
   const canonical = await validateCanonical();
   const invalid = canonical.judoka.find(record => !editorialReviewInputSchema.safeParse({ record, evidence: [] }).success);
   assert.equal(invalid, undefined, invalid ? `canonical record rejected: ${invalid.slug}` : undefined);
+});
+
+test("JEV MCP batch review validates a bounded proposal array and aggregate request size", () => {
+  const record = {
+    id: "57a86958-73c3-4dd3-b8b8-f0bbaab58b67", slug: "test-judoka", firstname: "Test", surname: "Judoka",
+    personType: "real", countryCode: "JP", weightClass: "-57", category: "Judo",
+    stats: { power: 5, speed: 5, technique: 5, kumikata: 5, newaza: 5 },
+    signatureMoveIds: ["uchi-mata"], lastUpdated: "2026-09-23T00:00:00Z", profileUrl: "https://example.test/profile",
+    bio: "A sufficiently long biography for the canonical record schema.", gender: "female", isHidden: false, rarity: "Rare",
+  };
+  const proposal = { record, evidence: [{ url: "https://example.test/source", excerpt: "A relevant source excerpt." }] };
+  assert.equal(editorialReviewBatchInputSchema.safeParse({ proposals: [proposal, proposal] }).success, true);
+  assert.equal(editorialReviewBatchInputSchema.safeParse({ proposals: [] }).success, false);
+  assert.equal(editorialReviewBatchInputSchema.safeParse({ proposals: Array.from({ length: 11 }, () => proposal) }).success, false);
+  assert.equal(editorialReviewBatchInputSchema.safeParse({ proposals: [{ ...proposal, evidence: [{ url: "https://example.test/source", excerpt: "x".repeat(64_000) }] }] }).success, false);
+});
+
+test("JEV MCP semantic search schema accepts full-catalogue limits and rejects unsafe values", () => {
+  assert.equal(semanticSearchInputSchema.safeParse({ query: "a semantic query", maxCandidates: 100 }).success, true);
+  assert.equal(semanticSearchInputSchema.safeParse({ query: "a semantic query", maxCandidates: 101 }).success, false);
+  assert.equal(semanticSearchInputSchema.safeParse({ query: "a semantic query", maxCandidates: 0 }).success, false);
 });

@@ -30,6 +30,9 @@ export interface Env {
   JEV_OPENROUTER_API_KEY?: string;
   JEV_MODEL?: string;
   JEV_TIMEOUT_MS?: string;
+  JEV_MINIMUM_RELEVANCE?: string;
+  JEV_EDITORIAL_THRESHOLD?: string;
+  JEV_QUERY_MINIMUM_CONFIDENCE?: string;
 }
 
 const repository = new JsonReadModelRepository({ ...dataset, manifest });
@@ -39,6 +42,12 @@ const eventDraw = new EventDrawService(repository);
 
 function json(value: unknown, status = 200, headers: HeadersInit = {}) {
   return new Response(JSON.stringify(value), { status, headers: { "content-type": "application/json; charset=utf-8", ...headers } });
+}
+
+function configuredProbability(value: string | undefined, fallback: number): number {
+  if (value === undefined || value.trim() === "") return fallback;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 && parsed <= 1 ? parsed : fallback;
 }
 
 type McpAuthentication = { authorizedInternal: boolean };
@@ -88,9 +97,9 @@ export function createWorker(openApiSpecification: string) {
         }) : undefined;
         const mcp = createBudokonMcpHandler({
           catalog, draw, eventDraw, authorizeInternal: () => authentication.authorizedInternal,
-          semanticSearch: client ? new SemanticJudokaSearchService(client) : undefined,
-          editorialReview: client ? new EditorialReviewService(client) : undefined,
-          queryInterpreter: client ? new JevJudokaQueryInterpreter(client) : undefined,
+          semanticSearch: client ? new SemanticJudokaSearchService(client, { minimumRelevance: configuredProbability(env.JEV_MINIMUM_RELEVANCE, 0.5) }) : undefined,
+          editorialReview: client ? new EditorialReviewService(client, configuredProbability(env.JEV_EDITORIAL_THRESHOLD, 0.8)) : undefined,
+          queryInterpreter: client ? new JevJudokaQueryInterpreter(client, { minimumConfidence: configuredProbability(env.JEV_QUERY_MINIMUM_CONFIDENCE, 0.7) }) : undefined,
         });
         response = await mcp.fetch(request);
       } else {

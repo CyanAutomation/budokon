@@ -5,7 +5,9 @@ import type { DrawService } from "../draw/draw-service.js";
 import type { EventDrawService } from "../draw/event-draw-service.js";
 import { createMcpTools } from "./tools.js";
 import type { EditorialReviewer } from "../jev/editorial-review.js";
+import { MAX_EDITORIAL_REVIEW_BATCH_SIZE } from "../jev/editorial-review.js";
 import type { SemanticJudokaSearcher } from "../jev/semantic-search.js";
+import { MAX_SEMANTIC_SEARCH_CANDIDATES } from "../jev/semantic-search.js";
 import type { JudokaQueryInterpreter } from "../jev/query-interpreter.js";
 
 const stringOrStrings = z.union([z.string(), z.array(z.string()).min(1)]);
@@ -18,7 +20,7 @@ const drawInput = z.object({ count: z.number().int().positive().optional(), seed
 const idInput = z.object({ id: z.string().min(1), includeHidden: z.boolean().optional() }).strict();
 const listEventsInput = z.object({ ruleset: z.string().optional(), category: z.string().optional() }).strict();
 const drawEventInput = z.object({ ruleset: z.string().min(1), category: z.string().optional(), seed: z.string().optional(), exclude: z.array(z.string()).optional() }).strict();
-const semanticSearchInput = z.object({ query: z.string().min(1).max(1_000), filters: filters.optional(), exclude: z.array(z.string()).optional(), includeHidden: z.boolean().optional(), maxCandidates: z.number().int().min(1).max(20).optional() }).strict();
+export const semanticSearchInputSchema = z.object({ query: z.string().min(1).max(1_000), filters: filters.optional(), exclude: z.array(z.string()).optional(), includeHidden: z.boolean().optional(), maxCandidates: z.number().int().min(1).max(MAX_SEMANTIC_SEARCH_CANDIDATES).optional() }).strict();
 const slug = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/u);
 const canonicalJudoka = z.object({
   id: z.string().uuid(), slug, firstname: z.string().min(1).max(200), surname: z.string().min(1).max(200),
@@ -43,13 +45,19 @@ const canonicalJudoka = z.object({
     context.addIssue({ code: "custom", message: "record exceeds the 16 KB JEV review input limit" });
   }
 });
-export const editorialReviewInputSchema = z.object({
+const editorialReviewProposalSchema = z.object({
   record: canonicalJudoka,
   evidence: z.array(z.object({ url: z.string().url().max(2_048).refine(value => value.startsWith("https://")), excerpt: z.string().min(1).max(4_000) }).strict()).max(10),
   duplicateCandidates: z.array(canonicalJudoka).max(10).optional(),
-}).strict().superRefine((input, context) => {
+}).strict();
+export const editorialReviewInputSchema = editorialReviewProposalSchema.superRefine((input, context) => {
   if (new TextEncoder().encode(JSON.stringify(input)).byteLength > 64_000) {
     context.addIssue({ code: "custom", message: "review input exceeds the 64 KB JEV request limit" });
+  }
+});
+export const editorialReviewBatchInputSchema = z.object({ proposals: z.array(editorialReviewProposalSchema).min(1).max(MAX_EDITORIAL_REVIEW_BATCH_SIZE) }).strict().superRefine((input, context) => {
+  if (new TextEncoder().encode(JSON.stringify(input)).byteLength > 64_000) {
+    context.addIssue({ code: "custom", message: "review batch exceeds the 64 KB JEV request limit" });
   }
 });
 const interpretJudokaQueryInput = z.object({ query: z.string().trim().min(1).max(1_000) }).strict();
@@ -85,10 +93,13 @@ export function createBudokonMcpHandler(dependencies: { catalog: CatalogService;
     register("draw_event", "Draw one event for a required game ruleset, optionally deterministically with a seed.", drawEventInput, input => tools.draw_event(input as Parameters<typeof tools.draw_event>[0]));
     register("version", "Get dataset and draw-algorithm versions.", z.object({}).strict(), () => tools.version());
     if (context.authorizedInternal && dependencies.semanticSearch) {
-      register("semantic_search_judoka", "Rank a bounded, filter-narrowed judoka candidate pool by semantic relevance. This does not change deterministic catalogue search.", semanticSearchInput, input => tools.semantic_search_judoka(input as Parameters<typeof tools.semantic_search_judoka>[0], context));
+      register("semantic_search_judoka", "Rank up to 100 eligible judoka by semantic relevance; filters can narrow the pool when needed. This does not change deterministic catalogue search.", semanticSearchInputSchema, input => tools.semantic_search_judoka(input as Parameters<typeof tools.semantic_search_judoka>[0], context));
     }
     if (context.authorizedInternal && dependencies.editorialReview) {
       register("review_proposed_judoka", "Review a proposed canonical judoka record against supplied source excerpts. It always requires human approval and never changes catalogue data.", editorialReviewInputSchema, input => tools.review_proposed_judoka(input as Parameters<typeof tools.review_proposed_judoka>[0], context));
+    }
+    if (context.authorizedInternal && dependencies.editorialReview?.reviewMany) {
+      register("review_proposed_judoka_batch", "Review up to 10 proposed judoka records in one bounded JEV request. Results remain advisory and each proposal still requires human approval.", editorialReviewBatchInputSchema, input => tools.review_proposed_judoka_batch(input as Parameters<typeof tools.review_proposed_judoka_batch>[0], context));
     }
     if (context.authorizedInternal && dependencies.queryInterpreter) {
       register("interpret_judoka_query", "Suggest existing catalogue filters from a natural-language judoka query. Low-confidence suggestions are returned but not applied.", interpretJudokaQueryInput, input => tools.interpret_judoka_query(input as Parameters<typeof tools.interpret_judoka_query>[0], context));

@@ -1,30 +1,17 @@
-name: JEV Advisory Review
+name: JEV Search Evaluation
 
 on:
   workflow_dispatch:
-    inputs:
-      task:
-        description: Select a read-only JEV task
-        required: true
-        type: choice
-        options:
-          - review-pr
-          - evaluate-search
-      pull_request:
-        description: Open pull request number (required for review-pr)
-        required: false
-        type: string
 
 permissions:
   contents: read
-  pull-requests: read
 
 concurrency:
-  group: jev-advisory-${{ github.repository }}-${{ inputs.task }}
+  group: jev-evaluation-${{ github.repository }}
   cancel-in-progress: false
 
 jobs:
-  advisory:
+  evaluate-search:
     if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -34,11 +21,6 @@ jobs:
       JEV_MODEL: ${{ vars.JEV_MODEL }}
       JEV_TIMEOUT_MS: "20000"
       JEV_MINIMUM_RELEVANCE: "0.5"
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      GITHUB_REPOSITORY: ${{ github.repository }}
-      GITHUB_API_URL: ${{ github.api_url }}
-      GITHUB_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-      JEV_PR_NUMBER: ${{ inputs.pull_request }}
 
     steps:
       - name: Checkout trusted default branch
@@ -56,10 +38,5 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Review pull request records
-        if: inputs.task == 'review-pr'
-        run: npm run jev:review-pr
-
       - name: Evaluate semantic search
-        if: inputs.task == 'evaluate-search'
         run: npm run jev:evaluate
