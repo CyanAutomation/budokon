@@ -8,6 +8,7 @@ import { createBudokonMcpHandler } from "../src/mcp/server.js";
 import { EditorialReviewService } from "../src/jev/editorial-review.js";
 import { OpenRouterJevClient } from "../src/jev/client.js";
 import { SemanticJudokaSearchService } from "../src/jev/semantic-search.js";
+import { JevJudokaQueryInterpreter } from "../src/jev/query-interpreter.js";
 import { JsonReadModelRepository } from "../src/repository/json-read-model-repository.js";
 import { authorized } from "./auth.js";
 import { cachePublicGet, preflightResponse, withCors } from "./cors.js";
@@ -89,6 +90,7 @@ export function createWorker(openApiSpecification: string) {
           catalog, draw, eventDraw, authorizeInternal: () => authentication.authorizedInternal,
           semanticSearch: client ? new SemanticJudokaSearchService(client) : undefined,
           editorialReview: client ? new EditorialReviewService(client) : undefined,
+          queryInterpreter: client ? new JevJudokaQueryInterpreter(client) : undefined,
         });
         response = await mcp.fetch(request);
       } else {

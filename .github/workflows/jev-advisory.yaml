@@ -1,0 +1,64 @@
+name: JEV Advisory Review
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: Select a read-only JEV task
+        required: true
+        type: choice
+        options:
+          - review-pr
+          - evaluate-search
+      pull_request:
+        description: Open pull request number (required for review-pr)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: jev-advisory-${{ github.repository }}-${{ inputs.task }}
+  cancel-in-progress: false
+
+jobs:
+  advisory:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      JEV_OPENROUTER_API_KEY: ${{ secrets.JEV_OPENROUTER_API_KEY }}
+      JEV_MODEL: ${{ vars.JEV_MODEL }}
+      JEV_TIMEOUT_MS: "20000"
+      JEV_MINIMUM_RELEVANCE: "0.5"
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_REPOSITORY: ${{ github.repository }}
+      GITHUB_API_URL: ${{ github.api_url }}
+      GITHUB_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+      JEV_PR_NUMBER: ${{ inputs.pull_request }}
+
+    steps:
+      - name: Checkout trusted default branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Review pull request records
+        if: inputs.task == 'review-pr'
+        run: npm run jev:review-pr
+
+      - name: Evaluate semantic search
+        if: inputs.task == 'evaluate-search'
+        run: npm run jev:evaluate
