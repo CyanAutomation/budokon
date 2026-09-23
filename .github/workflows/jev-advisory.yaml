@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      JEV_OPENROUTER_API_KEY: ${{ secrets.JEV_OPENROUTER_API_KEY }}
+      JEV_OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
       JEV_MODEL: ${{ vars.JEV_MODEL }}
       JEV_TIMEOUT_MS: "20000"
       JEV_MINIMUM_RELEVANCE: "0.5"
