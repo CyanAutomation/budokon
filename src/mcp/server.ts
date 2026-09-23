@@ -4,6 +4,8 @@ import type { CatalogService } from "../domain/catalog-service.js";
 import type { DrawService } from "../draw/draw-service.js";
 import type { EventDrawService } from "../draw/event-draw-service.js";
 import { createMcpTools } from "./tools.js";
+import type { EditorialReviewer } from "../jev/editorial-review.js";
+import type { SemanticJudokaSearcher } from "../jev/semantic-search.js";
 
 const stringOrStrings = z.union([z.string(), z.array(z.string()).min(1)]);
 const filters = z.object({
@@ -15,6 +17,12 @@ const drawInput = z.object({ count: z.number().int().positive().optional(), seed
 const idInput = z.object({ id: z.string().min(1), includeHidden: z.boolean().optional() }).strict();
 const listEventsInput = z.object({ ruleset: z.string().optional(), category: z.string().optional() }).strict();
 const drawEventInput = z.object({ ruleset: z.string().min(1), category: z.string().optional(), seed: z.string().optional(), exclude: z.array(z.string()).optional() }).strict();
+const semanticSearchInput = z.object({ query: z.string().min(1), filters: filters.optional(), exclude: z.array(z.string()).optional(), includeHidden: z.boolean().optional(), maxCandidates: z.number().int().min(1).max(20).optional() }).strict();
+const editorialReviewInput = z.object({
+  record: z.record(z.string(), z.unknown()),
+  evidence: z.array(z.object({ url: z.string().url(), excerpt: z.string().min(1) }).strict()),
+  duplicateCandidates: z.array(z.record(z.string(), z.unknown())).max(10).optional(),
+}).strict();
 
 function textResult(value: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(value) }], structuredContent: value };
@@ -25,7 +33,7 @@ function textResult(value: unknown) {
  * application services. Authentication and Host/Origin validation stay in the
  * Worker boundary, before this handler receives a request.
  */
-export function createBudokonMcpHandler(dependencies: { catalog: CatalogService; draw: DrawService; eventDraw: EventDrawService; authorizeInternal(request: Request): boolean }) {
+export function createBudokonMcpHandler(dependencies: { catalog: CatalogService; draw: DrawService; eventDraw: EventDrawService; authorizeInternal(request: Request): boolean; semanticSearch?: SemanticJudokaSearcher; editorialReview?: EditorialReviewer }) {
   return createMcpHandler(({ requestInfo }) => {
     const tools = createMcpTools(dependencies);
     const context = { authorizedInternal: requestInfo ? dependencies.authorizeInternal(requestInfo) : false };
@@ -46,6 +54,12 @@ export function createBudokonMcpHandler(dependencies: { catalog: CatalogService;
     register("get_event", "Get one gameplay event by ID.", z.object({ id: z.string().min(1) }).strict(), input => tools.get_event(input as Parameters<typeof tools.get_event>[0]));
     register("draw_event", "Draw one event for a required game ruleset, optionally deterministically with a seed.", drawEventInput, input => tools.draw_event(input as Parameters<typeof tools.draw_event>[0]));
     register("version", "Get dataset and draw-algorithm versions.", z.object({}).strict(), () => tools.version());
+    if (context.authorizedInternal && dependencies.semanticSearch) {
+      register("semantic_search_judoka", "Rank a bounded, filter-narrowed judoka candidate pool by semantic relevance. This does not change deterministic catalogue search.", semanticSearchInput, input => tools.semantic_search_judoka(input as Parameters<typeof tools.semantic_search_judoka>[0], context));
+    }
+    if (context.authorizedInternal && dependencies.editorialReview) {
+      register("review_proposed_judoka", "Review a proposed canonical judoka record against supplied source excerpts. It always requires human approval and never changes catalogue data.", editorialReviewInput, input => tools.review_proposed_judoka(input as Parameters<typeof tools.review_proposed_judoka>[0], context));
+    }
     return server;
   }, { legacy: "stateless" });
 }
