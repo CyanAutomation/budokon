@@ -1,11 +1,6 @@
 name: Release
 
 on:
-  # push:
-  #   branches:
-  #     - main
-    # Only trigger for commits that semantic-release will act on
-    # (feat:, fix:, breaking changes, or release commits)
   workflow_dispatch:
     inputs:
       dry_run:
@@ -37,7 +32,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
-          fetch-depth: 0  # Full history for semantic-release
+          fetch-depth: 0  # Full history for release planning
 
       - name: Set up Node
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
@@ -65,27 +60,18 @@ jobs:
           targets: true
           save-snapshot: true
 
-      - name: Run semantic-release
+      - name: Plan or publish release
         id: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
           if [[ "${{ inputs.dry_run }}" == "true" ]]; then
             npm run release:dry 2>&1 | tee release-output.log
-            echo "released=false" >> "$GITHUB_OUTPUT"
-            echo "dry_run=true" >> "$GITHUB_OUTPUT"
           else
             npm run release 2>&1 | tee release-output.log
-            # Check if release was created (look for "published" in output)
-            if grep -q "Published release" release-output.log; then
-              echo "released=true" >> "$GITHUB_OUTPUT"
-              # Extract version from git describe
-              VERSION=$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')
-              echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-            else
-              echo "released=false" >> "$GITHUB_OUTPUT"
-            fi
           fi
 
       - name: Upload release log

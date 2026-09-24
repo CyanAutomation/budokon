@@ -32,8 +32,8 @@ const draw = await fetch(`${baseUrl}/v1/draw`, {
 Use `limit` to opt into pagination. The response includes `nextCursor`; send
 that value as the `cursor` query parameter on the following request (for
 example, `/v1/judoka?limit=20&cursor=<nextCursor>`). Store `ETag` and send it
-as `If-None-Match` for efficient cache revalidation. Full interactive and
-machine-readable documentation is available at `/docs` and `/openapi/v1.yaml`.
+as `If-None-Match` for efficient cache revalidation. The API reference and
+machine-readable contract are available at `/docs` and `/openapi/v1.yaml`.
 On `429`, honour `Retry-After` before retrying; rate-limited responses also
 include `RateLimit-Limit` and `RateLimit-Policy`. The Cloudflare limiter cannot
 accurately expose a distributed per-client remaining count.
@@ -1129,9 +1129,9 @@ nextCursor }`, or `{ events, nextCursor }`; supply the returned `nextCursor` as
 `cursor` on the following request with the same filters. Pagination is applied
 after every filter and search.
 
-The deployed service has a JSON discovery document at `/`, an interactive Swagger UI
-at `/docs`, and the machine-readable contract at `/openapi/v1.yaml` (the source
-contract remains [openapi/v1.yaml](openapi/v1.yaml)).
+The deployed service has a JSON discovery document at `/`, a first-party API
+reference at `/docs`, and the machine-readable contract at `/openapi/v1.yaml`
+(the source contract remains [openapi/v1.yaml](openapi/v1.yaml)).
 
 ---
 
