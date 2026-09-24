@@ -35,3 +35,17 @@ create that artifact. It need not equal a later application-only commit in the
 repository. The production workflow recompiles artifacts with the deployment
 commit, then verifies them before deploying; use the manifest’s
 `sourceGitCommit` when checking a tracked release artifact locally.
+
+## Application releases
+
+The manually dispatched **Release** workflow publishes an application release
+from the default branch. It analyzes commits after the latest `vMAJOR.MINOR.PATCH`
+tag; existing `vMAJOR.MINOR` tags are read as patch version zero. A `feat`
+creates a minor release, `fix`, `perf`, and `revert` create a patch release,
+and a `!` marker or `BREAKING CHANGE:` footer creates a major release.
+Documentation and maintenance commits alone do not create a release.
+
+Choose the dry-run option to preview the version and release notes without
+calling the GitHub API. Locally, `npm run release:dry` prints the same preview.
+The publishing run uses the workflow token to create a GitHub Release and tag
+for the commit checked out by that workflow.

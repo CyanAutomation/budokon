@@ -76,7 +76,7 @@ export function createWorker(openApiSpecification: string) {
       const path = new URL(request.url).pathname;
       const origin = new URL(request.url).origin;
       if (path === "/") return landingResponse(origin);
-      if (path === "/docs" || path === "/docs/") return documentationResponse();
+      if (path === "/docs" || path === "/docs/") return documentationResponse(origin);
       if (path === "/openapi/v1.yaml") return openApiResponse(openApiSpecification);
       if (request.method === "OPTIONS") return path.startsWith("/v1/") ? preflightResponse(request, env) : new Response(null, { status: 405, headers: { allow: "POST" } });
       let response: Response;
