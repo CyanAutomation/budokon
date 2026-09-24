@@ -45,17 +45,33 @@ test("documentation is user-visible and links to the OpenAPI contract", async ()
   );
   assert.deepEqual(directives, new Map([
     ["default-src", new Set(["'none'"])],
-    ["script-src", new Set(["'self'", "'unsafe-inline'"])],
-    ["style-src", new Set(["'self'", "'unsafe-inline'"])],
-    ["img-src", new Set(["'self'", "data:", "https:"])],
-    ["connect-src", new Set(["'self'"])],
+    ["style-src", new Set(["'unsafe-inline'"])],
+    ["connect-src", new Set(["'none'"])],
     ["base-uri", new Set(["'none'"])],
     ["frame-ancestors", new Set(["'none'"])],
   ]));
 
   const docs = await documentation.text();
-  assert.match(docs, /aria-label="BU-DO-KON API reference"/);
-  assert.match(docs, /openapi\/v1\.yaml/);
+  assert.match(docs, /<h1>BU-DO-KON API reference<\/h1>/);
+  assert.match(docs, /href="\/openapi\/v1\.yaml"/);
+  assert.match(docs, /<span class="method get">GET<\/span><code>\/v1\/judoka<\/code>/);
+  assert.match(docs, /<span class="method post">POST<\/span><code>\/v1\/draw<\/code>/);
+  assert.ok(docs.includes(`curl "https://budokon.example/v1/judoka?q=shozo&amp;countryCode=JP"`));
+  assert.doesNotMatch(docs, /SwaggerUIBundle|swagger-ui\/swagger-ui/);
+  assert.doesNotMatch(docs, /<script\b/i);
+
+  const specification = await readFile(new URL("../openapi/v1.yaml", import.meta.url), "utf8");
+  const pathEntries = Array.from(specification.matchAll(/^  (\/[^:\n]+):[ \t]*$/gmu));
+  for (let index = 0; index < pathEntries.length; index += 1) {
+    const entry = pathEntries[index];
+    const blockStart = entry.index ?? 0;
+    const blockEnd = pathEntries[index + 1]?.index ?? specification.length;
+    const pathBlock = specification.slice(blockStart, blockEnd);
+    for (const [, method] of pathBlock.matchAll(/^    (get|post|put|patch|delete|options|head):/gmu)) {
+      const label = `<span class="method ${method.toLowerCase()}">${method.toUpperCase()}</span><code>${entry[1]}</code>`;
+      assert.ok(docs.includes(label), `The /docs endpoint list must include ${method.toUpperCase()} ${entry[1]}`);
+    }
+  }
 });
 
 // OpenAPI publication requirement: README.md, "REST API" (the contract at /openapi/v1.yaml).
