@@ -5,6 +5,7 @@
  */
 
 import type { Filters } from "./types.js";
+import { normalizeCatalogText } from "../contracts/text-normalization.js";
 
 /** Supported filter field names for catalog queries */
 export const FILTER_FIELDS = new Set(["countryCode", "gender", "weightClass", "rarity", "personType", "signatureMoveIds"]);
@@ -17,13 +18,7 @@ export const FILTER_FIELDS = new Set(["countryCode", "gender", "weightClass", "r
  * @returns Normalized text ready for search/comparison
  */
 export function normalizeSearchText(value: unknown): string {
-  return String(value ?? "")
-    .normalize("NFD")
-    .replace(/\p{Mark}+/gu, "")
-    .toLowerCase()
-    .replace(/[^\p{Letter}\p{Number}]+/gu, " ")
-    .trim()
-    .replace(/\s+/gu, " ");
+  return normalizeCatalogText(value);
 }
 
 /**
