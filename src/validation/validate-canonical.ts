@@ -2,6 +2,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { meaningfulText, ensureUnique, rejectGameStateProperties, isValidDateTime, rejectFutureDate } from './validators.js';
+import { normalizeCatalogText } from '../contracts/text-normalization.js';
 
 const defaultRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const placeholder = /^(?:todo|tbd|unknown|n\/?a|none|more info to come)(?=$|[\s:_\p{P}\p{S}])/iu;
@@ -80,7 +81,6 @@ async function records(directory) {
   const names = (await readdir(directory)).filter((name) => name.endsWith('.json')).sort();
   return Promise.all(names.map(async (name) => ({ name, value: await parse(path.join(directory, name)) })));
 }
-function normalizedName(value) { return String(value).normalize('NFD').replace(/\p{Mark}+/gu, '').toLowerCase().replace(/[^\p{Letter}\p{Number}]+/gu, ' ').trim().replace(/\s+/gu, ' '); }
 
 /** Parse and validate all canonical datasets, including cross-record rules. */
 export async function validateCanonical(root = defaultRoot) {
@@ -120,10 +120,10 @@ export async function validateCanonical(root = defaultRoot) {
   ensureUnique(judoka, 'handles', 'judoka slug or legacy slug', (item) => [item.slug, ...(item.legacySlugs ?? [])]);
   const names = new Map();
   for (const record of judoka) for (const name of [`${record.firstname} ${record.surname}`, ...(record.aliases ?? [])]) {
-    const normalized = normalizedName(name);
+    const normalized = normalizeCatalogText(name);
     if (names.has(normalized) && names.get(normalized) !== record.slug) throw new Error(`ambiguous normalized judoka name ${JSON.stringify(normalized)} in ${names.get(normalized)} and ${record.slug}`);
     names.set(normalized, record.slug);
-  } 
+  }
   ensureUnique(techniques, 'id', 'technique ID');
   ensureUnique(events, 'id', 'event ID');
   for (const file of validatedJudokaFiles) if (path.parse(file.name).name !== file.value.slug) {
