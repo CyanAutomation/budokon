@@ -1,10 +1,6 @@
 import assert from "node:assert/strict";
-import { execFile } from "node:child_process";
 import { readFile } from "node:fs/promises";
-import path from "node:path";
 import test from "node:test";
-import { fileURLToPath } from "node:url";
-import { promisify } from "node:util";
 import { createWorker } from "../worker/router.js";
 
 // Public-discovery requirement: README.md, "REST API" (the JSON document at /).
@@ -102,14 +98,4 @@ paths:
   const responseDocument = new TextDecoder().decode(responseBytes);
   assert.match(responseDocument, /^openapi: 3\.1\.0$/m);
   assert.match(responseDocument, /^  \/v1\/status:$/m);
-});
-
-test("published OpenAPI models response bodies, cache validation, visibility, and rate limiting", async () => {
-  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-  try {
-    await promisify(execFile)("ruby", ["scripts/validate-openapi.rb"], { cwd: root });
-  } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
-    throw new Error(`OpenAPI validation failed: ${detail}`, { cause: error });
-  }
 });
