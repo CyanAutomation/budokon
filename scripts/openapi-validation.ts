@@ -16,7 +16,7 @@ function valueAt(root: unknown, ...segments: string[]): unknown {
 }
 
 function format(value: unknown): string {
-  return JSON.stringify(value) ?? String(value);
+  return JSON.stringify(value) || String(value);
 }
 
 function assertEqual(actual: unknown, expected: unknown, context: string): void {
