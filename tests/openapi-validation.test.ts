@@ -26,6 +26,22 @@ test("validator rejects an incorrect response reference", () => {
   assert.throws(() => validateOpenApiDocument(document), /GET \/v1\/judoka response 200/);
 });
 
+test("validator formats values that JSON cannot serialize", () => {
+  const document = documentCopy();
+  delete document.paths["/v1/judoka"].get.responses["200"].$ref;
+
+  assert.throws(
+    () => validateOpenApiDocument(document),
+    { message: "GET /v1/judoka response 200: expected \"#/components/responses/JudokaList\", got undefined" },
+  );
+
+  document.paths["/v1/judoka"].get.responses["200"].$ref = Symbol("invalid-reference");
+  assert.throws(
+    () => validateOpenApiDocument(document),
+    { message: "GET /v1/judoka response 200: expected \"#/components/responses/JudokaList\", got Symbol(invalid-reference)" },
+  );
+});
+
 test("validator restricts IncludeHidden to the judoka list operation", () => {
   const document = documentCopy();
   document.paths["/v1/events"].get.parameters = [
