@@ -34,7 +34,7 @@
     "coverage": "tsx scripts/coverage-report.ts",
     "verify-release": "tsx scripts/verify-release.ts",
     "validate": "tsx src/validation/validate-canonical.ts",
-    "validate:openapi": "ruby scripts/validate-openapi.rb",
+    "validate:openapi": "tsx scripts/validate-openapi.ts",
     "validate:deployment-target": "tsx scripts/validate-cloudflare-deployment-target.ts",
     "smoke:deployment": "tsx scripts/smoke-deployment.ts",
     "test:validation:focused": "BUDOKON_SKIP_REPOSITORY_SMOKE=1 tsx --test tests/validation.test.ts",
@@ -49,7 +49,8 @@
     "@types/node": "^26.4.0",
     "tsx": "^4.23.12",
     "typescript": "^5.7.2",
-    "wrangler": "^4.0.0"
+    "wrangler": "^4.0.0",
+    "yaml": "^2.9.1"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "^2.0.0",
