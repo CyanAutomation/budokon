@@ -77,7 +77,7 @@ test("CORS headers wrap successful and error responses", async () => {
 });
 
 test("public GET responses receive a versioned cache validator and honour If-None-Match", async () => {
-  const initial = cachePublicGet(new Response("catalogue"), request(), "2026.08.1");
+  const initial = await cachePublicGet(new Response("catalogue"), request(), "2026.08.1", "revision-a");
   assert.equal(initial.status, 200);
   assert.match(initial.headers.get("cache-control"), /s-maxage=86400/);
   const etag = initial.headers.get("etag");
@@ -89,7 +89,7 @@ test("public GET responses receive a versioned cache validator and honour If-Non
     `"unrelated", W/"also-unrelated", ${etag}`,
     "*"
   ]) {
-    const cached = cachePublicGet(new Response("catalogue"), request(undefined, { headers: { "if-none-match": validator } }), "2026.08.1");
+    const cached = await cachePublicGet(new Response("catalogue"), request(undefined, { headers: { "if-none-match": validator } }), "2026.08.1", "revision-a");
     assert.equal(cached.status, 304, validator);
     assert.equal(await cached.text(), "");
   }
@@ -100,14 +100,24 @@ test("public GET responses receive a versioned cache validator and honour If-Non
     `${etag}malicious`,
     ", ,"
   ]) {
-    const fresh = cachePublicGet(new Response("catalogue"), request(undefined, { headers: { "if-none-match": validator } }), "2026.08.1");
+    const fresh = await cachePublicGet(new Response("catalogue"), request(undefined, { headers: { "if-none-match": validator } }), "2026.08.1", "revision-a");
     assert.equal(fresh.status, 200, validator);
     assert.equal(await fresh.text(), "catalogue");
   }
 });
 
+test("public GET validators change with the representation revision and remain stable for identical inputs", async () => {
+  const first = await cachePublicGet(new Response("catalogue"), request(), "2026.08.1", "revision-a");
+  const repeated = await cachePublicGet(new Response("catalogue"), request(), "2026.08.1", "revision-a");
+  const redeployed = await cachePublicGet(new Response("catalogue"), request(), "2026.08.1", "revision-b");
+
+  assert.match(first.headers.get("etag") ?? "", /^"budokon-[0-9a-f]{64}"$/);
+  assert.equal(repeated.headers.get("etag"), first.headers.get("etag"));
+  assert.notEqual(redeployed.headers.get("etag"), first.headers.get("etag"));
+});
+
 test("authorization-sensitive responses are private and never reuse public validators", async () => {
-  const publicResponse = cachePublicGet(new Response("public"), request(), "2026.08.1");
+  const publicResponse = await cachePublicGet(new Response("public"), request(), "2026.08.1", "revision-a");
   const publicEtag = publicResponse.headers.get("etag");
   assert.ok(publicEtag);
 
@@ -116,7 +126,7 @@ test("authorization-sensitive responses are private and never reuse public valid
     request(undefined, { headers: { "x-api-key": "internal", "if-none-match": publicEtag } }),
     new Request("https://api.example/v1/judoka?includeHidden=true", { headers: { "if-none-match": publicEtag } }),
   ]) {
-    const response = cachePublicGet(new Response("private"), sensitiveRequest, "2026.08.1");
+    const response = await cachePublicGet(new Response("private"), sensitiveRequest, "2026.08.1", "revision-a");
     assert.equal(response.status, 200);
     assert.equal(response.headers.get("cache-control"), "private, no-store");
     assert.equal(response.headers.get("etag"), null);

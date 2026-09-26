@@ -111,10 +111,11 @@ export function createWorker(openApiSpecification: string) {
           authorizeInternal: candidate => authorized(candidate, env.INTERNAL_API_KEY),
           onRepresentation: metadata => { cacheability.cacheablePublicly = metadata.cacheablePublicly; },
         });
-        response = await rateLimitPublicRequest(request, env) ?? cachePublicGet(
+        response = await rateLimitPublicRequest(request, env) ?? await cachePublicGet(
           await rest(request),
           request,
           catalog.version().datasetVersion,
+          manifest.sourceGitCommit,
           cacheability,
         );
       }
