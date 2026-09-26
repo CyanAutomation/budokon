@@ -586,6 +586,15 @@ test("assembled worker exposes exactly the public judoka catalogue without crede
   assert.equal(response.headers.get("cache-control"), "public, max-age=300, s-maxage=86400, stale-while-revalidate=86400");
   assert.match(response.headers.get("etag") ?? "", /^"budokon-/);
 
+  const validatorIdentity = JSON.stringify([
+    compiledModel.datasetVersion,
+    compiledModel.manifest.sourceGitCommit,
+    "/v1/judoka",
+  ]);
+  const validatorDigest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(validatorIdentity));
+  const validatorHash = Array.from(new Uint8Array(validatorDigest), byte => byte.toString(16).padStart(2, "0")).join("");
+  assert.equal(response.headers.get("etag"), `"budokon-${validatorHash}"`);
+
   const records = await mcpJson(response);
   const expectedPublicCatalogue = catalog.listJudoka();
   const hiddenFixtureIds = compiledModel.judoka
