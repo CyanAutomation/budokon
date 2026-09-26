@@ -82,12 +82,26 @@ function privateResponse(response: Response): Response {
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
+async function representationEtag(datasetVersion: string, representationRevision: string, request: Request): Promise<string> {
+  const url = new URL(request.url);
+  const representationKey = `${url.pathname}${url.search}`;
+  const identity = JSON.stringify([datasetVersion, representationRevision, representationKey]);
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(identity));
+  const hash = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
+  return `"budokon-${hash}"`;
+}
+
 /** Cache immutable catalogue GET representations at the edge and validate them cheaply in browsers. */
-export function cachePublicGet(response: Response, request: Request, datasetVersion: string, metadata?: RepresentationCacheability): Response {
+export async function cachePublicGet(
+  response: Response,
+  request: Request,
+  datasetVersion: string,
+  representationRevision: string,
+  metadata?: RepresentationCacheability,
+): Promise<Response> {
   if (isAuthorizationSensitive(request, metadata)) return privateResponse(response);
   if (request.method !== "GET" || response.status !== 200) return response;
-  const url = new URL(request.url);
-  const etag = `"budokon-${datasetVersion}-${encodeURIComponent(`${url.pathname}${url.search}`)}"`;
+  const etag = await representationEtag(datasetVersion, representationRevision, request);
   const headers = new Headers(response.headers);
   headers.set("cache-control", "public, max-age=300, s-maxage=86400, stale-while-revalidate=86400");
   headers.set("etag", etag);
