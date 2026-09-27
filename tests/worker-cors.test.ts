@@ -170,6 +170,17 @@ test("representation validators remain stable across repeated calls", async () =
   assert.equal(new Set(validators).size, 1);
 });
 
+test("representation validators tolerate malformed path percent-encoding", async () => {
+  for (const pathname of ["/v1/judoka/%ZZ", "/v1/judoka/%2"]) {
+    const malformed = new Request(`https://api.example${pathname}`);
+    const first = await representationEtag("2026.08.1", "revision-a", malformed);
+    const repeated = await representationEtag("2026.08.1", "revision-a", malformed);
+
+    assert.match(first, /^"budokon-[0-9a-f]{64}"$/);
+    assert.equal(repeated, first);
+  }
+});
+
 test("authorization-sensitive responses are private and never reuse public validators", async () => {
   const publicResponse = await cachePublicGet(new Response("public"), request(), "2026.08.1", "revision-a");
   const publicEtag = publicResponse.headers.get("etag");
