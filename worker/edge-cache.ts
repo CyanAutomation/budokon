@@ -47,8 +47,13 @@ export function publicCacheKey(request: Request, revision: EdgeCacheRevision): R
 
 function conditional(response: Response, request: Request): Response {
   const etag = response.headers.get("etag");
-  const validators = request.headers.get("if-none-match")?.split(",").map(value => value.trim().replace(/^W\//, ""));
-  if (etag && validators?.some(value => value === "*" || value === etag)) {
+  const validators = request.headers.get("if-none-match")?.split(",").map(value => value.trim());
+  if (etag && validators?.some(value => {
+    if (value === "*") return true;
+    const strippedValidator = value.startsWith("W/") ? value.slice(2) : value;
+    const strippedEtag = etag.startsWith("W/") ? etag.slice(2) : etag;
+    return strippedValidator === strippedEtag;
+  })) {
     return new Response(null, { status: 304, headers: response.headers });
   }
   return response;
