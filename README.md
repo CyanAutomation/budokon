@@ -1120,7 +1120,14 @@ if (!response.ok) throw new Error(`BU-DO-KON request failed: ${response.status}`
 const draw = await response.json();
 ```
 
-Public GET responses include an `ETag` and CDN-friendly `Cache-Control` header.
+On Cloudflare, cacheable public `GET /v1/*` representations are stored explicitly
+in `caches.default`. Cache keys include the dataset and service revision and a
+normalized query string, so deployments and equivalent query orderings behave
+predictably. Authenticated, API-key, hidden-record, error, non-GET, and draw
+requests bypass that cache. CORS is added after cache lookup/storage, preventing
+an allowlisted origin from being replayed to another caller. Other runtimes still
+receive an `ETag` and CDN-friendly `Cache-Control` header but need an injected
+cache adapter (or their own compliant shared cache) for edge storage.
 `GET /v1/judoka` remains backwards compatible and returns an array by default.
 Use `limit` (1–100) to opt into cursor pagination for judoka, techniques, and
 events. The response becomes `{ judoka, nextCursor }`, `{ techniques,

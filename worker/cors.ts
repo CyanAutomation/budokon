@@ -91,7 +91,7 @@ async function representationEtag(datasetVersion: string, representationRevision
   return `"budokon-${hash}"`;
 }
 
-/** Cache immutable catalogue GET representations at the edge and validate them cheaply in browsers. */
+/** Add shared-cache policy and validators; worker/edge-cache.ts performs Cache API storage before CORS is applied. */
 export async function cachePublicGet(
   response: Response,
   request: Request,
