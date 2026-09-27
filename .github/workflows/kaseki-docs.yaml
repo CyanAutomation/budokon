@@ -25,7 +25,7 @@ env:
 jobs:
   system_status:
     name: Kaseki System Status
-    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 2
     environment: kaseki-agent
@@ -64,7 +64,7 @@ jobs:
   readiness:
     name: Kaseki System Readiness
     needs: system_status
-    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 2
     environment: kaseki-agent
@@ -102,7 +102,7 @@ jobs:
   api_connection:
     name: Kaseki API Status
     needs: readiness
-    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 2
     environment: kaseki-agent
@@ -144,7 +144,7 @@ jobs:
   dispatch:
     name: Submit Kaseki documentation sweep
     needs: api_connection
-    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: kaseki-agent
