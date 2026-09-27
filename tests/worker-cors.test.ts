@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { cachePublicGet, corsHeaders, preflightResponse, withCors } from "../worker/cors.js";
+import { cachePublicGet, corsHeaders, preflightResponse, representationEtag, withCors } from "../worker/cors.js";
 
 const env = { PUBLIC_ALLOWED_ORIGINS: "https://game.example, http://localhost:5173" };
 const request = (origin?: string, init: RequestInit = {}): Request => {
@@ -114,6 +114,60 @@ test("public GET validators change with the representation revision and remain s
   assert.match(first.headers.get("etag") ?? "", /^"budokon-[0-9a-f]{64}"$/);
   assert.equal(repeated.headers.get("etag"), first.headers.get("etag"));
   assert.notEqual(redeployed.headers.get("etag"), first.headers.get("etag"));
+});
+
+test("representation validators have a bounded opaque format even for long query values", async () => {
+  const short = await representationEtag("2026.08.1", "revision-a", request());
+  const long = await representationEtag(
+    "2026.08.1",
+    "revision-a",
+    new Request(`https://api.example/v1/judoka?q=${"a".repeat(50_000)}`),
+  );
+
+  assert.match(short, /^"budokon-[0-9a-f]{64}"$/);
+  assert.match(long, /^"budokon-[0-9a-f]{64}"$/);
+  assert.equal(short.length, long.length);
+  assert.equal(long.length, 74);
+  assert.notEqual(long, short);
+});
+
+test("representation validators canonicalize query parameter ordering", async () => {
+  const first = await representationEtag(
+    "2026.08.1",
+    "revision-a",
+    new Request("https://api.example/v1/judoka?q=champion&countryCode=JP&limit=10"),
+  );
+  const reordered = await representationEtag(
+    "2026.08.1",
+    "revision-a",
+    new Request("https://api.example/v1/judoka?limit=10&q=champion&countryCode=JP"),
+  );
+
+  assert.equal(reordered, first);
+});
+
+test("representation validators distinguish representation parameters and ordered repeated values", async () => {
+  const etag = (query: string) => representationEtag(
+    "2026.08.1",
+    "revision-a",
+    new Request(`https://api.example/v1/judoka?${query}`),
+  );
+
+  assert.notEqual(await etag("countryCode=JP"), await etag("countryCode=FR"));
+  assert.notEqual(
+    await etag("exclude=judoka-a&exclude=judoka-b"),
+    await etag("exclude=judoka-b&exclude=judoka-a"),
+  );
+});
+
+test("representation validators remain stable across repeated calls", async () => {
+  const candidate = new Request("https://api.example/v1/events?ruleset=ijf&category=senior");
+  const validators = await Promise.all(Array.from(
+    { length: 5 },
+    () => representationEtag("2026.08.1", "revision-a", candidate),
+  ));
+
+  assert.equal(new Set(validators).size, 1);
 });
 
 test("authorization-sensitive responses are private and never reuse public validators", async () => {

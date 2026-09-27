@@ -73,6 +73,27 @@ export function isAuthorizationSensitive(request: Request, metadata?: Representa
     || request.headers.has("x-api-key");
 }
 
+/**
+ * Describe the parts of a validated REST request that select its representation.
+ *
+ * URLSearchParams has already decoded query names and values. Sorting only the
+ * parameter names makes differently ordered, equivalent queries share an
+ * identity, while keeping each name's values in request order. The latter is
+ * important for filters such as repeated `exclude` values whose order can be
+ * reflected in a response. An array of decoded path segments also avoids
+ * spelling differences in percent-encoding without conflating encoded slashes
+ * with path separators.
+ */
+function canonicalRepresentationKey(url: URL): string {
+  const pathname = url.pathname
+    .split("/")
+    .filter(Boolean)
+    .map(segment => decodeURIComponent(segment));
+  const parameterNames = [...new Set(url.searchParams.keys())].sort();
+  const parameters = parameterNames.map(name => [name, url.searchParams.getAll(name)]);
+  return JSON.stringify([pathname, parameters]);
+}
+
 function privateResponse(response: Response): Response {
   const headers = new Headers(response.headers);
   headers.set("cache-control", "private, no-store");
@@ -84,7 +105,7 @@ function privateResponse(response: Response): Response {
 
 export async function representationEtag(datasetVersion: string, representationRevision: string, request: Request): Promise<string> {
   const url = new URL(request.url);
-  const representationKey = `${url.pathname}${url.search}`;
+  const representationKey = canonicalRepresentationKey(url);
   const identity = JSON.stringify([datasetVersion, representationRevision, representationKey]);
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(identity));
   const hash = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");

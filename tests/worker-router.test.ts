@@ -589,7 +589,7 @@ test("assembled worker exposes exactly the public judoka catalogue without crede
   const validatorIdentity = JSON.stringify([
     compiledModel.datasetVersion,
     compiledModel.manifest.sourceGitCommit,
-    "/v1/judoka",
+    JSON.stringify([["v1", "judoka"], []]),
   ]);
   const validatorDigest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(validatorIdentity));
   const validatorHash = Array.from(new Uint8Array(validatorDigest), byte => byte.toString(16).padStart(2, "0")).join("");
