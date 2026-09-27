@@ -11,7 +11,7 @@ import { SemanticJudokaSearchService } from "../src/jev/semantic-search.js";
 import { JevJudokaQueryInterpreter } from "../src/jev/query-interpreter.js";
 import { JsonReadModelRepository } from "../src/repository/json-read-model-repository.js";
 import { authorized } from "./auth.js";
-import { preflightResponse, withCors } from "./cors.js";
+import { preflightResponse, publicNotModifiedResponse, withCors } from "./cors.js";
 import { defaultEdgeCache, readPublicCache, writePublicCache, type EdgeCacheStorage } from "./edge-cache.js";
 import { rateLimitMcpRequest, rateLimitPublicRequest } from "./rate-limit.js";
 import { documentationResponse, landingResponse, openApiResponse } from "./discovery.js";
@@ -109,6 +109,11 @@ export function createWorker(openApiSpecification: string, options: { cache?: Ed
         // while the awaited REST request is being routed.
         const cacheability = { cacheablePublicly: false };
         const revision = { dataset: catalog.version().datasetVersion, service: manifest.sourceGitCommit };
+        // A matching, authorization-insensitive conditional GET is answered from
+        // release identity alone. It consumes no public quota because it neither
+        // routes nor generates a response representation.
+        const notModified = await publicNotModifiedResponse(request, revision.dataset, revision.service);
+        if (notModified) return withCors(notModified, request, env);
         const edgeCache = options.cache === null ? undefined : options.cache ?? defaultEdgeCache();
         const cached = await readPublicCache(edgeCache, request, revision);
         if (cached) return withCors(cached, request, env);
