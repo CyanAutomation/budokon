@@ -42,6 +42,7 @@
     "test": "npm run build && tsx --test scripts/*.test.ts tests/*.test.ts",
     "jev:evaluate": "tsx scripts/evaluate-jev.ts",
     "release": "tsx scripts/release.ts",
+    "release:plan": "tsx scripts/release.ts --plan-only",
     "release:dry": "tsx scripts/release.ts --dry-run",
     "deploy": "wrangler deploy"
   },

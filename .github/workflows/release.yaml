@@ -13,26 +13,30 @@ on:
           - "false"
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: release-main
   cancel-in-progress: false
 
 jobs:
-  release:
+  prepare:
+    name: Validate and plan release
     # A manual dispatch may select any ref; releases are only produced from main.
     if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
     outputs:
-      released: ${{ steps.release.outputs.released }}
-      version: ${{ steps.release.outputs.version }}
+      release_required: ${{ steps.plan.outputs.release_required }}
+      version: ${{ steps.plan.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
-          fetch-depth: 0  # Full history for release planning
+          fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up Node
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
@@ -60,19 +64,40 @@ jobs:
           targets: true
           save-snapshot: true
 
-      - name: Plan or publish release
-        id: release
+      - name: Plan release
+        id: plan
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
           if [[ "${{ inputs.dry_run }}" == "true" ]]; then
-            npm run release:dry 2>&1 | tee release-output.log
+            npm run release:plan -- --dry-run 2>&1 | tee release-output.log
           else
-            npm run release 2>&1 | tee release-output.log
+            npm run release:plan 2>&1 | tee release-output.log
           fi
+
+          {
+            echo "## Release plan"
+            echo
+            if jq -e '.releaseRequired == true' release-plan.json >/dev/null; then
+              echo "Planned version: $(jq -r '.version' release-plan.json)"
+              if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+                echo "Dry run only; no release will be published."
+              fi
+              echo
+              jq -r '.notes' release-plan.json
+            else
+              echo "No release-worthy Conventional Commits found."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload release plan
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-plan
+          path: release-plan.json
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Upload release log
         if: failure()
@@ -80,4 +105,78 @@ jobs:
         with:
           name: release-output
           path: release-output.log
+          if-no-files-found: ignore
           retention-days: 7
+
+  publish:
+    name: Publish GitHub release
+    needs: prepare
+    if: needs.prepare.outputs.release_required == 'true' && inputs.dry_run != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Download planned release
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release-plan
+          path: release-plan
+
+      - name: Create GitHub release
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_API_URL: ${{ github.api_url }}
+        run: |
+          set -euo pipefail
+
+          plan_file="release-plan/release-plan.json"
+          jq -e '
+            .releaseRequired == true
+            and (.targetCommit | strings | test("^[0-9a-fA-F]{40}$"))
+            and (.version | strings | test("^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"))
+            and (.notes | strings)
+          ' "$plan_file" >/dev/null
+
+          version="$(jq -r '.version' "$plan_file")"
+          target_commit="$(jq -r '.targetCommit' "$plan_file")"
+          notes="$(jq -r '.notes' "$plan_file")"
+          payload_file="$(mktemp)"
+          response_file="$(mktemp)"
+          trap 'rm -f "$payload_file" "$response_file"' EXIT
+
+          jq -n \
+            --arg version "$version" \
+            --arg targetCommit "$target_commit" \
+            --arg notes "$notes" \
+            '{
+              tag_name: ("v" + $version),
+              target_commitish: $targetCommit,
+              name: ("v" + $version),
+              body: $notes,
+              draft: false,
+              prerelease: false
+            }' > "$payload_file"
+
+          curl \
+            --fail-with-body \
+            --silent \
+            --show-error \
+            --connect-timeout 10 \
+            --max-time 60 \
+            --output "$response_file" \
+            --request POST "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/releases" \
+            --header "Authorization: Bearer $GITHUB_TOKEN" \
+            --header "Accept: application/vnd.github+json" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            --header "Content-Type: application/json" \
+            --data-binary "@$payload_file"
+
+          release_url="$(jq -er '.html_url | strings' "$response_file")"
+          echo "Published v$version: $release_url"
+          {
+            echo "## Published v$version"
+            echo
+            echo "$release_url"
+          } >> "$GITHUB_STEP_SUMMARY"
