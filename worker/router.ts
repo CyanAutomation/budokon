@@ -11,7 +11,8 @@ import { SemanticJudokaSearchService } from "../src/jev/semantic-search.js";
 import { JevJudokaQueryInterpreter } from "../src/jev/query-interpreter.js";
 import { JsonReadModelRepository } from "../src/repository/json-read-model-repository.js";
 import { authorized } from "./auth.js";
-import { cachePublicGet, preflightResponse, withCors } from "./cors.js";
+import { preflightResponse, withCors } from "./cors.js";
+import { defaultEdgeCache, readPublicCache, writePublicCache, type EdgeCacheStorage } from "./edge-cache.js";
 import { rateLimitMcpRequest, rateLimitPublicRequest } from "./rate-limit.js";
 import { documentationResponse, landingResponse, openApiResponse } from "./discovery.js";
 import { hostHeaderValidationResponse, originValidationResponse } from "@modelcontextprotocol/server";
@@ -70,7 +71,7 @@ function authenticateMcpRequest(request: Request, env: Pick<Env, "API_KEY" | "IN
   );
 }
 
-export function createWorker(openApiSpecification: string) {
+export function createWorker(openApiSpecification: string, options: { cache?: EdgeCacheStorage | null } = {}) {
   return {
     async fetch(request: Request, env: Env): Promise<Response> {
       const path = new URL(request.url).pathname;
@@ -107,17 +108,16 @@ export function createWorker(openApiSpecification: string) {
         // Keep a stable metadata object so cachePublicGet observes the value reported
         // while the awaited REST request is being routed.
         const cacheability = { cacheablePublicly: false };
+        const revision = { dataset: catalog.version().datasetVersion, service: manifest.sourceGitCommit };
+        const edgeCache = options.cache === null ? undefined : options.cache ?? defaultEdgeCache();
+        const cached = await readPublicCache(edgeCache, request, revision);
+        if (cached) return withCors(cached, request, env);
         const rest = createRestRouter({ catalog, draw, eventDraw }, {
           authorizeInternal: candidate => authorized(candidate, env.INTERNAL_API_KEY),
           onRepresentation: metadata => { cacheability.cacheablePublicly = metadata.cacheablePublicly; },
         });
-        response = await rateLimitPublicRequest(request, env) ?? await cachePublicGet(
-          await rest(request),
-          request,
-          catalog.version().datasetVersion,
-          manifest.sourceGitCommit,
-          cacheability,
-        );
+        const rateLimited = await rateLimitPublicRequest(request, env);
+        response = rateLimited ?? await writePublicCache(edgeCache, request, await rest(request), revision, cacheability);
       }
       return path.startsWith("/v1/") ? withCors(response, request, env) : response;
     }
