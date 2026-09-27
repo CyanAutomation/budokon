@@ -88,7 +88,13 @@ function canonicalRepresentationKey(url: URL): string {
   const pathname = url.pathname
     .split("/")
     .filter(Boolean)
-    .map(segment => decodeURIComponent(segment));
+    .map(segment => {
+      try {
+        return decodeURIComponent(segment);
+      } catch {
+        return segment;
+      }
+    });
   const parameterNames = [...new Set(url.searchParams.keys())].sort();
   const parameters = parameterNames.map(name => [name, url.searchParams.getAll(name)]);
   return JSON.stringify([pathname, parameters]);
