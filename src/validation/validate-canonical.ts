@@ -5,8 +5,6 @@ import { meaningfulText, ensureUnique, rejectGameStateProperties, isValidDateTim
 import { normalizeCatalogText } from '../contracts/text-normalization.js';
 
 const defaultRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const placeholder = /^(?:todo|tbd|unknown|n\/?a|none|more info to come)(?=$|[\s:_\p{P}\p{S}])/iu;
-const rfc3339 = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?Z$/;
 
 interface ParsedFile<T> { name: string; value: T; }
 interface CanonicalCountry { code: string; country: string; active: boolean; lastUpdated: string; }
