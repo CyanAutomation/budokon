@@ -51,6 +51,32 @@ test("dataset and service revisions invalidate edge cache entries", async () => 
   assert.equal(await readPublicCache(cache, request, { ...revision, service: "service-2" }), undefined);
 });
 
+test("cached responses use weak comparison for If-None-Match validators", async () => {
+  const cache = new MemoryCache();
+  const request = new Request("https://api.test/v1/version");
+  const key = publicCacheKey(request, revision);
+  assert.ok(key);
+  cache.entries.set(key.url, new Response("public", { headers: { etag: 'W/"revision"' } }));
+
+  for (const validator of ['W/"revision"', '"revision"', '"other", W/"revision"']) {
+    const response = await readPublicCache(
+      cache,
+      new Request(request, { headers: { "if-none-match": validator } }),
+      revision,
+    );
+    assert.equal(response?.status, 304, `${validator} should match a weak cached ETag`);
+    assert.equal(await response?.text(), "");
+  }
+
+  const miss = await readPublicCache(
+    cache,
+    new Request(request, { headers: { "if-none-match": 'W/"other"' } }),
+    revision,
+  );
+  assert.equal(miss?.status, 200);
+  assert.equal(await miss?.text(), "public");
+});
+
 test("private and randomized requests bypass cache lookup and storage", async () => {
   const requests = [
     new Request("https://api.test/v1/judoka", { headers: { authorization: "Bearer secret" } }),
