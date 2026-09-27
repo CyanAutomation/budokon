@@ -30,6 +30,13 @@ commit, plus normalized representation-affecting query parameters. A new data or
 service revision therefore misses old entries without requiring a purge (old
 entries expire under the configured cache policy).
 
+Matching public `If-None-Match` requests are resolved from the release identity
+before cache lookup, rate limiting, or REST routing and therefore do not consume
+public quota. This is an intentional bypass rather than a cheaper secondary
+limiter: computing the validator is bounded work and does not generate or read
+the representation. Validator mismatches and authorization-sensitive requests
+continue through the standard public limiter and routing path.
+
 Only successful responses that the REST layer explicitly marks public are
 stored. Authorization/API-key requests, `includeHidden=true`, non-GET requests,
 errors, and draw routes bypass lookup and storage. Responses enter the cache

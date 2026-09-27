@@ -609,6 +609,64 @@ test("assembled worker exposes exactly the public judoka catalogue without crede
   );
 });
 
+test("matching public revalidation bypasses quota and representation generation, while sensitive requests do not", async () => {
+  const url = "https://example.test/v1/judoka";
+  const initial = await createWorker("openapi: 3.0.0", { cache: null }).fetch(new Request(url), mockEnv);
+  const etag = initial.headers.get("etag");
+  assert.ok(etag);
+
+  const limiterCalls: Array<{ key: string }> = [];
+  let allow = false;
+  const env: Env = {
+    ...mockEnv,
+    PUBLIC_RATE_LIMITER: {
+      async limit(input) {
+        limiterCalls.push(input);
+        return { success: allow };
+      },
+    },
+  };
+  const revalidationWorker = createWorker("openapi: 3.0.0", {
+    cache: {
+      async match() { throw new Error("matching revalidation must not read or generate a representation"); },
+      async put() { throw new Error("matching revalidation must not store a representation"); },
+    },
+  });
+
+  const notModified = await revalidationWorker.fetch(new Request(url, {
+    headers: { "if-none-match": etag, origin: "https://example.com" },
+  }), env);
+  assert.equal(notModified.status, 304);
+  assert.equal(await notModified.text(), "");
+  assert.equal(notModified.headers.get("etag"), etag);
+  assert.equal(notModified.headers.get("cache-control"), "public, max-age=300, s-maxage=86400, stale-while-revalidate=86400");
+  assert.equal(notModified.headers.get("vary"), "Origin");
+  assert.equal(notModified.headers.get("access-control-allow-origin"), "https://example.com");
+  assert.equal(limiterCalls.length, 0, "a valid public revalidation must bypass public quota");
+
+  const mismatched = await createWorker("openapi: 3.0.0", { cache: null }).fetch(new Request(url, {
+    headers: { "if-none-match": '"unrelated"' },
+  }), env);
+  assert.equal(mismatched.status, 429);
+  assert.equal(limiterCalls.length, 1, "a validator mismatch must use the normal limiter");
+
+  allow = true;
+  const credentialed = await createWorker("openapi: 3.0.0", { cache: null }).fetch(new Request(url, {
+    headers: { authorization: `Bearer ${mockEnv.INTERNAL_API_KEY}`, "if-none-match": etag },
+  }), env);
+  assert.equal(credentialed.status, 200);
+  assert.equal(credentialed.headers.get("etag"), null);
+  assert.equal(credentialed.headers.get("cache-control"), "private, no-store");
+
+  const hidden = await createWorker("openapi: 3.0.0", { cache: null }).fetch(new Request(`${url}?includeHidden=true`, {
+    headers: { "if-none-match": etag },
+  }), env);
+  assert.equal(hidden.status, 403);
+  assert.equal(hidden.headers.get("etag"), null);
+  assert.equal(hidden.headers.get("cache-control"), "private, no-store");
+  assert.equal(limiterCalls.length, 3, "credentialed and hidden-record requests must retain normal quota handling");
+});
+
 test("an authorized hidden-record representation cannot contaminate the public cache", async () => {
   const url = "https://example.test/v1/judoka?includeHidden=true";
   const internalResponse = await worker.fetch(new Request(url, {
