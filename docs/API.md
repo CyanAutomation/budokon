@@ -23,7 +23,11 @@ continue to return their original array response.
 use the equivalent `POST /v1/events/draw` endpoint and require a `ruleset`.
 
 All public GET responses include `ETag`. Send it as `If-None-Match` to receive
-`304 Not Modified` when the representation has not changed. On `429`, honour
+`304 Not Modified` when the representation has not changed. A matching public
+revalidation bypasses request quota because it is resolved from immutable release
+identity without generating the representation. Mismatches, requests carrying
+credentials, and `includeHidden=true` requests follow the normal rate-limit and
+authorization flow. On `429`, honour
 `Retry-After` before retrying; that response also includes `RateLimit-Limit`
 and `RateLimit-Policy`.
 
