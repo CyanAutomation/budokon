@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   createReleasePlan,
+  createWorkflowReleasePlan,
   parseConventionalCommit,
   parseReleaseTag,
   publishRelease,
@@ -75,6 +76,28 @@ test("documentation-only and empty commit ranges do not create a release", () =>
   assert.equal(createReleasePlan([], "1.2.3"), undefined);
   assert.equal(createReleasePlan([commit("docs: clarify API limits")], "1.2.3"), undefined);
   assert.equal(createReleasePlan([commit("chore: refresh generated metadata")], "1.2.3"), undefined);
+});
+
+test("workflow release plans preserve the analyzed commit and separate no-release runs", () => {
+  const targetCommit = "fedcba9876543210fedcba9876543210fedcba98";
+  const plan = createReleasePlan([commit("fix: repair response header")], "1.2.3");
+  assert.ok(plan);
+
+  assert.deepEqual(createWorkflowReleasePlan(plan, targetCommit), {
+    releaseRequired: true,
+    targetCommit,
+    version: "1.2.4",
+    releaseType: "patch",
+    notes: plan.notes,
+  });
+  assert.deepEqual(createWorkflowReleasePlan(undefined, targetCommit), {
+    releaseRequired: false,
+    targetCommit,
+  });
+});
+
+test("workflow release plans reject a non-commit target", () => {
+  assert.throws(() => createWorkflowReleasePlan(undefined, "main"), /full Git commit SHA/);
 });
 
 test("release publisher posts a GitHub release for the exact analyzed commit", async () => {

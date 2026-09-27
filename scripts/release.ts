@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { appendFile, readFile } from "node:fs/promises";
+import { appendFile, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -24,6 +24,10 @@ export interface ReleasePlan {
   releaseType: ReleaseType;
   notes: string;
 }
+
+export type WorkflowReleasePlan =
+  | { releaseRequired: false; targetCommit: string }
+  | { releaseRequired: true; targetCommit: string; version: string; releaseType: ReleaseType; notes: string };
 
 export interface PublishReleaseOptions {
   repository?: string;
@@ -129,6 +133,25 @@ export function createReleasePlan(commits: ConventionalCommit[], previousVersion
   };
 }
 
+/** Serialize the minimum verified release data needed by the privileged publishing job. */
+export function createWorkflowReleasePlan(
+  plan: ReleasePlan | undefined,
+  targetCommit: string,
+): WorkflowReleasePlan {
+  const commit = targetCommit.trim();
+  if (!/^[0-9a-f]{40}$/iu.test(commit)) {
+    throw new TypeError("The release target must be a full Git commit SHA");
+  }
+  if (!plan) return { releaseRequired: false, targetCommit: commit };
+  return {
+    releaseRequired: true,
+    targetCommit: commit,
+    version: plan.version,
+    releaseType: plan.releaseType,
+    notes: plan.notes,
+  };
+}
+
 /** Create a stable GitHub Release pointing at the commit analyzed by this run. */
 export async function publishRelease(
   plan: ReleasePlan,
@@ -220,6 +243,21 @@ export async function main(environment: NodeJS.ProcessEnv = process.env, args = 
 
   const plan = createReleasePlan(commitsSince(root, currentTag?.tag), previousVersion);
   const dryRun = args.includes("--dry-run");
+  const planOnly = args.includes("--plan-only");
+
+  if (planOnly) {
+    const targetCommit = environment.GITHUB_SHA?.trim() || git(root, ["rev-parse", "HEAD"]);
+    const workflowPlan = createWorkflowReleasePlan(plan, targetCommit);
+    await writeFile(path.join(root, "release-plan.json"), `${JSON.stringify(workflowPlan, null, 2)}\n`, "utf8");
+    await appendWorkflowOutputs(environment.GITHUB_OUTPUT, {
+      release_required: String(workflowPlan.releaseRequired),
+      version: workflowPlan.releaseRequired ? workflowPlan.version : "",
+    });
+    if (plan) console.log(`${dryRun ? "Dry run: " : ""}v${plan.version} (${plan.releaseType})\n\n${plan.notes}`);
+    else console.log("No release-worthy Conventional Commits found.");
+    return;
+  }
+
   if (!plan) {
     console.log("No release-worthy Conventional Commits found.");
     await appendWorkflowOutputs(environment.GITHUB_OUTPUT, { released: "false", version: "", dry_run: String(dryRun) });

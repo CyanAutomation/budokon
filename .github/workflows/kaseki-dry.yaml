@@ -19,19 +19,19 @@ concurrency:
 jobs:
   dry_sweep:
     name: Run Kaseki DRY sweep
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
     # Kaseki allows a run to last three hours; leave time for
     # preflight and final status polling.
     timeout-minutes: 200
 
-    # Configure KASEKI_API_TOKEN as a secret and KASEKI_BASE_URL as an
-    # environment variable.
+    # Restrict `kaseki-agent` to `main` in repository environment settings.
+    # Configure KASEKI_API_TOKEN as a secret and KASEKI_BASE_URL as an environment variable.
     environment: kaseki-agent
 
     env:
       KASEKI_BASE_URL: ${{ vars.KASEKI_BASE_URL }}
-      KASEKI_API_TOKEN: ${{ secrets.KASEKI_API_TOKEN }}
 
       REPO_URL: ${{ github.server_url }}/${{ github.repository }}
       REF: ${{ github.event.repository.default_branch }}
@@ -51,15 +51,9 @@ jobs:
           set -euo pipefail
 
           : "${KASEKI_BASE_URL:?Configure KASEKI_BASE_URL as an environment variable}"
-          : "${KASEKI_API_TOKEN:?Configure KASEKI_API_TOKEN as an environment secret}"
 
-          if [[ ! "$KASEKI_BASE_URL" =~ ^https:// ]]; then
-            echo "::error title=Invalid Kaseki URL::KASEKI_BASE_URL must use HTTPS"
-            exit 1
-          fi
-
-          if [[ "$KASEKI_BASE_URL" =~ [@[:space:]] ]]; then
-            echo "::error title=Invalid Kaseki URL::KASEKI_BASE_URL must not contain credentials or whitespace"
+          if [[ "$KASEKI_BASE_URL" != "https://kaseki-tunnel.scheimann.xyz" ]]; then
+            echo "::error title=Invalid Kaseki URL::Use the approved HTTPS controller origin."
             exit 1
           fi
 
@@ -101,8 +95,12 @@ jobs:
 
       - name: Verify gateway connectivity and authentication
         shell: bash
+        env:
+          KASEKI_API_TOKEN: ${{ secrets.KASEKI_API_TOKEN }}
         run: |
           set -euo pipefail
+
+          : "${KASEKI_API_TOKEN:?Configure KASEKI_API_TOKEN as an environment secret}"
 
           response_file="$(mktemp)"
           trap 'rm -f "$response_file"' EXIT
@@ -121,6 +119,8 @@ jobs:
       - name: Submit DRY sweep
         id: submit
         shell: bash
+        env:
+          KASEKI_API_TOKEN: ${{ secrets.KASEKI_API_TOKEN }}
         run: |
           set -euo pipefail
 
@@ -237,6 +237,7 @@ jobs:
         shell: bash
         env:
           RUN_ID: ${{ steps.submit.outputs.run_id }}
+          KASEKI_API_TOKEN: ${{ secrets.KASEKI_API_TOKEN }}
         run: |
           set -euo pipefail
 
