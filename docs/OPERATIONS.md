@@ -21,6 +21,24 @@ metadata, discovery/OpenAPI, cache revalidation, pagination, validation errors,
 CORS preflight, and deterministic judoka and event draws. If it fails, treat
 the deployment as unhealthy and investigate before relying on the new release.
 
+## Edge response cache
+
+The Cloudflare Worker reads and writes cacheable public `GET /v1/*` responses
+through the Cache API's `caches.default`; cache headers alone are not assumed to
+populate it. Keys contain both the compiled dataset version and manifest source
+commit, plus normalized representation-affecting query parameters. A new data or
+service revision therefore misses old entries without requiring a purge (old
+entries expire under the configured cache policy).
+
+Only successful responses that the REST layer explicitly marks public are
+stored. Authorization/API-key requests, `includeHidden=true`, non-GET requests,
+errors, and draw routes bypass lookup and storage. Responses enter the cache
+before request-specific CORS headers are applied. Preserve that ordering when
+changing middleware; otherwise an allowlisted `Access-Control-Allow-Origin`
+value could leak across callers. Local and non-Cloudflare deployments have no
+Cache API by default and must inject a compatible cache adapter if edge storage
+is desired.
+
 ## Rate-limit binding separation
 
 The Worker intentionally routes authenticated `/mcp` traffic through the
