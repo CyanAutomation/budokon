@@ -1,14 +1,7 @@
 import type { EventDrawRequest } from "../../domain/types.js";
 import type { RestCatalogDependency, RestEventDrawDependency } from "../router.js";
+import type { RestHandlerContext as Context } from "./context.js";
 import { validateEventDrawBody, parseEventListQuery } from "../schemas.js";
-
-type ErrorCode = "bad_request" | "forbidden" | "not_found" | "method_not_allowed" | "conflict" | "internal_error";
-
-type Context = {
-  json: (body: unknown, status?: number, headers?: HeadersInit) => Response;
-  failure: (status: number, code: ErrorCode, message: string) => Response;
-  namedPage: <T extends { id: string }>(name: string, records: T[], limit: number | undefined, cursor: string | undefined) => unknown;
-};
 
 export async function eventsListHandler(context: Context, url: URL, catalog: RestCatalogDependency): Promise<Response> {
   const query = parseEventListQuery(url.searchParams);

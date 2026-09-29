@@ -65,7 +65,7 @@ export interface RepresentationCacheability {
   cacheablePublicly: boolean;
 }
 
-export function isAuthorizationSensitive(request: Request, metadata?: RepresentationCacheability): boolean {
+function isAuthorizationSensitive(request: Request, metadata?: RepresentationCacheability): boolean {
   const requestsHiddenRecords = new URL(request.url).searchParams.getAll("includeHidden").includes("true");
   return metadata?.cacheablePublicly === false
     || requestsHiddenRecords

@@ -3,15 +3,6 @@ import type {
   Filters, JudoEvent, Judoka, ListJudokaOptions, RequestContext, SearchJudokaOptions,
   StatusResponse, Technique, VersionResponse, WeightCategoryGroup
 } from "../domain/types.js";
-import {
-  parsePageQuery,
-  parseListQuery,
-  parseEventListQuery,
-  validateDrawBody,
-  validateEventDrawBody,
-} from "./schemas.js";
-import { createQueryParser } from "./query-parser.js";
-import { createBodyValidator } from "./body-validator.js";
 import { createRequestAuthority } from "./request-authority.js";
 import { judokaListHandler, judokaGetHandler } from "./handlers/judoka-handler.js";
 import { techniquesListHandler, techniquesGetHandler } from "./handlers/techniques-handler.js";
@@ -73,34 +64,97 @@ function namedPage<T extends { id: string }>(name: string, records: T[], limit: 
 
 /** Create a runtime-neutral Fetch API handler backed exclusively by application services. */
 export function createRestRouter({ catalog, draw, eventDraw }: { catalog: RestCatalogDependency; draw: RestDrawDependency; eventDraw?: RestEventDrawDependency }, options: RestRouterOptions = {}) {
-  // Initialize middleware utilities
-  const queryParser = createQueryParser();
-  const bodyValidator = createBodyValidator();
   const authority = createRequestAuthority(options.authorizeInternal);
-
-  // Create context object for handlers
-  const createContext = () => ({
+  const context = {
     json,
     failure,
     namedPage,
-  });
-
-  // Handler routing table: [resource, method?, id?] -> handler function
-  const handlers = {
-    judokaList: () => judokaListHandler(createContext(), new URL(""), catalog, false), // Will be called with proper params
-    judokaGet: () => judokaGetHandler(createContext(), new URL(""), "", catalog, false),
-    techniquesList: () => techniquesListHandler(createContext(), new URL(""), catalog),
-    techniquesGet: () => techniquesGetHandler(createContext(), "", catalog),
-    eventsList: () => eventsListHandler(createContext(), new URL(""), catalog),
-    eventsGet: () => eventsGetHandler(createContext(), new URL(""), "", catalog),
-    eventsDraw: () => eventsDrawHandler(createContext(), new Request("http://localhost"), eventDraw),
-    countries: () => countriesHandler(createContext(), catalog),
-    weightCategories: () => weightCategoriesHandler(createContext(), catalog),
-    version: () => versionHandler(createContext(), catalog),
-    status: () => statusHandler(createContext(), catalog),
-    coverage: () => coverageHandler(createContext(), catalog),
-    draw: () => drawHandler(createContext(), new Request("http://localhost"), draw, false),
   };
+  const singletonHandlers: Record<string, () => Promise<Response>> = {
+    countries: () => countriesHandler(context, catalog),
+    "weight-categories": () => weightCategoriesHandler(context, catalog),
+    version: () => versionHandler(context, catalog),
+    status: () => statusHandler(context, catalog),
+    coverage: () => coverageHandler(context, catalog),
+  };
+
+  async function routeJudoka(
+    id: string | undefined,
+    request: Request,
+    url: URL,
+    authorizedInternal: boolean,
+  ): Promise<Response | undefined> {
+    if (request.method !== "GET") return methodNotAllowed("GET");
+    return id === undefined
+      ? judokaListHandler(context, url, catalog, authorizedInternal)
+      : judokaGetHandler(context, url, id, catalog, authorizedInternal);
+  }
+
+  async function routeTechniques(id: string | undefined, request: Request, url: URL): Promise<Response> {
+    if (request.method !== "GET") return methodNotAllowed("GET");
+    return id === undefined
+      ? techniquesListHandler(context, url, catalog)
+      : techniquesGetHandler(context, id, catalog);
+  }
+
+  async function routeEvents(id: string | undefined, request: Request, url: URL): Promise<Response> {
+    if (id === "draw") {
+      return request.method === "POST"
+        ? eventsDrawHandler(context, request, eventDraw)
+        : methodNotAllowed("POST");
+    }
+    if (request.method !== "GET") return methodNotAllowed("GET");
+    return id === undefined
+      ? eventsListHandler(context, url, catalog)
+      : eventsGetHandler(context, url, id, catalog);
+  }
+
+  async function routeCollection(
+    resource: string | undefined,
+    id: string | undefined,
+    request: Request,
+    url: URL,
+    authorizedInternal: boolean,
+  ): Promise<Response | undefined> {
+    if (resource === "judoka") return routeJudoka(id, request, url, authorizedInternal);
+    if (resource === "techniques") return routeTechniques(id, request, url);
+    if (resource === "events") return routeEvents(id, request, url);
+    return undefined;
+  }
+
+  async function routeSingleton(resource: string | undefined, id: string | undefined, method: string): Promise<Response | undefined> {
+    if (id !== undefined || resource === undefined) return undefined;
+    const handler = singletonHandlers[resource];
+    if (!handler) return undefined;
+    return method === "GET" ? handler() : methodNotAllowed("GET");
+  }
+
+  async function routeDraw(
+    resource: string | undefined,
+    id: string | undefined,
+    request: Request,
+    authorizedInternal: boolean,
+  ): Promise<Response | undefined> {
+    if (resource !== "draw" || id !== undefined) return undefined;
+    return request.method === "POST"
+      ? drawHandler(context, request, draw, authorizedInternal)
+      : methodNotAllowed("POST");
+  }
+
+  async function routeResource(
+    resource: string | undefined,
+    id: string | undefined,
+    request: Request,
+    url: URL,
+    authorizedInternal: boolean,
+  ): Promise<Response> {
+    const collection = await routeCollection(resource, id, request, url, authorizedInternal);
+    if (collection) return collection;
+    const singleton = await routeSingleton(resource, id, request.method);
+    if (singleton) return singleton;
+    const drawResponse = await routeDraw(resource, id, request, authorizedInternal);
+    return drawResponse ?? failure(404, "not_found", "route not found");
+  }
 
   return async function route(request: Request): Promise<Response> {
     try {
@@ -117,43 +171,7 @@ export function createRestRouter({ catalog, draw, eventDraw }: { catalog: RestCa
       });
       const resource = segments[1]; const id = segments[2];
       if (segments.length > 3) return failure(404, "not_found", "route not found");
-
-      const context = { json, failure, namedPage };
-
-      if (resource === "judoka" && request.method === "GET") {
-        return id !== undefined
-          ? await judokaGetHandler(context, url, id, catalog, authorizedInternal)
-          : await judokaListHandler(context, url, catalog, authorizedInternal);
-      }
-      if (resource === "techniques" && request.method === "GET") {
-        return id !== undefined
-          ? await techniquesGetHandler(context, id, catalog)
-          : await techniquesListHandler(context, url, catalog);
-      }
-      if (resource === "events") {
-        if (id === "draw" && request.method === "POST") {
-          return await eventsDrawHandler(context, request, eventDraw);
-        }
-        if (id === "draw") return methodNotAllowed("POST");
-        if (request.method === "GET") {
-          return id !== undefined
-            ? await eventsGetHandler(context, url, id, catalog)
-            : await eventsListHandler(context, url, catalog);
-        }
-      }
-      if (resource === "countries" && request.method === "GET" && id === undefined) return await countriesHandler(context, catalog);
-      if (resource === "weight-categories" && request.method === "GET" && id === undefined) return await weightCategoriesHandler(context, catalog);
-      if (resource === "version" && request.method === "GET" && id === undefined) return await versionHandler(context, catalog);
-      if (resource === "status" && request.method === "GET" && id === undefined) return await statusHandler(context, catalog);
-      if (resource === "coverage" && request.method === "GET" && id === undefined) return await coverageHandler(context, catalog);
-      if (resource === "draw" && request.method === "POST" && id === undefined) {
-        return await drawHandler(context, request, draw, authorizedInternal);
-      }
-      const collectionRoute = resource === "judoka" || resource === "techniques" || resource === "events";
-      const getSingletonRoute = id === undefined && ["countries", "weight-categories", "version", "status", "coverage"].includes(resource ?? "");
-      if (collectionRoute || getSingletonRoute) return methodNotAllowed("GET");
-      if (resource === "draw" && id === undefined) return methodNotAllowed("POST");
-      return failure(404, "not_found", "route not found");
+      return await routeResource(resource, id, request, url, authorizedInternal);
     } catch (error) {
       const expectedInputError = error instanceof Error && /^(unsupported (query parameter|body field|filter|draw algorithm)|filter .+ must |includeHidden must |q must |limit must |cursor (must|requires) |content-type must |request body |count must |seed must |algorithm must |ruleset must |category must |exclude must )/.test(error.message);
       if (expectedInputError) return badRequest(error.message);

@@ -1,4 +1,5 @@
 build/
+coverage/
 .wrangler/
 node_modules/
 release-plan.json

@@ -1,21 +1,11 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateCanonical } from '../src/validation/validate-canonical.js';
+import { countStringField } from '../src/domain/coverage-counts.js';
 import { assertCoveragePolicySatisfied, publicRealJudoka } from './coverage-policy.js';
 import type { CountMap } from './coverage-policy.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const orderedCounts = (counts: CountMap): CountMap => Object.fromEntries(Object.entries(counts).sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0));
-
-function countBy(records, field) {
-  const counts: CountMap = {};
-  for (const record of records) {
-    const value = record[field];
-    if (typeof value === 'string' && value) counts[value] = (counts[value] ?? 0) + 1;
-  }
-  return orderedCounts(counts);
-}
-
 /** Return a stable, descriptive snapshot to guide the next small curation batch. */
 export function summarizeCoverage(judoka) {
   const publicReal = publicRealJudoka(judoka);
@@ -23,11 +13,11 @@ export function summarizeCoverage(judoka) {
     total: judoka.length,
     publicReal: publicReal.length,
     hidden: judoka.filter(record => record.isHidden === true).length,
-    byGender: countBy(publicReal, 'gender'),
-    byCountry: countBy(publicReal, 'countryCode'),
-    byWeightClass: countBy(publicReal, 'weightClass'),
-    byRarity: countBy(publicReal, 'rarity'),
-    byPersonType: countBy(judoka, 'personType'),
+    byGender: countStringField(publicReal, 'gender'),
+    byCountry: countStringField(publicReal, 'countryCode'),
+    byWeightClass: countStringField(publicReal, 'weightClass'),
+    byRarity: countStringField(publicReal, 'rarity'),
+    byPersonType: countStringField(judoka, 'personType'),
   };
 }
 

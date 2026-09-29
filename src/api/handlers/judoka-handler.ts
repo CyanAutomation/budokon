@@ -1,14 +1,7 @@
 import type { RestCatalogDependency } from "../router.js";
 import type { ListQuerySchema } from "../schemas.js";
+import type { RestHandlerContext as Context } from "./context.js";
 import { parseListQuery } from "../schemas.js";
-
-type ErrorCode = "bad_request" | "forbidden" | "not_found" | "method_not_allowed" | "conflict" | "internal_error";
-
-type Context = {
-  json: (body: unknown, status?: number, headers?: HeadersInit) => Response;
-  failure: (status: number, code: ErrorCode, message: string) => Response;
-  namedPage: <T extends { id: string }>(name: string, records: T[], limit: number | undefined, cursor: string | undefined) => unknown;
-};
 
 export async function judokaListHandler(context: Context, url: URL, catalog: RestCatalogDependency, authorizedInternal: boolean): Promise<Response> {
   const query = parseListQuery(url.searchParams);

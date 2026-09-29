@@ -6,20 +6,6 @@
 import type { DrawRequest, EventDrawRequest, Filters } from "../domain/types.js";
 import { FILTER_FIELDS } from "../domain/catalog-filters.js";
 
-/** Schema definition for filter validation in MCP and REST APIs. */
-export const FILTERS_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    countryCode: { oneOf: [{ type: "string" }, { type: "array", items: { type: "string" }, minItems: 1 }] },
-    gender: { oneOf: [{ type: "string" }, { type: "array", items: { type: "string" }, minItems: 1 }] },
-    weightClass: { oneOf: [{ type: "string" }, { type: "array", items: { type: "string" }, minItems: 1 }] },
-    rarity: { oneOf: [{ type: "string" }, { type: "array", items: { type: "string" }, minItems: 1 }] },
-    personType: { oneOf: [{ type: "string" }, { type: "array", items: { type: "string" }, minItems: 1 }] },
-    signatureMoveIds: { oneOf: [{ type: "string" }, { type: "array", items: { type: "string" }, minItems: 1 }] },
-  },
-} as const;
-
 export interface ListQuerySchema {
   filters: Filters;
   exclude: string[];
@@ -45,6 +31,51 @@ export interface DrawBodySchema extends DrawRequest {}
 export interface EventDrawBodySchema extends EventDrawRequest {}
 
 const FILTERS = Array.from(FILTER_FIELDS) as readonly string[];
+const DRAW_BODY_FIELDS = new Set(["count", "seed", "algorithm", "filters", "exclude", "includeHidden"]);
+const EVENT_DRAW_BODY_FIELDS = new Set(["ruleset", "category", "seed", "exclude"]);
+
+function requestObject(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new TypeError("request body must be a JSON object");
+  }
+  return value as Record<string, unknown>;
+}
+
+function assertAllowedFields(body: Record<string, unknown>, allowed: ReadonlySet<string>): void {
+  for (const key of Object.keys(body)) {
+    if (!allowed.has(key)) throw new TypeError(`unsupported body field: ${key}`);
+  }
+}
+
+function assertStringFields(body: Record<string, unknown>, fields: readonly string[]): void {
+  for (const key of fields) {
+    if (body[key] !== undefined && typeof body[key] !== "string") {
+      throw new TypeError(`${key} must be a string`);
+    }
+  }
+}
+
+function assertExcludeField(body: Record<string, unknown>): void {
+  const exclude = body.exclude;
+  if (exclude !== undefined && (!Array.isArray(exclude) || exclude.some(item => typeof item !== "string"))) {
+    throw new TypeError("exclude must be an array of strings");
+  }
+}
+
+function assertDrawFilters(value: unknown): void {
+  if (value === undefined) return;
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new TypeError("filters must be an object");
+  }
+
+  for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+    if (!FILTERS.includes(key)) throw new TypeError(`unsupported filter: ${key}`);
+    const validValue = typeof item === "string" || (
+      Array.isArray(item) && item.length > 0 && item.every(entry => typeof entry === "string")
+    );
+    if (!validValue) throw new TypeError(`filter ${key} must be a string or non-empty array of strings`);
+  }
+}
 
 function values(params: URLSearchParams, name: string): string[] {
   return params.getAll(name).flatMap(value => value.split(",")).map(value => value.trim()).filter(Boolean);
@@ -120,52 +151,19 @@ export function parseEventListQuery(params: URLSearchParams): EventListQuerySche
  * Validate and normalize a draw request body.
  */
 export function validateDrawBody(value: unknown): DrawBodySchema {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new TypeError("request body must be a JSON object");
-  }
-
-  const body = value as Record<string, unknown>;
-  const allowed = new Set(["count", "seed", "algorithm", "filters", "exclude", "includeHidden"]);
-
-  for (const key of Object.keys(body)) {
-    if (!allowed.has(key)) throw new TypeError(`unsupported body field: ${key}`);
-  }
+  const body = requestObject(value);
+  assertAllowedFields(body, DRAW_BODY_FIELDS);
 
   if (body.count !== undefined && (!Number.isSafeInteger(body.count) || (body.count as number) < 1)) {
     throw new TypeError("count must be a positive integer");
   }
-
-  for (const key of ["seed", "algorithm"] as const) {
-    if (body[key] !== undefined && typeof body[key] !== "string") {
-      throw new TypeError(`${key} must be a string`);
-    }
-  }
+  assertStringFields(body, ["seed", "algorithm"]);
 
   if (body.includeHidden !== undefined && typeof body.includeHidden !== "boolean") {
     throw new TypeError("includeHidden must be a boolean");
   }
-
-  if (body.exclude !== undefined && (!Array.isArray(body.exclude) || body.exclude.some(item => typeof item !== "string"))) {
-    throw new TypeError("exclude must be an array of strings");
-  }
-
-  if (body.filters !== undefined) {
-    if (!body.filters || typeof body.filters !== "object" || Array.isArray(body.filters)) {
-      throw new TypeError("filters must be an object");
-    }
-
-    for (const [key, item] of Object.entries(body.filters as Record<string, unknown>)) {
-      if (!(FILTERS as readonly string[]).includes(key)) throw new TypeError(`unsupported filter: ${key}`);
-      if (
-        !(
-          typeof item === "string" ||
-          (Array.isArray(item) && item.length > 0 && item.every(entry => typeof entry === "string"))
-        )
-      ) {
-        throw new TypeError(`filter ${key} must be a string or non-empty array of strings`);
-      }
-    }
-  }
+  assertExcludeField(body);
+  assertDrawFilters(body.filters);
 
   return body as DrawBodySchema;
 }
@@ -174,30 +172,15 @@ export function validateDrawBody(value: unknown): DrawBodySchema {
  * Validate and normalize an event draw request body.
  */
 export function validateEventDrawBody(value: unknown): EventDrawBodySchema {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new TypeError("request body must be a JSON object");
-  }
-
-  const body = value as Record<string, unknown>;
-  const allowed = new Set(["ruleset", "category", "seed", "exclude"]);
-
-  for (const key of Object.keys(body)) {
-    if (!allowed.has(key)) throw new TypeError(`unsupported body field: ${key}`);
-  }
+  const body = requestObject(value);
+  assertAllowedFields(body, EVENT_DRAW_BODY_FIELDS);
 
   if (typeof body.ruleset !== "string" || body.ruleset.trim() === "") {
     throw new TypeError("ruleset must be a non-empty string");
   }
 
-  for (const key of ["category", "seed"] as const) {
-    if (body[key] !== undefined && typeof body[key] !== "string") {
-      throw new TypeError(`${key} must be a string`);
-    }
-  }
-
-  if (body.exclude !== undefined && (!Array.isArray(body.exclude) || body.exclude.some(item => typeof item !== "string"))) {
-    throw new TypeError("exclude must be an array of strings");
-  }
+  assertStringFields(body, ["category", "seed"]);
+  assertExcludeField(body);
 
   return body as unknown as EventDrawBodySchema;
 }
