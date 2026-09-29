@@ -35,7 +35,7 @@ const DRAW_BODY_FIELDS = new Set(["count", "seed", "algorithm", "filters", "excl
 const EVENT_DRAW_BODY_FIELDS = new Set(["ruleset", "category", "seed", "exclude"]);
 
 function requestObject(value: unknown): Record<string, unknown> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
+  if (value === null || value === undefined || typeof value !== "object" || Array.isArray(value)) {
     throw new TypeError("request body must be a JSON object");
   }
   return value as Record<string, unknown>;
@@ -64,7 +64,7 @@ function assertExcludeField(body: Record<string, unknown>): void {
 
 function assertDrawFilters(value: unknown): void {
   if (value === undefined) return;
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
+  if (value === null || value === undefined || typeof value !== "object" || Array.isArray(value)) {
     throw new TypeError("filters must be an object");
   }
 
