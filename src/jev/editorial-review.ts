@@ -26,33 +26,53 @@ const MAX_REVIEW_BYTES = 64_000;
 export const MAX_EDITORIAL_REVIEW_BATCH_SIZE = 10;
 const probability = (answer: JevAnswer | undefined) => answer?.type === "noul" ? answer.noul : 0;
 
-function validateReviewInput(input: EditorialReviewInput): void {
-  if (!input.record || typeof input.record !== "object" || Array.isArray(input.record)) throw new TypeError("record must be an object");
-  if (typeof input.record.id !== "string" || !input.record.id || typeof input.record.slug !== "string" || !input.record.slug) {
+function validateReviewRecord(record: Judoka): void {
+  if (!record || typeof record !== "object" || Array.isArray(record)) throw new TypeError("record must be an object");
+  if (typeof record.id !== "string" || !record.id || typeof record.slug !== "string" || !record.slug) {
     throw new TypeError("record must include a non-empty id and slug");
   }
-  if (typeof input.record.bio !== "string" || input.record.bio.length > 8_000) throw new TypeError("record.bio must be a string of at most 8000 characters");
-  if (!Array.isArray(input.record.signatureMoveIds) || input.record.signatureMoveIds.length > 20
-    || !input.record.signatureMoveIds.every(id => typeof id === "string" && id.length > 0)) {
+  if (typeof record.bio !== "string" || record.bio.length > 8_000) throw new TypeError("record.bio must be a string of at most 8000 characters");
+  if (!Array.isArray(record.signatureMoveIds) || record.signatureMoveIds.length > 20
+    || !record.signatureMoveIds.every(id => typeof id === "string" && id.length > 0)) {
     throw new TypeError("record.signatureMoveIds must contain at most 20 non-empty IDs");
   }
-  if (!Array.isArray(input.evidence) || input.evidence.length > 10
-    || !input.evidence.every(item => {
-      if (!item || typeof item.url !== "string" || typeof item.excerpt !== "string" || item.excerpt.length === 0 || item.excerpt.length > 4_000) return false;
-      try { return new URL(item.url).protocol === "https:"; } catch { return false; }
-    })) {
+}
+
+function isValidEvidenceItem(item: unknown): boolean {
+  if (!item || typeof item !== "object" || Array.isArray(item)) return false;
+  const evidence = item as Record<string, unknown>;
+  if (typeof evidence.url !== "string" || typeof evidence.excerpt !== "string" || evidence.excerpt.length === 0 || evidence.excerpt.length > 4_000) return false;
+  try { return new URL(evidence.url).protocol === "https:"; }
+  catch { return false; }
+}
+
+function validateReviewEvidence(evidence: EditorialEvidence[]): void {
+  if (!Array.isArray(evidence) || evidence.length > 10 || !evidence.every(isValidEvidenceItem)) {
     throw new TypeError("evidence must contain at most 10 HTTPS source excerpts of 1–4000 characters");
   }
+}
+
+function validateOptionalReviewLimits(input: EditorialReviewInput): void {
   if (input.duplicateCandidates !== undefined && (!Array.isArray(input.duplicateCandidates) || input.duplicateCandidates.length > 10)) {
     throw new RangeError("duplicateCandidates accepts at most 10 records");
   }
   if (input.techniques !== undefined && (!Array.isArray(input.techniques) || input.techniques.length > 20)) {
     throw new RangeError("techniques accepts at most 20 resolved records");
   }
+}
+
+function validateReviewInputSize(input: EditorialReviewInput): void {
   let serializedInput: string;
   try { serializedInput = JSON.stringify(input); }
   catch { throw new TypeError("review input must be JSON-serializable"); }
   if (new TextEncoder().encode(serializedInput).byteLength > MAX_REVIEW_BYTES) throw new RangeError("review input exceeds the 64 KB JEV request limit");
+}
+
+function validateReviewInput(input: EditorialReviewInput): void {
+  validateReviewRecord(input.record);
+  validateReviewEvidence(input.evidence);
+  validateOptionalReviewLimits(input);
+  validateReviewInputSize(input);
 }
 
 function questionsFor(input: EditorialReviewInput, statePath: string): Record<string, JevQuestion> {

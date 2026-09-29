@@ -1,10 +1,5 @@
 import type { RestCatalogDependency } from "../router.js";
-
-type ErrorCode = "bad_request" | "forbidden" | "not_found" | "method_not_allowed" | "conflict" | "internal_error";
-
-type Context = {
-  json: (body: unknown, status?: number, headers?: HeadersInit) => Response;
-};
+import type { SimpleRestHandlerContext as Context } from "./context.js";
 
 export async function countriesHandler(context: Context, catalog: RestCatalogDependency): Promise<Response> {
   return context.json(catalog.listCountries());

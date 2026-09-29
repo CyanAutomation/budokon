@@ -42,8 +42,7 @@ export function validateOpenApiYaml(source: string): void {
   validateOpenApiDocument(parseOpenApiYaml(source));
 }
 
-export function validateOpenApiDocument(document: unknown): void {
-  const expectedResponses: Record<string, Record<string, Record<string, string>>> = {
+const expectedResponses: Record<string, Record<string, Record<string, string>>> = {
     "/v1/judoka": { get: { "200": "JudokaList", "304": "NotModified", "429": "RateLimited" } },
     "/v1/judoka/{id}": { get: { "200": "Judoka", "304": "NotModified", "429": "RateLimited" } },
     "/v1/techniques": { get: { "200": "TechniqueList", "304": "NotModified", "429": "RateLimited" } },
@@ -57,8 +56,20 @@ export function validateOpenApiDocument(document: unknown): void {
     "/v1/status": { get: { "200": "Status", "304": "NotModified", "429": "RateLimited" } },
     "/v1/coverage": { get: { "200": "Coverage", "304": "NotModified", "429": "RateLimited" } },
     "/v1/draw": { post: { "200": "JudokaDraw", "429": "RateLimited" } },
-  };
+};
 
+const responseSchemas: Record<string, string> = {
+  Judoka: "Judoka",
+  Technique: "Technique",
+  Event: "Event",
+  EventDraw: "EventDraw",
+  Version: "Version",
+  Status: "Status",
+  Coverage: "Coverage",
+  JudokaDraw: "JudokaDraw",
+};
+
+function validateExpectedResponses(document: unknown): void {
   for (const [path, methods] of Object.entries(expectedResponses)) {
     for (const [method, responses] of Object.entries(methods)) {
       for (const [status, component] of Object.entries(responses)) {
@@ -67,7 +78,9 @@ export function validateOpenApiDocument(document: unknown): void {
       }
     }
   }
+}
 
+function validateVisibilityOperations(document: unknown): void {
   const paths = asObject(valueAt(document, "paths")) ?? {};
   const visibilityOperations: string[][] = [];
   for (const [path, pathItemValue] of Object.entries(paths)) {
@@ -82,7 +95,9 @@ export function validateOpenApiDocument(document: unknown): void {
     }
   }
   assertEqual(visibilityOperations, [["/v1/judoka", "get"]], "operations using IncludeHidden");
+}
 
+function validateResponseHeaders(document: unknown): void {
   const notModifiedHeaders = asObject(valueAt(document, "components", "responses", "NotModified", "headers")) ?? {};
   assertEqual(Object.keys(notModifiedHeaders), ["ETag"], "NotModified response headers");
 
@@ -92,17 +107,9 @@ export function validateOpenApiDocument(document: unknown): void {
     ["RateLimit-Limit", "RateLimit-Policy", "Retry-After"].sort(),
     "RateLimited response headers",
   );
+}
 
-  const responseSchemas: Record<string, string> = {
-    Judoka: "Judoka",
-    Technique: "Technique",
-    Event: "Event",
-    EventDraw: "EventDraw",
-    Version: "Version",
-    Status: "Status",
-    Coverage: "Coverage",
-    JudokaDraw: "JudokaDraw",
-  };
+function validateResponseSchemas(document: unknown): void {
   for (const [response, schema] of Object.entries(responseSchemas)) {
     const actual = valueAt(
       document,
@@ -110,7 +117,9 @@ export function validateOpenApiDocument(document: unknown): void {
     );
     assertEqual(actual, `#/components/schemas/${schema}`, `${response} response body`);
   }
+}
 
+function validateSourceSchemas(document: unknown): void {
   assertEqual(
     valueAt(document, "components", "schemas", "Judoka", "properties", "sources", "items", "$ref"),
     "#/components/schemas/Source",
@@ -121,4 +130,12 @@ export function validateOpenApiDocument(document: unknown): void {
     "uri",
     "Judoka sourceUrls",
   );
+}
+
+export function validateOpenApiDocument(document: unknown): void {
+  validateExpectedResponses(document);
+  validateVisibilityOperations(document);
+  validateResponseHeaders(document);
+  validateResponseSchemas(document);
+  validateSourceSchemas(document);
 }
