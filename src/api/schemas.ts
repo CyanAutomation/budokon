@@ -64,7 +64,7 @@ function assertExcludeField(body: Record<string, unknown>): void {
 
 function assertDrawFilters(value: unknown): void {
   if (value === undefined) return;
-  if (value === null || value === undefined || typeof value !== "object" || Array.isArray(value)) {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new TypeError("filters must be an object");
   }
 
