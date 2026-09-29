@@ -7,8 +7,7 @@ import {
   createMcpTools,
   createRestRouter,
   DrawService,
-} from "../build/runtime/index.js";
-import { createRestHandlers } from "../build/runtime/api/handlers.js";
+} from "../src/index.js";
 import compiledModel from "./fixtures/compiled-model.js";
 
 const events = [
@@ -70,28 +69,32 @@ test("MCP event tools share event-draw semantics", () => {
   assert.equal(mcp.draw_event({ ruleset: "ju-do-kon-v1", seed: "mcp" }).event.ruleset, "ju-do-kon-v1");
 });
 
-test("optional event draw adapters fail explicitly when the service is unavailable", () => {
+test("REST reports an unavailable event draw route and MCP rejects the missing service", async () => {
   const draw = new DrawService(catalog);
-  const rest = createRestHandlers({ catalog, draw });
+  const unavailableRouter = createRestRouter({ catalog, draw });
   const mcp = createMcpTools({ catalog, draw });
 
-  assert.throws(
-    () => rest.drawEvent({ body: { ruleset: "ju-do-kon-v1" } }),
-    /eventDraw service not configured/
-  );
+  const response = await unavailableRouter(new Request("https://example.test/v1/events/draw", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ ruleset: "ju-do-kon-v1" }),
+  }));
+  assert.equal(response.status, 404);
+  assert.equal((await response.json()).error.message, "route not found");
   assert.throws(
     () => mcp.draw_event({ ruleset: "ju-do-kon-v1" }),
     /eventDraw service not configured/
   );
 });
 
-test("event REST handler validates an omitted body as empty input", () => {
-  const rest = createRestHandlers({ catalog, draw: new DrawService(catalog), eventDraw });
+test("event REST route reports an omitted JSON body as malformed input", async () => {
+  const response = await request("/v1/events/draw", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+  });
 
-  assert.throws(
-    () => rest.drawEvent(),
-    { name: "RangeError", message: "ruleset must be a non-empty string" }
-  );
+  assert.equal(response.status, 400);
+  assert.equal((await response.json()).error.message, "request body contains malformed JSON");
 });
 
 test("dataset versions 2026.08.1-2026.08.6 retain pre-events compiled-model compatibility", () => {

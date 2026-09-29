@@ -71,59 +71,85 @@ function authenticateMcpRequest(request: Request, env: Pick<Env, "API_KEY" | "IN
   );
 }
 
+function discoveryResponse(path: string, origin: string, openApiSpecification: string): Response | undefined {
+  if (path === "/") return landingResponse(origin);
+  if (path === "/docs" || path === "/docs/") return documentationResponse(origin);
+  if (path === "/openapi/v1.yaml") return openApiResponse(openApiSpecification);
+  return undefined;
+}
+
+async function handleMcpRequest(request: Request, env: Env): Promise<Response> {
+  const rateLimited = await rateLimitMcpRequest(request, env);
+  if (rateLimited) return rateLimited;
+  if (!env.MCP_ALLOWED_HOSTNAMES) {
+    return json({ error: { code: "not_configured", message: "MCP allowed hostnames are required" } }, 503);
+  }
+
+  const authentication = authenticateMcpRequest(request, env);
+  if (authentication instanceof Response) return authentication;
+  const allowedHostnames = env.MCP_ALLOWED_HOSTNAMES.split(",").map(value => value.trim()).filter(Boolean);
+  const rejected = hostHeaderValidationResponse(request, allowedHostnames)
+    ?? originValidationResponse(request, allowedHostnames.map(hostname => `https://${hostname}`));
+  if (rejected) return rejected;
+
+  const client = env.JEV_OPENROUTER_API_KEY ? new OpenRouterJevClient({
+    apiKey: env.JEV_OPENROUTER_API_KEY,
+    model: env.JEV_MODEL,
+    timeoutMs: Number(env.JEV_TIMEOUT_MS),
+  }) : undefined;
+  const mcp = createBudokonMcpHandler({
+    catalog, draw, eventDraw, authorizeInternal: () => authentication.authorizedInternal,
+    semanticSearch: client ? new SemanticJudokaSearchService(client, { minimumRelevance: configuredProbability(env.JEV_MINIMUM_RELEVANCE, 0.5) }) : undefined,
+    editorialReview: client ? new EditorialReviewService(client, configuredProbability(env.JEV_EDITORIAL_THRESHOLD, 0.8)) : undefined,
+    queryInterpreter: client ? new JevJudokaQueryInterpreter(client, { minimumConfidence: configuredProbability(env.JEV_QUERY_MINIMUM_CONFIDENCE, 0.7) }) : undefined,
+  });
+  return mcp.fetch(request);
+}
+
+async function handleRestRequest(
+  request: Request,
+  env: Env,
+  cacheOption: EdgeCacheStorage | null | undefined,
+): Promise<Response> {
+  // Catalogue reads and draws are public; hidden records still require INTERNAL_API_KEY.
+  // Keep a stable metadata object so cachePublicGet observes the value reported
+  // while the awaited REST request is being routed.
+  const cacheability = { cacheablePublicly: false };
+  const revision = { dataset: catalog.version().datasetVersion, service: manifest.sourceGitCommit };
+  // A matching, authorization-insensitive conditional GET is answered from
+  // release identity alone. It consumes no public quota because it neither
+  // routes nor generates a response representation.
+  const notModified = await publicNotModifiedResponse(request, revision.dataset, revision.service);
+  if (notModified) return notModified;
+
+  const edgeCache = cacheOption === null ? undefined : cacheOption ?? defaultEdgeCache();
+  const cached = await readPublicCache(edgeCache, request, revision);
+  if (cached) return cached;
+
+  const rest = createRestRouter({ catalog, draw, eventDraw }, {
+    authorizeInternal: candidate => authorized(candidate, env.INTERNAL_API_KEY),
+    onRepresentation: metadata => { cacheability.cacheablePublicly = metadata.cacheablePublicly; },
+  });
+  const rateLimited = await rateLimitPublicRequest(request, env);
+  return rateLimited ?? await writePublicCache(edgeCache, request, await rest(request), revision, cacheability);
+}
+
 export function createWorker(openApiSpecification: string, options: { cache?: EdgeCacheStorage | null } = {}) {
   return {
     async fetch(request: Request, env: Env): Promise<Response> {
-      const path = new URL(request.url).pathname;
-      const origin = new URL(request.url).origin;
-      if (path === "/") return landingResponse(origin);
-      if (path === "/docs" || path === "/docs/") return documentationResponse(origin);
-      if (path === "/openapi/v1.yaml") return openApiResponse(openApiSpecification);
-      if (request.method === "OPTIONS") return path.startsWith("/v1/") ? preflightResponse(request, env) : new Response(null, { status: 405, headers: { allow: "POST" } });
-      let response: Response;
-      if (path === "/mcp") {
-        const rateLimited = await rateLimitMcpRequest(request, env);
-        if (rateLimited) return rateLimited;
-        if (!env.MCP_ALLOWED_HOSTNAMES) return json({ error: { code: "not_configured", message: "MCP allowed hostnames are required" } }, 503);
-        const authentication = authenticateMcpRequest(request, env);
-        if (authentication instanceof Response) return authentication;
-        const allowedHostnames = env.MCP_ALLOWED_HOSTNAMES.split(",").map(value => value.trim()).filter(Boolean);
-        const rejected = hostHeaderValidationResponse(request, allowedHostnames)
-          ?? originValidationResponse(request, allowedHostnames.map(hostname => `https://${hostname}`));
-        if (rejected) return rejected;
-        const client = env.JEV_OPENROUTER_API_KEY ? new OpenRouterJevClient({
-          apiKey: env.JEV_OPENROUTER_API_KEY,
-          model: env.JEV_MODEL,
-          timeoutMs: Number(env.JEV_TIMEOUT_MS),
-        }) : undefined;
-        const mcp = createBudokonMcpHandler({
-          catalog, draw, eventDraw, authorizeInternal: () => authentication.authorizedInternal,
-          semanticSearch: client ? new SemanticJudokaSearchService(client, { minimumRelevance: configuredProbability(env.JEV_MINIMUM_RELEVANCE, 0.5) }) : undefined,
-          editorialReview: client ? new EditorialReviewService(client, configuredProbability(env.JEV_EDITORIAL_THRESHOLD, 0.8)) : undefined,
-          queryInterpreter: client ? new JevJudokaQueryInterpreter(client, { minimumConfidence: configuredProbability(env.JEV_QUERY_MINIMUM_CONFIDENCE, 0.7) }) : undefined,
-        });
-        response = await mcp.fetch(request);
-      } else {
-        // Catalogue reads and draws are public; hidden records still require INTERNAL_API_KEY.
-        // Keep a stable metadata object so cachePublicGet observes the value reported
-        // while the awaited REST request is being routed.
-        const cacheability = { cacheablePublicly: false };
-        const revision = { dataset: catalog.version().datasetVersion, service: manifest.sourceGitCommit };
-        // A matching, authorization-insensitive conditional GET is answered from
-        // release identity alone. It consumes no public quota because it neither
-        // routes nor generates a response representation.
-        const notModified = await publicNotModifiedResponse(request, revision.dataset, revision.service);
-        if (notModified) return withCors(notModified, request, env);
-        const edgeCache = options.cache === null ? undefined : options.cache ?? defaultEdgeCache();
-        const cached = await readPublicCache(edgeCache, request, revision);
-        if (cached) return withCors(cached, request, env);
-        const rest = createRestRouter({ catalog, draw, eventDraw }, {
-          authorizeInternal: candidate => authorized(candidate, env.INTERNAL_API_KEY),
-          onRepresentation: metadata => { cacheability.cacheablePublicly = metadata.cacheablePublicly; },
-        });
-        const rateLimited = await rateLimitPublicRequest(request, env);
-        response = rateLimited ?? await writePublicCache(edgeCache, request, await rest(request), revision, cacheability);
+      const url = new URL(request.url);
+      const path = url.pathname;
+      const discovery = discoveryResponse(path, url.origin, openApiSpecification);
+      if (discovery) return discovery;
+      if (request.method === "OPTIONS") {
+        return path.startsWith("/v1/")
+          ? preflightResponse(request, env)
+          : new Response(null, { status: 405, headers: { allow: "POST" } });
       }
+
+      const response = path === "/mcp"
+        ? await handleMcpRequest(request, env)
+        : await handleRestRequest(request, env, options.cache);
       return path.startsWith("/v1/") ? withCors(response, request, env) : response;
     }
   };

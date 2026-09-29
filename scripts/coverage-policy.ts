@@ -21,7 +21,7 @@ export interface CoveragePolicy {
 /** Stable reference to the human-readable policy enforced by this module. */
 export const coveragePolicyId = 'README.md#editorial-coverage-and-rarity-policy';
 
-export const coveragePolicy: Readonly<CoveragePolicy> = Object.freeze({
+const coveragePolicy: Readonly<CoveragePolicy> = Object.freeze({
   minimumPublicReal: 20,
   minimumCountries: 10,
   maximumCountryShare: 0.35,
@@ -39,19 +39,50 @@ export function publicRealJudoka(judoka) {
   return judoka.filter(record => record.personType === 'real' && record.isHidden !== true);
 }
 
-export function coverageViolations(summary: CoverageSummary, weightCategories, policy: Readonly<CoveragePolicy> = coveragePolicy) {
+function catalogueSizeViolations(summary: CoverageSummary, policy: Readonly<CoveragePolicy>): string[] {
   const violations = [];
-  const { publicReal } = summary;
-  if (publicReal < policy.minimumPublicReal) violations.push(`public real catalogue has ${publicReal}; need at least ${policy.minimumPublicReal}`);
-  if (Object.keys(summary.byCountry).length < policy.minimumCountries) violations.push(`catalogue covers ${Object.keys(summary.byCountry).length} countries; need at least ${policy.minimumCountries}`);
-  for (const [country, count] of Object.entries(summary.byCountry)) if (count / publicReal > policy.maximumCountryShare) violations.push(`${country} has ${(count / publicReal * 100).toFixed(1)}% of the catalogue; maximum is ${policy.maximumCountryShare * 100}%`);
-  for (const [gender, count] of Object.entries(summary.byGender)) if (count / publicReal > policy.maximumGenderShare) violations.push(`${gender} has ${(count / publicReal * 100).toFixed(1)}% of the catalogue; maximum is ${policy.maximumGenderShare * 100}%`);
-  if (policy.requireEveryWeightClass) for (const group of weightCategories) for (const { weight } of group.categories) if (!summary.byWeightClass[weight]) violations.push(`weight class ${weight} has no public real judoka`);
+  if (summary.publicReal < policy.minimumPublicReal) {
+    violations.push(`public real catalogue has ${summary.publicReal}; need at least ${policy.minimumPublicReal}`);
+  }
+  const countryCount = Object.keys(summary.byCountry).length;
+  if (countryCount < policy.minimumCountries) violations.push(`catalogue covers ${countryCount} countries; need at least ${policy.minimumCountries}`);
+  return violations;
+}
+
+function shareViolations(counts: CountMap, publicReal: number, maximum: number): string[] {
+  return Object.entries(counts)
+    .filter(([, count]) => count / publicReal > maximum)
+    .map(([label, count]) => `${label} has ${(count / publicReal * 100).toFixed(1)}% of the catalogue; maximum is ${maximum * 100}%`);
+}
+
+function weightClassViolations(weightCategories, summary: CoverageSummary, policy: Readonly<CoveragePolicy>): string[] {
+  if (!policy.requireEveryWeightClass) return [];
+  const violations = [];
+  for (const group of weightCategories) {
+    for (const { weight } of group.categories) {
+      if (!summary.byWeightClass[weight]) violations.push(`weight class ${weight} has no public real judoka`);
+    }
+  }
+  return violations;
+}
+
+function rarityViolations(summary: CoverageSummary, policy: Readonly<CoveragePolicy>): string[] {
+  const violations = [];
   for (const [rarity, target] of Object.entries(policy.rarity)) {
-    const share = (summary.byRarity[rarity] ?? 0) / publicReal;
+    const share = (summary.byRarity[rarity] ?? 0) / summary.publicReal;
     if (share < target.min || share > target.max) violations.push(`${rarity} is ${(share * 100).toFixed(1)}%; target is ${target.min * 100}-${target.max * 100}%`);
   }
   return violations;
+}
+
+export function coverageViolations(summary: CoverageSummary, weightCategories, policy: Readonly<CoveragePolicy> = coveragePolicy) {
+  return [
+    ...catalogueSizeViolations(summary, policy),
+    ...shareViolations(summary.byCountry, summary.publicReal, policy.maximumCountryShare),
+    ...shareViolations(summary.byGender, summary.publicReal, policy.maximumGenderShare),
+    ...weightClassViolations(weightCategories, summary, policy),
+    ...rarityViolations(summary, policy),
+  ];
 }
 
 /** Format policy violations as one actionable diagnostic. */

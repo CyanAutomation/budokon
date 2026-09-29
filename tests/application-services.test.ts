@@ -1,12 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { CatalogService } from "../build/runtime/domain/catalog-service.js";
-import { DRAW_ALGORITHM, DrawService } from "../build/runtime/draw/draw-service.js";
-import { JsonReadModelRepository } from "../build/runtime/repository/json-read-model-repository.js";
-import { createRestHandlers } from "../build/runtime/api/handlers.js";
-import { createMcpTools } from "../build/runtime/mcp/tools.js";
-import type { JsonValue, Judoka } from "../build/runtime/domain/types.js";
-import type { ReadModelRepository } from "../build/runtime/repository/read-model-repository.js";
+import { CatalogService, DRAW_ALGORITHM, DrawService, JsonReadModelRepository, createMcpTools } from "../src/index.js";
+import { createRestRouter } from "../src/api/router.js";
+import type { JsonValue, Judoka } from "../src/domain/types.js";
+import type { ReadModelRepository } from "../src/repository/read-model-repository.js";
 import compiledModel from "./fixtures/compiled-model.js";
 
 const repository = new JsonReadModelRepository(compiledModel);
@@ -25,7 +22,13 @@ const repositoryWithJudoka = (records: Judoka[]): ReadModelRepository => ({
   listWeightCategories: () => repository.listWeightCategories()
 });
 const catalog = new CatalogService(repository); const draw = new DrawService(catalog);
-const rest = createRestHandlers({ catalog, draw }); const mcp = createMcpTools({ catalog, draw });
+const restRouter = createRestRouter({ catalog, draw }); const mcp = createMcpTools({ catalog, draw });
+const restRequest = (path: string, init?: RequestInit) => restRouter(new Request(`https://example.test${path}`, init));
+async function restJson(path: string, init?: RequestInit) {
+  const response = await restRequest(path, init);
+  assert.equal(response.status, 200, path);
+  return response.json();
+}
 
 test("hidden judoka require an explicit authorized internal option", () => {
   assert.equal(catalog.listJudoka().some(j => j.isHidden), false);
@@ -73,11 +76,12 @@ test("display aliases, diacritic-free names, and legacy slugs resolve consistent
   assert.deepEqual(catalog.searchJudoka({ query: "Askley McKenzie" }).map(j => j.slug), ["ashley-mckenzie"]);
 });
 
-test("multi-technique filters match any requested technique across catalog, REST, MCP, and draws", () => {
+test("multi-technique filters match any requested technique across catalog, REST, MCP, and draws", async () => {
   const filters = { signatureMoveIds: ["seoi-nage", "o-soto-gari"] };
   const expected = catalog.listJudoka({ filters }).map(j => j.slug);
   assert.ok(expected.includes("shozo-fujii") && expected.includes("nina-cutro-kelly"));
-  assert.deepEqual(rest.listJudoka({ query: filters }).body.map(j => j.slug), expected);
+  const response = await restJson("/v1/judoka?signatureMoveIds=seoi-nage&signatureMoveIds=o-soto-gari") as Judoka[];
+  assert.deepEqual(response.map(j => j.slug), expected);
   assert.deepEqual(mcp.search_judoka({ filters }).judoka.map(j => j.slug), expected);
   assert.equal(draw.draw({ count: 1, filters, seed: "multi-technique" }).poolSize, expected.length);
 });
@@ -224,22 +228,32 @@ test("repository rejects invalid compiled dataset structure", () => {
     );
   }
 });
-test("REST and MCP seeded selections are byte-for-byte equivalent", () => {
+test("REST and MCP seeded selections are byte-for-byte equivalent", async () => {
   const input = { count: 1, filters: { gender: ["male"], countryCode: ["JP", "GE"] }, exclude: ["ilia-sulamanidze"], seed: "match-472-round-3" };
-  const apiBytes = JSON.stringify(rest.draw({ body: input }).body);
+  const apiResult = await restJson("/v1/draw", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  const apiBytes = JSON.stringify(apiResult);
   const mcpBytes = JSON.stringify(mcp.draw_judoka({ ...input, filters: { countryCode: ["GE", "JP"], gender: "male" } }));
   assert.equal(apiBytes, mcpBytes);
 });
-test("version, draw, and MCP results expose the canonical dataset version", () => {
-  assert.equal(rest.version().body.datasetVersion, compiledModel.datasetVersion);
-  assert.equal(rest.draw({ body: { seed: "version-test" } }).body.datasetVersion, compiledModel.datasetVersion);
+test("version, draw, and MCP results expose the canonical dataset version", async () => {
+  assert.equal((await restJson("/v1/version")).datasetVersion, compiledModel.datasetVersion);
+  const drawResult = await restJson("/v1/draw", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ seed: "version-test" }),
+  });
+  assert.equal(drawResult.datasetVersion, compiledModel.datasetVersion);
   assert.equal(mcp.search_judoka().datasetVersion, compiledModel.datasetVersion);
   assert.equal(mcp.get_judoka({ id: "shozo-fujii" }).datasetVersion, compiledModel.datasetVersion);
   assert.equal(mcp.version().datasetVersion, compiledModel.datasetVersion);
 });
 
-test("version endpoint release identity matches repository metadata and the draw algorithm contract", () => {
-  const restVersion = rest.version().body;
+test("version endpoint release identity matches repository metadata and the draw algorithm contract", async () => {
+  const restVersion = await restJson("/v1/version");
   const mcpVersion = mcp.version();
   const expectedVersion = {
     datasetVersion: repository.datasetVersion,
@@ -285,10 +299,10 @@ test("search composes with filters, exclusions, and visibility in UUID order", (
   assert.deepEqual(service.searchJudoka({ query: "renee", includeHidden: true, authorizedInternal: true }).map(j => j.id), ["a", "b", "c", "d"]);
 });
 
-test("REST and MCP searches conform and an absent query retains list behavior", () => {
-  const restResult = rest.listJudoka({ query: { q: "  SHOZO! ", countryCode: "JP", exclude: "tatsuuma-ushiyama" } }).body;
+test("REST and MCP searches conform and an absent query retains list behavior", async () => {
+  const restResult = await restJson("/v1/judoka?q=%20%20SHOZO!%20&countryCode=JP&exclude=tatsuuma-ushiyama");
   const mcpResult = mcp.search_judoka({ query: "  SHOZO! ", filters: { countryCode: "JP" }, exclude: ["tatsuuma-ushiyama"] }).judoka;
   assert.deepEqual(restResult, mcpResult);
-  assert.deepEqual(rest.listJudoka().body, catalog.listJudoka());
+  assert.deepEqual(await restJson("/v1/judoka"), catalog.listJudoka());
   assert.deepEqual(mcp.search_judoka().judoka, catalog.listJudoka());
 });

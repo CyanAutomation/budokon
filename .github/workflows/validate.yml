@@ -32,7 +32,10 @@ jobs:
       - run: npm run check:typescript-only
       - name: Check deployment workflow executable paths
         run: npm run check:deployment-workflow
-      - run: npm test
+      - name: Test with TypeScript coverage
+        run: npm run test:coverage
+      - name: Run Fallow TypeScript health report
+        run: npm run fallow:health
       - run: npm run validate
       - name: Compile expected output and verify tracked artifacts
         run: SOURCE_GIT_COMMIT=$(node -p "require('./dist/manifest.json').sourceGitCommit") npm run check-artifacts

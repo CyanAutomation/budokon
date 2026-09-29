@@ -3,7 +3,7 @@ import test from "node:test";
 import {
   CatalogService, DrawService, JsonReadModelRepository, createRestRouter, summarizeCoverage,
   type CoverageResponse, type Judoka, type RestCatalogDependency, type RestDrawDependency
-} from "../build/runtime/index.js";
+} from "../src/index.js";
 import { createWorker, type Env } from "../worker/router.js";
 import compiledModel from "./fixtures/compiled-model.js";
 
@@ -235,4 +235,14 @@ test("missing resources, unsupported input, and unexpected failures are stable",
   const broken = createRestRouter({ catalog: failingCatalog, draw: failingDraw });
   const response = await broken(new Request("https://example.test/v1/version"));
   assert.equal(response.status, 500); assert.equal(JSON.stringify(await body(response)).includes("secret"), false);
+});
+
+test("malformed path escapes and excess path segments are rejected before dispatch", async () => {
+  const malformedEscape = await request("/v1/techniques/%ZZ");
+  assert.equal(malformedEscape.status, 400);
+  assert.deepEqual(await body(malformedEscape), { error: { code: "bad_request", message: "path contains invalid encoding" } });
+
+  const extraSegment = await request("/v1/techniques/seoi-nage/extra");
+  assert.equal(extraSegment.status, 404);
+  assert.deepEqual(await body(extraSegment), { error: { code: "not_found", message: "route not found" } });
 });
