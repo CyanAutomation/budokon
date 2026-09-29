@@ -1,13 +1,7 @@
 import type { DrawRequest } from "../../domain/types.js";
 import type { RestDrawDependency } from "../router.js";
+import type { RestHandlerContext as Context } from "./context.js";
 import { validateDrawBody } from "../schemas.js";
-
-type ErrorCode = "bad_request" | "forbidden" | "not_found" | "method_not_allowed" | "conflict" | "internal_error";
-
-type Context = {
-  json: (body: unknown, status?: number, headers?: HeadersInit) => Response;
-  failure: (status: number, code: ErrorCode, message: string) => Response;
-};
 
 export async function drawHandler(
   context: Context,

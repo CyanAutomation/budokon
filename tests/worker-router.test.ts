@@ -1,8 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { CatalogService, DrawService, EventDrawService, JsonReadModelRepository } from "../build/runtime/index.js";
-import { DRAW_ALGORITHM } from "../build/runtime/draw/draw-service.js";
-import { createMcpTools } from "../build/runtime/mcp/tools.js";
+import { CatalogService, DRAW_ALGORITHM, DrawService, EventDrawService, JsonReadModelRepository, createMcpTools } from "../src/index.js";
 import { createWorker } from "../worker/router.js";
 import type { Env } from "../worker/router.js";
 import compiledModel from "./fixtures/compiled-model.js";

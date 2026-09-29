@@ -232,38 +232,24 @@ async function appendWorkflowOutputs(outputFile: string | undefined, values: Rec
   await appendFile(outputFile, output, "utf8");
 }
 
-export async function main(environment: NodeJS.ProcessEnv = process.env, args = process.argv.slice(2)): Promise<void> {
-  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-  const currentTag = latestReleaseTag(root);
-  const packageDocument = JSON.parse(await readFile(path.join(root, "package.json"), "utf8")) as { version?: unknown };
-  const previousVersion = currentTag?.version ?? packageDocument.version;
-  if (typeof previousVersion !== "string" || !versionPattern.test(previousVersion)) {
-    throw new TypeError("Could not determine the previous stable release version");
-  }
+async function runPlanOnly(root: string, plan: ReleasePlan | undefined, dryRun: boolean, environment: NodeJS.ProcessEnv): Promise<void> {
+  const targetCommit = environment.GITHUB_SHA?.trim() || git(root, ["rev-parse", "HEAD"]);
+  const workflowPlan = createWorkflowReleasePlan(plan, targetCommit);
+  await writeFile(path.join(root, "release-plan.json"), `${JSON.stringify(workflowPlan, null, 2)}\n`, "utf8");
+  await appendWorkflowOutputs(environment.GITHUB_OUTPUT, {
+    release_required: String(workflowPlan.releaseRequired),
+    version: workflowPlan.releaseRequired ? workflowPlan.version : "",
+  });
+  if (plan) console.log(`${dryRun ? "Dry run: " : ""}v${plan.version} (${plan.releaseType})\n\n${plan.notes}`);
+  else console.log("No release-worthy Conventional Commits found.");
+}
 
-  const plan = createReleasePlan(commitsSince(root, currentTag?.tag), previousVersion);
-  const dryRun = args.includes("--dry-run");
-  const planOnly = args.includes("--plan-only");
+async function reportNoRelease(dryRun: boolean, environment: NodeJS.ProcessEnv): Promise<void> {
+  console.log("No release-worthy Conventional Commits found.");
+  await appendWorkflowOutputs(environment.GITHUB_OUTPUT, { released: "false", version: "", dry_run: String(dryRun) });
+}
 
-  if (planOnly) {
-    const targetCommit = environment.GITHUB_SHA?.trim() || git(root, ["rev-parse", "HEAD"]);
-    const workflowPlan = createWorkflowReleasePlan(plan, targetCommit);
-    await writeFile(path.join(root, "release-plan.json"), `${JSON.stringify(workflowPlan, null, 2)}\n`, "utf8");
-    await appendWorkflowOutputs(environment.GITHUB_OUTPUT, {
-      release_required: String(workflowPlan.releaseRequired),
-      version: workflowPlan.releaseRequired ? workflowPlan.version : "",
-    });
-    if (plan) console.log(`${dryRun ? "Dry run: " : ""}v${plan.version} (${plan.releaseType})\n\n${plan.notes}`);
-    else console.log("No release-worthy Conventional Commits found.");
-    return;
-  }
-
-  if (!plan) {
-    console.log("No release-worthy Conventional Commits found.");
-    await appendWorkflowOutputs(environment.GITHUB_OUTPUT, { released: "false", version: "", dry_run: String(dryRun) });
-    return;
-  }
-
+async function publishPlannedRelease(root: string, plan: ReleasePlan, dryRun: boolean, environment: NodeJS.ProcessEnv): Promise<void> {
   console.log(`${dryRun ? "Dry run: " : ""}v${plan.version} (${plan.releaseType})\n\n${plan.notes}`);
   if (dryRun) {
     await publishRelease(plan, { dryRun: true });
@@ -283,6 +269,24 @@ export async function main(environment: NodeJS.ProcessEnv = process.env, args = 
     version: plan.version,
     dry_run: "false",
   });
+}
+
+export async function main(environment: NodeJS.ProcessEnv = process.env, args = process.argv.slice(2)): Promise<void> {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+  const currentTag = latestReleaseTag(root);
+  const packageDocument = JSON.parse(await readFile(path.join(root, "package.json"), "utf8")) as { version?: unknown };
+  const previousVersion = currentTag?.version ?? packageDocument.version;
+  if (typeof previousVersion !== "string" || !versionPattern.test(previousVersion)) {
+    throw new TypeError("Could not determine the previous stable release version");
+  }
+
+  const plan = createReleasePlan(commitsSince(root, currentTag?.tag), previousVersion);
+  const dryRun = args.includes("--dry-run");
+  const planOnly = args.includes("--plan-only");
+
+  if (planOnly) return runPlanOnly(root, plan, dryRun, environment);
+  if (!plan) return reportNoRelease(dryRun, environment);
+  return publishPlannedRelease(root, plan, dryRun, environment);
 }
 
 const invokedPath = process.argv[1] ? pathToFileURL(path.resolve(process.argv[1])).href : "";
