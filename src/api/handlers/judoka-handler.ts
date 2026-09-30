@@ -1,7 +1,7 @@
 import type { RestCatalogDependency } from "../router.js";
-import type { ListQuerySchema } from "../schemas.js";
+import type { ListQuerySchema } from "../list-query-schema.js";
 import type { RestHandlerContext as Context } from "./context.js";
-import { parseListQuery } from "../schemas.js";
+import { parseListQuery } from "../list-query-schema.js";
 
 export async function judokaListHandler(context: Context, url: URL, catalog: RestCatalogDependency, authorizedInternal: boolean): Promise<Response> {
   const query = parseListQuery(url.searchParams);

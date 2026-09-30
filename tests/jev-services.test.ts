@@ -167,6 +167,34 @@ test("editorial reviews always require a human and derive a conservative recomme
   assert.equal(Object.hasOwn(questions, "duplicate_candidate"), false);
 });
 
+test("editorial review validates record identity, biography bounds, and signature move IDs", async () => {
+  let called = false;
+  const service = new EditorialReviewService({
+    async decide() {
+      called = true;
+      return { model: "test", usage: {}, answers: {} };
+    },
+  });
+  const valid = candidate("valid");
+  const cases: Array<[string, unknown, string]> = [
+    ["non-object record", null, "record must be an object"],
+    ["missing identity", { ...valid, id: "" }, "record must include a non-empty id and slug"],
+    ["non-string biography", { ...valid, bio: 3 }, "record.bio must be a string of at most 8000 characters"],
+    ["oversized biography", { ...valid, bio: "x".repeat(8_001) }, "record.bio must be a string of at most 8000 characters"],
+    ["too many signature moves", { ...valid, signatureMoveIds: Array(21).fill("move") }, "record.signatureMoveIds must contain at most 20 non-empty IDs"],
+    ["empty signature move ID", { ...valid, signatureMoveIds: [""] }, "record.signatureMoveIds must contain at most 20 non-empty IDs"],
+  ];
+
+  for (const [label, record, message] of cases) {
+    await assert.rejects(
+      service.review({ record: record as Judoka, evidence: [] }),
+      { name: "TypeError", message },
+      label,
+    );
+  }
+  assert.equal(called, false, "invalid records should be rejected before the JEV client runs");
+});
+
 test("editorial review uses every editorial answer and escalates when source excerpts are missing", async () => {
   const answers = {
     biography_publishable: { type: "noul", noul: 0.95 },

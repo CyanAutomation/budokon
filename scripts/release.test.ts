@@ -1,11 +1,16 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { execFileSync } from "node:child_process";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import test, { type TestContext } from "node:test";
 import {
   createReleasePlan,
   createWorkflowReleasePlan,
   parseConventionalCommit,
   parseReleaseTag,
   publishRelease,
+  runReleaseCommand,
   type ConventionalCommit,
 } from "./release.js";
 
@@ -14,6 +19,26 @@ const commit = (subject: string, body = "", hash = "0123456789abcdef0123456789ab
   subject,
   body,
 });
+
+async function createReleaseRepository(context: TestContext, subjects: string[]): Promise<string> {
+  const root = await mkdtemp(path.join(tmpdir(), "budokon-release-test-"));
+  context.after(() => rm(root, { recursive: true, force: true }));
+  const git = (args: string[]) => execFileSync("git", args, { cwd: root, stdio: "ignore" });
+  git(["init", "--quiet"]);
+  git(["config", "user.name", "Release Test"]);
+  git(["config", "user.email", "release-test@example.test"]);
+  await writeFile(path.join(root, "package.json"), JSON.stringify({ version: "1.2.3" }));
+  await writeFile(path.join(root, "README.md"), "release fixture\n");
+  git(["add", "."]);
+  git(["commit", "--quiet", "-m", "chore: initialize release fixture"]);
+  git(["tag", "v1.2.3"]);
+  for (const [index, subject] of subjects.entries()) {
+    await writeFile(path.join(root, `change-${index}.txt`), `${subject}\n`);
+    git(["add", "."]);
+    git(["commit", "--quiet", "-m", subject]);
+  }
+  return root;
+}
 
 test("release tag parser accepts existing short tags and full semantic-version tags", () => {
   assert.deepEqual(parseReleaseTag("v1.0"), { tag: "v1.0", version: "1.0.0" });
@@ -156,4 +181,115 @@ test("release publisher reports GitHub API failures", async () => {
     targetCommit: "fedcba9876543210fedcba9876543210fedcba98",
     fetchImpl: async () => new Response("release denied", { status: 403 }),
   }), /GitHub release request failed \(403\)/);
+});
+
+test("release command writes a plan for the exact workflow commit without publishing", async t => {
+  const root = await createReleaseRepository(t, ["feat(api): add a release fixture"]);
+  const outputFile = path.join(root, "workflow-output.txt");
+  const messages: string[] = [];
+
+  await runReleaseCommand({
+    environment: { GITHUB_SHA: "fedcba9876543210fedcba9876543210fedcba98", GITHUB_OUTPUT: outputFile },
+    args: ["--plan-only", "--dry-run"],
+    root,
+    log(message) { messages.push(message); },
+  });
+
+  const plan = JSON.parse(await readFile(path.join(root, "release-plan.json"), "utf8")) as Record<string, unknown>;
+  assert.deepEqual({ ...plan, notes: undefined }, {
+    releaseRequired: true,
+    targetCommit: "fedcba9876543210fedcba9876543210fedcba98",
+    version: "1.3.0",
+    releaseType: "minor",
+    notes: undefined,
+  });
+  assert.match(String(plan.notes), /add a release fixture/);
+  assert.equal(await readFile(outputFile, "utf8"), "release_required=true\nversion=1.3.0\n");
+  assert.match(messages[0] ?? "", /^Dry run: v1\.3\.0 \(minor\)/);
+});
+
+test("release command reports a no-release workflow plan", async t => {
+  const root = await createReleaseRepository(t, ["docs: clarify the release fixture"]);
+  const outputFile = path.join(root, "workflow-output.txt");
+  const messages: string[] = [];
+
+  await runReleaseCommand({
+    environment: { GITHUB_SHA: "fedcba9876543210fedcba9876543210fedcba98", GITHUB_OUTPUT: outputFile },
+    args: ["--plan-only"],
+    root,
+    log(message) { messages.push(message); },
+  });
+
+  assert.deepEqual(JSON.parse(await readFile(path.join(root, "release-plan.json"), "utf8")), {
+    releaseRequired: false,
+    targetCommit: "fedcba9876543210fedcba9876543210fedcba98",
+  });
+  assert.equal(await readFile(outputFile, "utf8"), "release_required=false\nversion=\n");
+  assert.deepEqual(messages, ["No release-worthy Conventional Commits found."]);
+});
+
+test("release command dry-run does not publish and reports workflow outputs", async t => {
+  const root = await createReleaseRepository(t, ["fix(api): repair fixture"]);
+  const outputFile = path.join(root, "workflow-output.txt");
+  let publishOptions: Parameters<typeof publishRelease>[1] | undefined;
+  const messages: string[] = [];
+
+  await runReleaseCommand({
+    environment: {
+      GITHUB_SHA: "fedcba9876543210fedcba9876543210fedcba98",
+      GITHUB_OUTPUT: outputFile,
+    },
+    args: ["--dry-run"],
+    root,
+    log(message) { messages.push(message); },
+    async publish(_plan, options) {
+      publishOptions = options;
+      return { published: false, dryRun: true };
+    },
+  });
+
+  assert.deepEqual(publishOptions, { dryRun: true });
+  assert.equal(await readFile(outputFile, "utf8"), "released=false\nversion=\ndry_run=true\n");
+  assert.match(messages[0] ?? "", /^Dry run: v1\.2\.4 \(patch\)/);
+});
+
+test("release command delegates publishing and records a successful release", async t => {
+  const root = await createReleaseRepository(t, ["fix(api): repair fixture"]);
+  const outputFile = path.join(root, "workflow-output.txt");
+  let publishedVersion = "";
+
+  await runReleaseCommand({
+    environment: {
+      GITHUB_SHA: "fedcba9876543210fedcba9876543210fedcba98",
+      GITHUB_OUTPUT: outputFile,
+      GITHUB_REPOSITORY: "CyanAutomation/budokon",
+      GITHUB_TOKEN: "test-token",
+    },
+    args: [],
+    root,
+    log() {},
+    async publish(plan) {
+      publishedVersion = plan.version;
+      return { published: true, url: "https://example.test/release" };
+    },
+  });
+
+  assert.equal(publishedVersion, "1.2.4");
+  assert.equal(await readFile(outputFile, "utf8"), "released=true\nversion=1.2.4\ndry_run=false\n");
+});
+
+test("release command reports no-release output without creating a plan", async t => {
+  const root = await createReleaseRepository(t, ["docs: clarify the release fixture"]);
+  const outputFile = path.join(root, "workflow-output.txt");
+  const messages: string[] = [];
+
+  await runReleaseCommand({
+    environment: { GITHUB_OUTPUT: outputFile },
+    args: [],
+    root,
+    log(message) { messages.push(message); },
+  });
+
+  assert.equal(await readFile(outputFile, "utf8"), "released=false\nversion=\ndry_run=false\n");
+  assert.deepEqual(messages, ["No release-worthy Conventional Commits found."]);
 });
