@@ -232,7 +232,13 @@ async function appendWorkflowOutputs(outputFile: string | undefined, values: Rec
   await appendFile(outputFile, output, "utf8");
 }
 
-async function runPlanOnly(root: string, plan: ReleasePlan | undefined, dryRun: boolean, environment: NodeJS.ProcessEnv): Promise<void> {
+async function runPlanOnly(
+  root: string,
+  plan: ReleasePlan | undefined,
+  dryRun: boolean,
+  environment: NodeJS.ProcessEnv,
+  log: (message: string) => void,
+): Promise<void> {
   const targetCommit = environment.GITHUB_SHA?.trim() || git(root, ["rev-parse", "HEAD"]);
   const workflowPlan = createWorkflowReleasePlan(plan, targetCommit);
   await writeFile(path.join(root, "release-plan.json"), `${JSON.stringify(workflowPlan, null, 2)}\n`, "utf8");
@@ -240,30 +246,37 @@ async function runPlanOnly(root: string, plan: ReleasePlan | undefined, dryRun: 
     release_required: String(workflowPlan.releaseRequired),
     version: workflowPlan.releaseRequired ? workflowPlan.version : "",
   });
-  if (plan) console.log(`${dryRun ? "Dry run: " : ""}v${plan.version} (${plan.releaseType})\n\n${plan.notes}`);
-  else console.log("No release-worthy Conventional Commits found.");
+  if (plan) log(`${dryRun ? "Dry run: " : ""}v${plan.version} (${plan.releaseType})\n\n${plan.notes}`);
+  else log("No release-worthy Conventional Commits found.");
 }
 
-async function reportNoRelease(dryRun: boolean, environment: NodeJS.ProcessEnv): Promise<void> {
-  console.log("No release-worthy Conventional Commits found.");
+async function reportNoRelease(dryRun: boolean, environment: NodeJS.ProcessEnv, log: (message: string) => void): Promise<void> {
+  log("No release-worthy Conventional Commits found.");
   await appendWorkflowOutputs(environment.GITHUB_OUTPUT, { released: "false", version: "", dry_run: String(dryRun) });
 }
 
-async function publishPlannedRelease(root: string, plan: ReleasePlan, dryRun: boolean, environment: NodeJS.ProcessEnv): Promise<void> {
-  console.log(`${dryRun ? "Dry run: " : ""}v${plan.version} (${plan.releaseType})\n\n${plan.notes}`);
+async function publishPlannedRelease(
+  root: string,
+  plan: ReleasePlan,
+  dryRun: boolean,
+  environment: NodeJS.ProcessEnv,
+  publish: typeof publishRelease,
+  log: (message: string) => void,
+): Promise<void> {
+  log(`${dryRun ? "Dry run: " : ""}v${plan.version} (${plan.releaseType})\n\n${plan.notes}`);
   if (dryRun) {
-    await publishRelease(plan, { dryRun: true });
+    await publish(plan, { dryRun: true });
     await appendWorkflowOutputs(environment.GITHUB_OUTPUT, { released: "false", version: "", dry_run: "true" });
     return;
   }
 
   const targetCommit = environment.GITHUB_SHA?.trim() || git(root, ["rev-parse", "HEAD"]);
-  const result = await publishRelease(plan, {
+  const result = await publish(plan, {
     repository: environment.GITHUB_REPOSITORY,
     token: environment.GITHUB_TOKEN,
     targetCommit,
   });
-  console.log(`Published v${plan.version}: ${result.url}`);
+  log(`Published v${plan.version}: ${result.url}`);
   await appendWorkflowOutputs(environment.GITHUB_OUTPUT, {
     released: "true",
     version: plan.version,
@@ -271,8 +284,19 @@ async function publishPlannedRelease(root: string, plan: ReleasePlan, dryRun: bo
   });
 }
 
-export async function main(environment: NodeJS.ProcessEnv = process.env, args = process.argv.slice(2)): Promise<void> {
-  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+export interface ReleaseCommandOptions {
+  environment?: NodeJS.ProcessEnv;
+  args?: string[];
+  root?: string;
+  publish?: typeof publishRelease;
+  log?: (message: string) => void;
+}
+
+export async function runReleaseCommand(options: ReleaseCommandOptions = {}): Promise<void> {
+  const environment = options.environment ?? process.env;
+  const args = options.args ?? process.argv.slice(2);
+  const root = options.root ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+  const log = options.log ?? console.log;
   const currentTag = latestReleaseTag(root);
   const packageDocument = JSON.parse(await readFile(path.join(root, "package.json"), "utf8")) as { version?: unknown };
   const previousVersion = currentTag?.version ?? packageDocument.version;
@@ -284,9 +308,13 @@ export async function main(environment: NodeJS.ProcessEnv = process.env, args = 
   const dryRun = args.includes("--dry-run");
   const planOnly = args.includes("--plan-only");
 
-  if (planOnly) return runPlanOnly(root, plan, dryRun, environment);
-  if (!plan) return reportNoRelease(dryRun, environment);
-  return publishPlannedRelease(root, plan, dryRun, environment);
+  if (planOnly) return runPlanOnly(root, plan, dryRun, environment, log);
+  if (!plan) return reportNoRelease(dryRun, environment, log);
+  return publishPlannedRelease(root, plan, dryRun, environment, options.publish ?? publishRelease, log);
+}
+
+export async function main(environment: NodeJS.ProcessEnv = process.env, args = process.argv.slice(2)): Promise<void> {
+  return runReleaseCommand({ environment, args });
 }
 
 const invokedPath = process.argv[1] ? pathToFileURL(path.resolve(process.argv[1])).href : "";

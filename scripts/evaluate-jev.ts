@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Judoka } from "../src/domain/types.js";
 import { OpenRouterJevClient } from "../src/jev/client.js";
-import { SemanticJudokaSearchService } from "../src/jev/semantic-search.js";
+import { SemanticJudokaSearchService, type SemanticJudokaSearcher } from "../src/jev/semantic-search.js";
 
 export interface JevEvaluationCase { id: string; query: string; candidateSlugs: string[]; relevantSlugs: string[]; }
 export interface JevEvaluationScore {
@@ -34,22 +34,58 @@ export function scoreEvaluationCases(cases: Array<{ relevant: string[]; predicte
   };
 }
 
+export interface EvaluationSearchOptions {
+  apiKey: string;
+  model?: string;
+  timeoutMs: number;
+  minimumRelevance: number;
+  maxCandidates: number;
+}
+
+export interface EvaluationDependencies {
+  environment?: NodeJS.ProcessEnv;
+  root?: string;
+  readText?: (filePath: string) => Promise<string>;
+  appendSummary?: (filePath: string, report: string) => Promise<void>;
+  writeOutput?: (report: string) => void;
+  createSearchService?: (options: EvaluationSearchOptions) => SemanticJudokaSearcher;
+}
+
+interface EvaluationRow {
+  id: string;
+  relevant: string[];
+  predicted: string[];
+  ranked: Array<{ slug: string; relevance: number }>;
+}
+
+interface EvaluationTotals {
+  rows: EvaluationRow[];
+  models: Set<string>;
+  inputTokens: number;
+  outputTokens: number;
+  totalCost: number;
+}
+
 function formatPercent(value: number): string { return `${(value * 100).toFixed(1)}%`; }
 
-async function runEvaluation(): Promise<void> {
-  const apiKey = process.env.JEV_OPENROUTER_API_KEY;
-  if (!apiKey) throw new Error("JEV_OPENROUTER_API_KEY is required to run the live evaluation");
-  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-  const fixtures = JSON.parse(await readFile(path.join(root, "tests/fixtures/jev-evaluation.json"), "utf8")) as JevEvaluationCase[];
-  const records = (await Promise.all(fixtures.flatMap(item => item.candidateSlugs).filter((slug, index, all) => all.indexOf(slug) === index)
-    .map(async slug => JSON.parse(await readFile(path.join(root, `data/judoka/${slug}.json`), "utf8")) as Judoka)))
-    .reduce((bySlug, record) => bySlug.set(record.slug, record), new Map<string, Judoka>());
-  const threshold = process.env.JEV_MINIMUM_RELEVANCE === undefined ? 0.5 : Number(process.env.JEV_MINIMUM_RELEVANCE);
-  const service = new SemanticJudokaSearchService(new OpenRouterJevClient({
-    apiKey,
-    model: process.env.JEV_MODEL,
-    timeoutMs: Number(process.env.JEV_TIMEOUT_MS) || 20_000,
-  }), { minimumRelevance: threshold, maxCandidates: 20 });
+async function loadEvaluationRecords(
+  root: string,
+  fixtures: JevEvaluationCase[],
+  readText: (filePath: string) => Promise<string>,
+): Promise<Map<string, Judoka>> {
+  const slugs = [...new Set(fixtures.flatMap(item => item.candidateSlugs))];
+  const records = await Promise.all(slugs.map(async slug => {
+    const source = await readText(path.join(root, `data/judoka/${slug}.json`));
+    return JSON.parse(source) as Judoka;
+  }));
+  return new Map(records.map(record => [record.slug, record]));
+}
+
+async function evaluateFixtures(
+  fixtures: JevEvaluationCase[],
+  records: Map<string, Judoka>,
+  service: SemanticJudokaSearcher,
+): Promise<EvaluationTotals> {
   const results = [];
   const models = new Set<string>();
   let inputTokens = 0;
@@ -73,27 +109,57 @@ async function runEvaluation(): Promise<void> {
       ranked: response.results.map(item => ({ slug: item.judoka.slug, relevance: item.relevance })),
     });
   }
-  const metrics = scoreEvaluationCases(results);
+  return { rows: results, models, inputTokens, outputTokens, totalCost };
+}
+
+function formatEvaluationReport(fixtures: JevEvaluationCase[], totals: EvaluationTotals, threshold: number): string {
+  const metrics = scoreEvaluationCases(totals.rows);
   const lines = [
     "## JEV semantic search evaluation",
     "",
-    `Model(s): ${[...models].join(", ")}`,
+    `Model(s): ${[...totals.models].join(", ")}`,
     `Threshold: ${threshold}`,
     `Precision: ${formatPercent(metrics.precision)} (${metrics.truePositives}/${metrics.predicted} retrieved)`,
     `Recall: ${formatPercent(metrics.recall)} (${metrics.truePositives}/${metrics.relevant} labeled relevant)`,
-    `Usage: ${inputTokens} input tokens, ${outputTokens} output tokens, $${totalCost.toFixed(6)} reported cost`,
+    `Usage: ${totals.inputTokens} input tokens, ${totals.outputTokens} output tokens, $${totals.totalCost.toFixed(6)} reported cost`,
     "",
     "| Case | Query | Expected relevant | Retrieved candidates |",
     "| --- | --- | --- | --- |",
-    ...results.map((row, index) => `| ${fixtures[index].id} | ${fixtures[index].query} | ${row.relevant.join(", ") || "—"} | ${row.ranked.map(item => `${item.slug} (${item.relevance.toFixed(2)})`).join(", ") || "—"} |`),
+    ...totals.rows.map((row, index) => `| ${fixtures[index].id} | ${fixtures[index].query} | ${row.relevant.join(", ") || "—"} | ${row.ranked.map(item => `${item.slug} (${item.relevance.toFixed(2)})`).join(", ") || "—"} |`),
     "",
     "This small hand-labeled set is for regression tracking and threshold comparison; it is not a release gate or a statistically robust accuracy estimate.",
     "",
   ];
-  const report = lines.join("\n");
-  const summaryPath = process.env.GITHUB_STEP_SUMMARY;
-  if (summaryPath) await appendFile(summaryPath, report, "utf8");
-  else process.stdout.write(report);
+  return lines.join("\n");
+}
+
+export async function runEvaluation(dependencies: EvaluationDependencies = {}): Promise<void> {
+  const environment = dependencies.environment ?? process.env;
+  const apiKey = environment.JEV_OPENROUTER_API_KEY;
+  if (!apiKey) throw new Error("JEV_OPENROUTER_API_KEY is required to run the live evaluation");
+  const root = dependencies.root ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+  const readText = dependencies.readText ?? (filePath => readFile(filePath, "utf8"));
+  const fixtures = JSON.parse(await readText(path.join(root, "tests/fixtures/jev-evaluation.json"))) as JevEvaluationCase[];
+  const records = await loadEvaluationRecords(root, fixtures, readText);
+  const threshold = environment.JEV_MINIMUM_RELEVANCE === undefined ? 0.5 : Number(environment.JEV_MINIMUM_RELEVANCE);
+  const service = dependencies.createSearchService?.({
+    apiKey,
+    model: environment.JEV_MODEL,
+    timeoutMs: Number(environment.JEV_TIMEOUT_MS) || 20_000,
+    minimumRelevance: threshold,
+    maxCandidates: 20,
+  }) ?? new SemanticJudokaSearchService(new OpenRouterJevClient({
+    apiKey,
+    model: environment.JEV_MODEL,
+    timeoutMs: Number(environment.JEV_TIMEOUT_MS) || 20_000,
+  }), { minimumRelevance: threshold, maxCandidates: 20 });
+  const totals = await evaluateFixtures(fixtures, records, service);
+  const report = formatEvaluationReport(fixtures, totals, threshold);
+  if (environment.GITHUB_STEP_SUMMARY) {
+    await (dependencies.appendSummary ?? ((filePath, value) => appendFile(filePath, value, "utf8")))(environment.GITHUB_STEP_SUMMARY, report);
+  } else {
+    (dependencies.writeOutput ?? (value => process.stdout.write(value)))(report);
+  }
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

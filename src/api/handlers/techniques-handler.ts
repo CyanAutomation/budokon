@@ -1,5 +1,5 @@
 import type { RestCatalogDependency } from "../router.js";
-import { parsePageQuery } from "../schemas.js";
+import { parsePageQuery } from "../page-query-schema.js";
 import type { RestHandlerContext as Context } from "./context.js";
 
 export async function techniquesListHandler(context: Context, url: URL, catalog: RestCatalogDependency): Promise<Response> {
