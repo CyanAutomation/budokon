@@ -1,7 +1,7 @@
 import type { DrawRequest } from "../../domain/types.js";
 import type { RestDrawDependency } from "../router.js";
 import type { RestHandlerContext as Context } from "./context.js";
-import { validateDrawBody } from "../schemas.js";
+import { validateDrawBody } from "../draw-body-schema.js";
 
 export async function drawHandler(
   context: Context,

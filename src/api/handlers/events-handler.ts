@@ -1,7 +1,8 @@
 import type { EventDrawRequest } from "../../domain/types.js";
 import type { RestCatalogDependency, RestEventDrawDependency } from "../router.js";
 import type { RestHandlerContext as Context } from "./context.js";
-import { validateEventDrawBody, parseEventListQuery } from "../schemas.js";
+import { validateEventDrawBody } from "../event-draw-body-schema.js";
+import { parseEventListQuery } from "../event-list-query-schema.js";
 
 export async function eventsListHandler(context: Context, url: URL, catalog: RestCatalogDependency): Promise<Response> {
   const query = parseEventListQuery(url.searchParams);
