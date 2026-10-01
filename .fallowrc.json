@@ -1,0 +1,47 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  "rulePacks": ["rule-packs/architecture.jsonc"],
+  "rules": {
+    "boundary-violation": "error",
+    "policy-violation": "error"
+  },
+  "boundaries": {
+    "zones": [
+      {
+        "name": "runtime-neutral",
+        "patterns": [
+          "src/api/**",
+          "src/contracts/**",
+          "src/domain/**",
+          "src/draw/**",
+          "src/jev/**",
+          "src/mcp/**",
+          "src/platform/**",
+          "src/repository/**",
+          "src/index.ts"
+        ]
+      },
+      {
+        "name": "runtime-specific",
+        "patterns": ["src/validation/**"]
+      },
+      {
+        "name": "edge-worker",
+        "patterns": ["worker/**"]
+      },
+      {
+        "name": "tooling",
+        "patterns": ["scripts/**", "tests/**", "types/**"]
+      }
+    ],
+    "rules": [
+      { "from": "runtime-neutral", "allow": ["runtime-neutral"] },
+      { "from": "runtime-specific", "allow": ["runtime-specific", "runtime-neutral"] },
+      { "from": "edge-worker", "allow": ["edge-worker", "runtime-neutral"] },
+      { "from": "tooling", "allow": ["tooling", "runtime-neutral", "runtime-specific", "edge-worker"] }
+    ],
+    "coverage": {
+      "requireAllFiles": true
+    }
+  }
+}

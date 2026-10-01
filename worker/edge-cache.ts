@@ -1,4 +1,4 @@
-import { cachePublicGet, type RepresentationCacheability } from "./cors.js";
+import { cachePublicGet, type RepresentationCacheability } from "./representation-cache.js";
 
 export interface EdgeCacheStorage {
   match(request: Request): Promise<Response | undefined>;
