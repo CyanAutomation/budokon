@@ -32,7 +32,6 @@ export class OpenRouterJevClient implements JevDecisionClient {
         return await requestJevDecision(this.fetcher, this.options.apiKey.trim(), requestBody, questions, controller.signal);
       } catch (error) {
         const failure = classifyRequestFailure(error, this.timeout);
-        clearTimeout(timer);
         if (attempt === this.retries || !isRetryableJevFailure(failure.error)) throw failure.error;
         await delay(retryDelayMilliseconds(attempt, failure.retryAfter));
       } finally {
