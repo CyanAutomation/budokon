@@ -1,14 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { Judoka } from "../src/domain/types.js";
-import { EditorialReviewService } from "../src/jev/editorial-review.js";
-import { JevClientError, OpenRouterJevClient, retryDelayMilliseconds } from "../src/jev/client.js";
+import { EditorialReviewService } from "../src/jev/editorial-review-service.js";
+import { JevClientError } from "../src/jev/client-contracts.js";
+import { retryDelayMilliseconds } from "../src/jev/client-retry-policy.js";
+import { OpenRouterJevClient } from "../src/jev/openrouter-client.js";
 import { SemanticJudokaSearchService } from "../src/jev/semantic-search.js";
 import { JevJudokaQueryInterpreter } from "../src/jev/query-interpreter.js";
 import { rankDuplicateCandidates } from "../src/jev/duplicate-shortlist.js";
 import { CatalogService } from "../src/domain/catalog-service.js";
-import { DrawService } from "../src/draw/draw-service.js";
-import { createMcpTools } from "../src/mcp/tools.js";
+import { createJevTools } from "../src/mcp/jev-tools.js";
 import { JsonReadModelRepository } from "../src/repository/json-read-model-repository.js";
 import { editorialReviewBatchInputSchema, editorialReviewInputSchema, semanticSearchInputSchema } from "../src/mcp/server.js";
 import { validateCanonical } from "../src/validation/validate-canonical.js";
@@ -443,8 +444,8 @@ test("JEV MCP tools require internal authorization and use an already-filtered c
     datasetVersion: "test", judoka: [candidate("a"), candidate("b")], techniques: [], events: [], countries: {}, weightCategories: [],
     manifest: { datasetVersion: "test", serviceVersion: "test", drawAlgorithms: [], defaultDrawAlgorithm: "test", sourceGitCommit: "test", checksums: { "budokon.json": "test" } },
   }));
-  const mcp = createMcpTools({
-    catalog, draw: new DrawService(catalog),
+  const mcp = createJevTools({
+    catalog,
     semanticSearch: { async search(query, candidates) { return { model: "test", usage: {}, results: candidates.map(judoka => ({ judoka, relevance: query === "specialist" ? 0.9 : 0.5 })) }; } },
     editorialReview: { async review() { return { model: "test", usage: {}, answers: {}, recommendation: "needs_human_review" as const, requiresHumanApproval: true as const }; } },
     queryInterpreter: { async interpret() { return { model: "test", usage: {}, filters: { countryCode: "JP" }, suggestions: { countryCode: { value: "JP", confidence: 0.9, applied: true } } }; } },
@@ -466,8 +467,8 @@ test("semantic MCP search defaults to the complete current catalogue pool", asyn
     manifest: { datasetVersion: "test", serviceVersion: "test", drawAlgorithms: [], defaultDrawAlgorithm: "test", sourceGitCommit: "test", checksums: { "budokon.json": "test" } },
   }));
   let candidateCount = 0;
-  const mcp = createMcpTools({
-    catalog, draw: new DrawService(catalog),
+  const mcp = createJevTools({
+    catalog,
     semanticSearch: { async search(_query, candidates) { candidateCount = candidates.length; return { model: "test", usage: {}, results: [] }; } },
   });
   await mcp.semantic_search_judoka({ query: "grappling specialist" }, { authorizedInternal: true });
@@ -492,7 +493,7 @@ test("editorial MCP tools shortlist likely duplicates and batch proposals throug
       return { model: "test", usage: {}, reviews: inputs.map(() => ({ answers: {}, recommendation: "needs_human_review" as const, requiresHumanApproval: true as const })) };
     },
   };
-  const mcp = createMcpTools({ catalog, draw: new DrawService(catalog), editorialReview });
+  const mcp = createJevTools({ catalog, editorialReview });
   const proposed = { ...existing, id: "proposed", slug: "proposed-keiko" };
   await mcp.review_proposed_judoka({ record: proposed, evidence: [] }, { authorizedInternal: true });
   assert.deepEqual(singleInput?.duplicateCandidates?.map(record => record.id), ["existing"]);

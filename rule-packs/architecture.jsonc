@@ -1,0 +1,24 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/rule-pack-schema.json",
+  "version": 1,
+  "name": "budokon-architecture",
+  "description": "Keep domain code independent of platform I/O and network adapters.",
+  "rules": [
+    {
+      "id": "domain-no-platform-io",
+      "kind": "banned-import",
+      "specifiers": ["node:fs", "node:fs/promises", "node:path", "node:url", "node:crypto"],
+      "files": ["src/domain/**"],
+      "message": "Keep filesystem and platform I/O at an application boundary.",
+      "severity": "error"
+    },
+    {
+      "id": "domain-no-network",
+      "kind": "banned-call",
+      "callees": ["fetch"],
+      "files": ["src/domain/**"],
+      "message": "Inject network access through a service boundary instead of calling fetch in the domain.",
+      "severity": "error"
+    }
+  ]
+}
