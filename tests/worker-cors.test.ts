@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { cachePublicGet, corsHeaders, preflightResponse, representationEtag, withCors } from "../worker/cors.js";
+import { corsHeaders, preflightResponse, withCors } from "../worker/cors.js";
+import { cachePublicGet } from "../worker/representation-cache.js";
+import { representationEtag } from "../worker/representation-identity.js";
 
 const env = { PUBLIC_ALLOWED_ORIGINS: "https://game.example, http://localhost:5173" };
 const request = (origin?: string, init: RequestInit = {}): Request => {

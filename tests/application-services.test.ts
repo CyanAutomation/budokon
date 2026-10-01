@@ -199,6 +199,22 @@ test("repository reports malformed serialized data with parse context", () => {
       && error.message.length > "Failed to parse JSON:".length
   );
 });
+test("repository list snapshots do not let callers reorder canonical collections", () => {
+  const subject = new JsonReadModelRepository(compiledModel);
+  const expected = {
+    judoka: subject.listJudoka(),
+    techniques: subject.listTechniques(),
+    events: subject.listEvents(),
+  };
+
+  subject.listJudoka().reverse();
+  subject.listTechniques().splice(0, 1);
+  subject.listEvents().push({ id: "caller-only", ruleset: "test", category: "test", description: "Caller data", effects: [] });
+
+  assert.deepEqual(subject.listJudoka(), expected.judoka);
+  assert.deepEqual(subject.listTechniques(), expected.techniques);
+  assert.deepEqual(subject.listEvents(), expected.events);
+});
 test("repository rejects an empty dataset version", () => {
   assert.throws(
     () => new JsonReadModelRepository({ ...compiledModel, datasetVersion: "   " }),
