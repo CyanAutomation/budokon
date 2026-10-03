@@ -54,6 +54,11 @@ export interface CompiledDataset {
 
 export type FilterField = "countryCode" | "gender" | "weightClass" | "rarity" | "personType" | "signatureMoveIds";
 export type Filters = Partial<Record<FilterField, string | string[]>>;
+export interface SearchTechniqueOptions {
+  query?: string;
+  category?: string | string[];
+  subCategory?: string | string[];
+}
 export interface VisibilityOptions { includeHidden?: boolean; authorizedInternal?: boolean; }
 export interface ListJudokaOptions extends VisibilityOptions { filters?: Filters; exclude?: string[]; }
 export interface SearchJudokaOptions extends ListJudokaOptions { query?: string; q?: string; }
@@ -75,6 +80,14 @@ export interface CoverageResponse {
   total: number;
   publicReal: number;
   hidden: number;
+  byGender: Record<string, number>;
+  byCountry: Record<string, number>;
+  byWeightClass: Record<string, number>;
+  byRarity: Record<string, number>;
+  rarityPercentages: Record<string, number>;
+}
+export interface PublicCoverageResponse {
+  publicReal: number;
   byGender: Record<string, number>;
   byCountry: Record<string, number>;
   byWeightClass: Record<string, number>;

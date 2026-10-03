@@ -1,8 +1,9 @@
-import type { CoverageResponse, Filters, JudoEvent, Judoka, ListJudokaOptions, SearchJudokaOptions, StatusResponse, VersionResponse } from "./types.js";
+import type { CoverageResponse, Filters, JudoEvent, Judoka, ListJudokaOptions, PublicCoverageResponse, SearchJudokaOptions, SearchTechniqueOptions, StatusResponse, VersionResponse } from "./types.js";
 import type { ReadModelRepository } from "../repository/read-model-repository.js";
 import { createFilterService } from "./filter-service.js";
 import { createSearchService } from "./search-service.js";
 import { createMetadataService } from "./metadata-service.js";
+import { normalizeSearchText } from "./catalog-filters.js";
 
 /**
  * Main catalog service providing access to judoka, techniques, events, and metadata.
@@ -29,6 +30,11 @@ export class CatalogService {
 
   coverage(): CoverageResponse {
     return this.metadataService.coverage(this.repository.listJudoka());
+  }
+
+  publicCoverage(): PublicCoverageResponse {
+    const { total: _total, hidden: _hidden, ...coverage } = this.coverage();
+    return coverage;
   }
 
   listJudoka(options: ListJudokaOptions = {}): Judoka[] {
@@ -59,6 +65,19 @@ export class CatalogService {
     return this.repository.listTechniques();
   }
 
+  searchTechniques(options: SearchTechniqueOptions = {}): Technique[] {
+    const query = normalizeSearchText(options.query);
+    const categories = stringValues(options.category);
+    const subCategories = stringValues(options.subCategory);
+    return this.repository.listTechniques().filter(technique => {
+      if (categories.length && !categories.includes(normalizeSearchText(technique.category))) return false;
+      if (subCategories.length && !subCategories.includes(normalizeSearchText(technique.subCategory))) return false;
+      if (!query) return true;
+      return [technique.id, technique.name, technique.japanese, technique.description]
+        .some(value => normalizeSearchText(value).includes(query));
+    });
+  }
+
   getTechnique(id: string | undefined): Technique | undefined {
     return this.repository.getTechnique(id);
   }
@@ -82,6 +101,11 @@ export class CatalogService {
   listWeightCategories() {
     return this.repository.listWeightCategories();
   }
+}
+
+function stringValues(value: string | string[] | undefined): string[] {
+  if (value === undefined) return [];
+  return (Array.isArray(value) ? value : [value]).map(normalizeSearchText).filter(Boolean);
 }
 
 // Import types needed for methods

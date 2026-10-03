@@ -27,6 +27,7 @@ function isKnownPublicGet(request: Request): boolean {
   const [_, resource, id] = segments;
   if (resource === "judoka" || resource === "techniques") return true;
   if (resource === "events") return id !== "draw";
+  if (resource === "coverage" && id === "public") return true;
   return id === undefined && ["countries", "weight-categories", "version", "status", "coverage"].includes(resource ?? "");
 }
 

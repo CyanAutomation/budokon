@@ -49,5 +49,5 @@ export function namedPage<T extends { id: string }>(
 }
 
 export function isExpectedInputError(error: unknown): error is Error {
-  return error instanceof Error && /^(unsupported (query parameter|body field|filter|draw algorithm)|filter .+ must |includeHidden must |q must |limit must |cursor (must|requires) |content-type must |request body |count must |seed must |algorithm must |ruleset must |category must |exclude must )/.test(error.message);
+  return error instanceof Error && /^(unsupported (query parameter|body field|filter|draw algorithm)|filter .+ must |includeHidden must |q must |query must |limit must |cursor (must|requires) |content-type must |request body |count must |seed must |algorithm must |ruleset must |category must |subCategory must |exclude must )/.test(error.message);
 }
