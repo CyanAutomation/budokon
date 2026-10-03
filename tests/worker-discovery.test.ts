@@ -99,3 +99,17 @@ paths:
   assert.match(responseDocument, /^openapi: 3\.1\.0$/m);
   assert.match(responseDocument, /^  \/v1\/status:$/m);
 });
+
+test("discovery routes accept GET only and describe their Allow header", async () => {
+  const worker = createWorker("openapi: 3.1.0");
+  for (const path of ["/", "/docs", "/openapi/v1.yaml"]) {
+    const response = await worker.fetch(new Request(`https://budokon.example${path}`, { method: "POST" }), { API_KEY: "test-key" });
+    assert.equal(response.status, 405, path);
+    assert.equal(response.headers.get("allow"), "GET", path);
+    assert.deepEqual(await response.json(), { error: { code: "method_not_allowed", message: "method not allowed" } }, path);
+  }
+
+  const preflight = await worker.fetch(new Request("https://budokon.example/docs", { method: "OPTIONS" }), { API_KEY: "test-key" });
+  assert.equal(preflight.status, 405);
+  assert.equal(preflight.headers.get("allow"), "GET");
+});

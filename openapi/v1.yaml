@@ -2,7 +2,11 @@ openapi: 3.1.0
 info:
   title: BU-DO-KON public catalogue API
   version: 1.0.0
-  description: Read-only, browser-safe REST interface for the BU-DO-KON judoka catalogue.
+  description: >-
+    Public, read-only REST interface for the BU-DO-KON judo catalogue. This
+    contract excludes controls for internal-only hidden records. The public
+    coverage operation is GET /v1/coverage/public; the legacy coverage response
+    is deprecated and scheduled to sunset on 2027-01-15.
   contact:
     url: https://github.com/CyanAutomation/budokon
   license:
@@ -16,6 +20,11 @@ paths:
     get:
       operationId: listJudoka
       summary: Search, filter, or page public judoka
+      description: >-
+        `q` matches normalized names, slugs, legacy slugs, and aliases. Repeated
+        and comma-separated values are both accepted for filters and exclude.
+        Values in one filter are ORed; different filters are ANDed. Supplying
+        `limit` changes the legacy array response to a named page response.
       parameters:
         - $ref: '#/components/parameters/Q'
         - $ref: '#/components/parameters/CountryCode'
@@ -27,31 +36,56 @@ paths:
         - $ref: '#/components/parameters/Exclude'
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Cursor'
-        - $ref: '#/components/parameters/IncludeHidden'
       responses:
         '200': { $ref: '#/components/responses/JudokaList' }
         '304': { $ref: '#/components/responses/NotModified' }
         '400': { $ref: '#/components/responses/BadRequest' }
-        '403': { $ref: '#/components/responses/Forbidden' }
+        '405': { $ref: '#/components/responses/MethodNotAllowed' }
         '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
   /v1/judoka/{id}:
     get:
       operationId: getJudoka
-      summary: Look up a public judoka by UUID, slug, legacy slug, or name alias
+      summary: Look up a public judoka by ID or alias
       parameters: [ { $ref: '#/components/parameters/Id' } ]
-      responses: { '200': { $ref: '#/components/responses/Judoka' }, '304': { $ref: '#/components/responses/NotModified' }, '404': { $ref: '#/components/responses/NotFound' }, '429': { $ref: '#/components/responses/RateLimited' } }
+      responses:
+        '200': { $ref: '#/components/responses/Judoka' }
+        '304': { $ref: '#/components/responses/NotModified' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '405': { $ref: '#/components/responses/MethodNotAllowed' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
   /v1/techniques:
     get:
       operationId: listTechniques
-      summary: List techniques, optionally with cursor pagination
-      parameters: [ { $ref: '#/components/parameters/Limit' }, { $ref: '#/components/parameters/Cursor' } ]
-      responses: { '200': { $ref: '#/components/responses/TechniqueList' }, '304': { $ref: '#/components/responses/NotModified' }, '400': { $ref: '#/components/responses/BadRequest' }, '429': { $ref: '#/components/responses/RateLimited' } }
+      summary: Search, filter, or page techniques
+      description: Category and subcategory filters accept repeated or comma-separated exact normalized values (case- and diacritic-insensitive).
+      parameters:
+        - $ref: '#/components/parameters/TechniqueQuery'
+        - $ref: '#/components/parameters/TechniqueCategory'
+        - $ref: '#/components/parameters/TechniqueSubCategory'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200': { $ref: '#/components/responses/TechniqueList' }
+        '304': { $ref: '#/components/responses/NotModified' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '405': { $ref: '#/components/responses/MethodNotAllowed' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
   /v1/techniques/{id}:
     get:
       operationId: getTechnique
-      summary: Get a technique
+      summary: Get a technique by ID
       parameters: [ { $ref: '#/components/parameters/Id' } ]
-      responses: { '200': { $ref: '#/components/responses/Technique' }, '304': { $ref: '#/components/responses/NotModified' }, '404': { $ref: '#/components/responses/NotFound' }, '429': { $ref: '#/components/responses/RateLimited' } }
+      responses:
+        '200': { $ref: '#/components/responses/Technique' }
+        '304': { $ref: '#/components/responses/NotModified' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '405': { $ref: '#/components/responses/MethodNotAllowed' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
   /v1/events:
     get:
       operationId: listEvents
@@ -61,17 +95,32 @@ paths:
         - $ref: '#/components/parameters/EventCategory'
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Cursor'
-      responses: { '200': { $ref: '#/components/responses/EventList' }, '304': { $ref: '#/components/responses/NotModified' }, '400': { $ref: '#/components/responses/BadRequest' }, '429': { $ref: '#/components/responses/RateLimited' } }
+      responses:
+        '200': { $ref: '#/components/responses/EventList' }
+        '304': { $ref: '#/components/responses/NotModified' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '405': { $ref: '#/components/responses/MethodNotAllowed' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
   /v1/events/{id}:
     get:
       operationId: getEvent
       summary: Get a gameplay event by ID
       parameters: [ { $ref: '#/components/parameters/Id' } ]
-      responses: { '200': { $ref: '#/components/responses/Event' }, '304': { $ref: '#/components/responses/NotModified' }, '404': { $ref: '#/components/responses/NotFound' }, '429': { $ref: '#/components/responses/RateLimited' } }
+      responses:
+        '200': { $ref: '#/components/responses/Event' }
+        '304': { $ref: '#/components/responses/NotModified' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '405': { $ref: '#/components/responses/MethodNotAllowed' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
   /v1/events/draw:
     post:
       operationId: drawEvent
-      summary: Draw one random or deterministic gameplay event for a ruleset
+      summary: Draw a random or deterministic gameplay event
+      description: A ruleset is required. Provide a seed and retain the returned dataset version and algorithm for reproducibility.
+      x-openai-isConsequential: false
       requestBody:
         required: true
         content:
@@ -81,29 +130,90 @@ paths:
               required: [ruleset]
               additionalProperties: false
               properties:
-                ruleset: { type: string, example: ju-do-kon-v1 }
+                ruleset: { type: string, minLength: 1, example: ju-do-kon-v1 }
                 category: { type: string, example: shiai }
                 seed: { type: string }
                 exclude: { type: array, items: { type: string } }
       responses:
         '200': { $ref: '#/components/responses/EventDraw' }
         '400': { $ref: '#/components/responses/BadRequest' }
-        '409': { description: No event is eligible for the requested ruleset and filters }
+        '405': { $ref: '#/components/responses/MethodNotAllowed' }
+        '409': { $ref: '#/components/responses/Conflict' }
         '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
   /v1/countries:
-    get: { operationId: listCountries, summary: List supported countries, responses: { '200': { $ref: '#/components/responses/Countries' }, '304': { $ref: '#/components/responses/NotModified' }, '429': { $ref: '#/components/responses/RateLimited' } } }
+    get:
+      operationId: listCountries
+      summary: List supported countries
+      responses:
+        '200': { $ref: '#/components/responses/Countries' }
+        '304': { $ref: '#/components/responses/NotModified' }
+        '405': { $ref: '#/components/responses/MethodNotAllowed' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
   /v1/weight-categories:
-    get: { operationId: listWeightCategories, summary: List weight categories, responses: { '200': { $ref: '#/components/responses/WeightCategories' }, '304': { $ref: '#/components/responses/NotModified' }, '429': { $ref: '#/components/responses/RateLimited' } } }
+    get:
+      operationId: listWeightCategories
+      summary: List supported weight categories
+      responses:
+        '200': { $ref: '#/components/responses/WeightCategories' }
+        '304': { $ref: '#/components/responses/NotModified' }
+        '405': { $ref: '#/components/responses/MethodNotAllowed' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
   /v1/version:
-    get: { operationId: getVersion, summary: Get catalogue and draw-algorithm versions, responses: { '200': { $ref: '#/components/responses/Version' }, '304': { $ref: '#/components/responses/NotModified' }, '429': { $ref: '#/components/responses/RateLimited' } } }
+    get:
+      operationId: getVersion
+      summary: Get catalogue and draw-algorithm versions
+      responses:
+        '200': { $ref: '#/components/responses/Version' }
+        '304': { $ref: '#/components/responses/NotModified' }
+        '405': { $ref: '#/components/responses/MethodNotAllowed' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
   /v1/status:
-    get: { operationId: getStatus, summary: Get service health and immutable release identity, responses: { '200': { $ref: '#/components/responses/Status' }, '304': { $ref: '#/components/responses/NotModified' }, '429': { $ref: '#/components/responses/RateLimited' } } }
+    get:
+      operationId: getStatus
+      summary: Get liveness status and immutable release identity
+      description: This reports that the Worker and bundled catalogue are responding; it does not check external dependencies.
+      responses:
+        '200': { $ref: '#/components/responses/Status' }
+        '304': { $ref: '#/components/responses/NotModified' }
+        '405': { $ref: '#/components/responses/MethodNotAllowed' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
   /v1/coverage:
-    get: { operationId: getCoverage, summary: Get public real-judoka representation and rarity coverage metrics, responses: { '200': { $ref: '#/components/responses/Coverage' }, '304': { $ref: '#/components/responses/NotModified' }, '429': { $ref: '#/components/responses/RateLimited' } } }
+    get:
+      operationId: getLegacyCoverage
+      summary: Get legacy coverage metadata (deprecated)
+      deprecated: true
+      description: >-
+        This response includes all-record total and hidden-record counts. Migrate
+        to GET /v1/coverage/public, which contains public real-judoka metrics only.
+        This legacy operation sunsets on 2027-01-15.
+      responses:
+        '200': { $ref: '#/components/responses/LegacyCoverage' }
+        '304': { $ref: '#/components/responses/NotModified' }
+        '405': { $ref: '#/components/responses/MethodNotAllowed' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /v1/coverage/public:
+    get:
+      operationId: getPublicCoverage
+      summary: Get public real-judoka coverage metrics
+      description: Contains no all-record or hidden-record counts.
+      responses:
+        '200': { $ref: '#/components/responses/PublicCoverage' }
+        '304': { $ref: '#/components/responses/NotModified' }
+        '405': { $ref: '#/components/responses/MethodNotAllowed' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
   /v1/draw:
     post:
       operationId: drawJudoka
       summary: Draw one or more public judoka
+      description: A seed and returned dataset version/algorithm make the result reproducible. Hidden-record controls are internal-only and intentionally absent from this public contract.
+      x-openai-isConsequential: false
       requestBody:
         required: true
         content:
@@ -112,36 +222,41 @@ paths:
               type: object
               additionalProperties: false
               properties:
-                count: { type: integer, minimum: 1 }
+                count: { type: integer, minimum: 1, description: Must not exceed the eligible pool size. }
                 seed: { type: string }
-                algorithm: { type: string, example: budokon-v1 }
+                algorithm: { type: string, enum: [budokon-v1], example: budokon-v1 }
                 filters: { $ref: '#/components/schemas/Filters' }
                 exclude: { type: array, items: { type: string } }
       responses:
         '200': { $ref: '#/components/responses/JudokaDraw' }
         '400': { $ref: '#/components/responses/BadRequest' }
-        '409': { description: Requested count exceeds the eligible pool }
+        '405': { $ref: '#/components/responses/MethodNotAllowed' }
+        '409': { $ref: '#/components/responses/Conflict' }
         '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
 components:
   parameters:
-    Id: { name: id, in: path, required: true, schema: { type: string } }
-    Q: { name: q, in: query, schema: { type: string } }
-    CountryCode: { name: countryCode, in: query, schema: { type: string, example: JP } }
-    Gender: { name: gender, in: query, schema: { type: string, example: female } }
-    WeightClass: { name: weightClass, in: query, schema: { type: string, example: '-81' } }
-    Rarity: { name: rarity, in: query, schema: { type: string, example: Legendary } }
-    PersonType: { name: personType, in: query, schema: { type: string, example: real } }
-    SignatureMoveIds: { name: signatureMoveIds, in: query, schema: { type: string, example: seoi-nage } }
-    Exclude: { name: exclude, in: query, schema: { type: string } }
-    Limit: { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
-    Cursor: { name: cursor, in: query, schema: { type: string, description: id returned as nextCursor } }
-    IncludeHidden: { name: includeHidden, in: query, schema: { type: boolean }, description: Requires an internal API credential. }
+    Id: { name: id, in: path, required: true, description: "UUID, slug, legacy slug, or supported alias", schema: { type: string, minLength: 1 } }
+    Q: { name: q, in: query, description: "Normalized substring search over name, slug, legacy slug, and aliases. Empty means no text filter.", schema: { type: string } }
+    TechniqueQuery: { name: q, in: query, description: "Normalized substring search over technique ID, name, Japanese name, and description.", schema: { type: string } }
+    CountryCode: { name: countryCode, in: query, description: "Repeated or comma-separated values are ORed.", schema: { type: string, example: JP } }
+    Gender: { name: gender, in: query, description: "Repeated or comma-separated values are ORed.", schema: { type: string, enum: [male, female], example: female } }
+    WeightClass: { name: weightClass, in: query, description: "Repeated or comma-separated values are ORed.", schema: { type: string, example: '-81' } }
+    Rarity: { name: rarity, in: query, description: "Repeated or comma-separated values are ORed.", schema: { type: string, enum: [Common, Rare, Epic, Legendary], example: Legendary } }
+    PersonType: { name: personType, in: query, description: "Repeated or comma-separated values are ORed.", schema: { type: string, enum: [real, fictional], example: real } }
+    SignatureMoveIds: { name: signatureMoveIds, in: query, description: "Repeated or comma-separated values match any signature move.", schema: { type: string, example: seoi-nage } }
+    Exclude: { name: exclude, in: query, description: "IDs or slugs to exclude; repeated and comma-separated values are accepted.", schema: { type: string } }
+    Limit: { name: limit, in: query, description: Enables cursor pagination., schema: { type: integer, minimum: 1, maximum: 100 } }
+    Cursor: { name: cursor, in: query, description: "ID returned as nextCursor; requires limit and the same filters.", schema: { type: string, minLength: 1 } }
     Ruleset: { name: ruleset, in: query, schema: { type: string, example: ju-do-kon-v1 } }
     EventCategory: { name: category, in: query, schema: { type: string, example: shiai } }
+    TechniqueCategory: { name: category, in: query, description: "Exact normalized (case- and diacritic-insensitive) category filter; repeated and comma-separated values are ORed.", schema: { type: string, enum: [Nage-waza, Katame-waza], example: Nage-waza } }
+    TechniqueSubCategory: { name: subCategory, in: query, description: "Exact normalized (case- and diacritic-insensitive) subcategory filter; repeated and comma-separated values are ORed.", schema: { type: string, enum: [Te-waza, Koshi-waza, Ashi-waza, Ma-sutemi-waza, Yoko-sutemi-waza, Osaekomi-waza, Shime-waza, Kansetsu-waza], example: Te-waza } }
   schemas:
     Filters:
       type: object
       additionalProperties: false
+      description: Values in one filter are ORed; different filter fields are ANDed.
       properties:
         countryCode: { oneOf: [ { type: string }, { type: array, minItems: 1, items: { type: string } } ] }
         gender: { oneOf: [ { type: string }, { type: array, minItems: 1, items: { type: string } } ] }
@@ -152,54 +267,217 @@ components:
     Error:
       type: object
       required: [error]
-      properties: { error: { type: object, required: [code, message], properties: { code: { type: string }, message: { type: string } } } }
+      additionalProperties: false
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          additionalProperties: false
+          properties:
+            code: { type: string }
+            message: { type: string }
     Judoka:
       type: object
-      required: [id, slug, personType, countryCode, weightClass, signatureMoveIds]
+      required: [id, slug, firstname, surname, personType, countryCode, weightClass, category, stats, signatureMoveIds, lastUpdated, profileUrl, bio, gender, isHidden, rarity]
       properties:
         id: { type: string, format: uuid }
-        slug: { type: string }
+        slug: { type: string, pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$' }
         firstname: { type: string }
         surname: { type: string }
-        personType: { enum: [real, fictional] }
+        aliases: { type: array, items: { type: string } }
+        legacySlugs: { type: array, items: { type: string } }
+        personType: { type: string, enum: [real, fictional] }
         countryCode: { type: string, pattern: '^[A-Z]{2}$' }
-        weightClass: { type: string }
-        signatureMoveIds: { type: array, items: { type: string } }
+        country: { type: string, description: Resolved country display name when available. }
+        weightClass: { type: string, pattern: '^[+-][0-9]{2,3}$' }
+        category: { const: Judo }
+        stats:
+          type: object
+          required: [power, speed, technique, kumikata, newaza]
+          additionalProperties: false
+          properties:
+            power: { type: integer, minimum: 0, maximum: 10 }
+            speed: { type: integer, minimum: 0, maximum: 10 }
+            technique: { type: integer, minimum: 0, maximum: 10 }
+            kumikata: { type: integer, minimum: 0, maximum: 10 }
+            newaza: { type: integer, minimum: 0, maximum: 10 }
+        signatureMoveIds: { type: array, minItems: 1, items: { type: string } }
+        lastUpdated: { type: string, format: date-time }
+        profileUrl: { type: string, format: uri }
+        bio: { type: string, minLength: 20 }
+        gender: { type: string, enum: [male, female] }
+        isHidden: { type: boolean, description: Public records are false. Internal-only records are not returned by this public API contract. }
+        rarity: { type: string, enum: [Common, Rare, Epic, Legendary] }
         sourceUrls: { type: array, items: { type: string, format: uri } }
         sources: { type: array, items: { $ref: '#/components/schemas/Source' } }
     Source:
       type: object
       required: [url, claims, checkedAt]
+      additionalProperties: false
       properties:
         url: { type: string, format: uri }
         publisher: { type: string }
-        claims: { type: array, items: { type: string } }
+        claims: { type: array, minItems: 1, items: { type: string, enum: [identity, nationality, weightClass, biography, competitionHistory] } }
         checkedAt: { type: string, format: date-time }
-    Technique: { type: object, required: [id, name], properties: { id: { type: string }, name: { type: string } } }
-    Event: { type: object, required: [id, ruleset, category, description, effects], properties: { id: { type: string }, ruleset: { type: string }, category: { type: string }, description: { type: string }, effects: { type: array, items: { type: object } } } }
-    Version: { type: object, required: [datasetVersion, serviceVersion, sourceGitCommit, datasetChecksum, drawAlgorithms, defaultDrawAlgorithm], properties: { datasetVersion: { type: string }, serviceVersion: { type: string }, sourceGitCommit: { type: string }, datasetChecksum: { type: string }, drawAlgorithms: { type: array, items: { type: string } }, defaultDrawAlgorithm: { type: string } } }
-    Status: { allOf: [ { $ref: '#/components/schemas/Version' }, { type: object, required: [status], properties: { status: { const: ok } } } ] }
-    Coverage: { type: object, required: [total, publicReal, hidden, byGender, byCountry, byWeightClass, byRarity, rarityPercentages], properties: { total: { type: integer }, publicReal: { type: integer }, hidden: { type: integer }, byGender: { type: object, additionalProperties: { type: integer } }, byCountry: { type: object, additionalProperties: { type: integer } }, byWeightClass: { type: object, additionalProperties: { type: integer } }, byRarity: { type: object, additionalProperties: { type: integer } }, rarityPercentages: { type: object, additionalProperties: { type: number } } } }
-    JudokaDraw: { type: object, required: [datasetVersion, algorithm, poolSize, judoka], properties: { datasetVersion: { type: string }, algorithm: { type: string }, seed: { type: string }, poolSize: { type: integer }, judoka: { type: array, items: { $ref: '#/components/schemas/Judoka' } } } }
-    EventDraw: { type: object, required: [datasetVersion, algorithm, poolSize, event], properties: { datasetVersion: { type: string }, algorithm: { type: string }, seed: { type: string }, poolSize: { type: integer }, event: { $ref: '#/components/schemas/Event' } } }
+    Technique:
+      type: object
+      required: [id, name, japanese, style, category, subCategory, description, link]
+      additionalProperties: false
+      properties:
+        id: { type: string, pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$' }
+        name: { type: string, minLength: 1 }
+        japanese: { type: string, minLength: 1 }
+        style: { const: Judo }
+        category: { type: string, enum: [Nage-waza, Katame-waza] }
+        subCategory: { type: string, enum: [Te-waza, Koshi-waza, Ashi-waza, Ma-sutemi-waza, Yoko-sutemi-waza, Osaekomi-waza, Shime-waza, Kansetsu-waza] }
+        description: { type: string, minLength: 3 }
+        link: { type: string, format: uri }
+    EventEffect:
+      type: object
+      required: [action, target, value]
+      additionalProperties: false
+      properties:
+        action: { type: string, enum: [modify, set] }
+        target: { type: string, enum: [power, speed, technique, kumikata, newaza, shido, waza_ari, score, match_result] }
+        value: { oneOf: [ { type: integer }, { type: string } ] }
+    Event:
+      type: object
+      required: [id, ruleset, category, description, effects]
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        ruleset: { type: string }
+        category: { type: string }
+        description: { type: string, minLength: 20 }
+        effects: { type: array, minItems: 1, items: { $ref: '#/components/schemas/EventEffect' } }
+    Country:
+      type: object
+      required: [country, code, lastUpdated, active]
+      additionalProperties: false
+      properties:
+        country: { type: string, minLength: 1 }
+        code: { type: string, pattern: '^[A-Z]{2}$' }
+        lastUpdated: { type: string, format: date-time }
+        active: { type: boolean }
+    WeightCategory:
+      type: object
+      required: [gender, description, categories]
+      additionalProperties: false
+      properties:
+        gender: { type: string, enum: [male, female] }
+        description: { type: string, minLength: 1 }
+        categories:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [weight, descriptor]
+            additionalProperties: false
+            properties:
+              weight: { type: string, pattern: '^[+-][0-9]{2,3}$' }
+              descriptor: { type: string, minLength: 1 }
+    Version:
+      type: object
+      required: [datasetVersion, serviceVersion, sourceGitCommit, datasetChecksum, drawAlgorithms, defaultDrawAlgorithm]
+      properties:
+        datasetVersion: { type: string }
+        serviceVersion: { type: string }
+        sourceGitCommit: { type: string, pattern: '^[0-9a-f]{40}$' }
+        datasetChecksum: { type: string, pattern: '^sha256:[0-9a-f]{64}$' }
+        drawAlgorithms: { type: array, items: { type: string } }
+        defaultDrawAlgorithm: { type: string }
+    Status:
+      allOf:
+        - $ref: '#/components/schemas/Version'
+        - type: object
+          required: [status]
+          properties:
+            status: { const: ok }
+    Coverage:
+      type: object
+      required: [total, publicReal, hidden, byGender, byCountry, byWeightClass, byRarity, rarityPercentages]
+      properties:
+        total: { type: integer }
+        publicReal: { type: integer }
+        hidden: { type: integer, deprecated: true, description: This all-record count is deprecated. Use /v1/coverage/public. }
+        byGender: { type: object, additionalProperties: { type: integer } }
+        byCountry: { type: object, additionalProperties: { type: integer } }
+        byWeightClass: { type: object, additionalProperties: { type: integer } }
+        byRarity: { type: object, additionalProperties: { type: integer } }
+        rarityPercentages: { type: object, additionalProperties: { type: number } }
+    PublicCoverage:
+      type: object
+      required: [publicReal, byGender, byCountry, byWeightClass, byRarity, rarityPercentages]
+      additionalProperties: false
+      properties:
+        publicReal: { type: integer, description: Number of visible real judoka included in the distributions. }
+        byGender: { type: object, additionalProperties: { type: integer } }
+        byCountry: { type: object, additionalProperties: { type: integer } }
+        byWeightClass: { type: object, additionalProperties: { type: integer } }
+        byRarity: { type: object, additionalProperties: { type: integer } }
+        rarityPercentages: { type: object, additionalProperties: { type: number } }
+    JudokaPage:
+      type: object
+      required: [judoka]
+      properties:
+        judoka: { type: array, items: { $ref: '#/components/schemas/Judoka' } }
+        nextCursor: { type: string }
+    TechniquePage:
+      type: object
+      required: [techniques]
+      properties:
+        techniques: { type: array, items: { $ref: '#/components/schemas/Technique' } }
+        nextCursor: { type: string }
+    EventPage:
+      type: object
+      required: [events]
+      properties:
+        events: { type: array, items: { $ref: '#/components/schemas/Event' } }
+        nextCursor: { type: string }
+    JudokaDraw:
+      type: object
+      required: [datasetVersion, algorithm, poolSize, judoka]
+      properties:
+        datasetVersion: { type: string }
+        algorithm: { type: string }
+        seed: { type: string }
+        poolSize: { type: integer }
+        judoka: { type: array, items: { $ref: '#/components/schemas/Judoka' } }
+    EventDraw:
+      type: object
+      required: [datasetVersion, algorithm, poolSize, event]
+      properties:
+        datasetVersion: { type: string }
+        algorithm: { type: string }
+        seed: { type: string }
+        poolSize: { type: integer }
+        event: { $ref: '#/components/schemas/Event' }
+  headers:
+    ETag: { schema: { type: string }, description: Entity tag for the current public representation. }
+    CacheControl: { schema: { type: string }, description: Public caching policy. }
+    Deprecation: { schema: { type: string }, description: Deprecation marker for the legacy coverage operation. }
+    Sunset: { schema: { type: string }, description: Planned removal date in HTTP-date form. }
+    SuccessorLink: { schema: { type: string }, description: Link to the replacement public coverage operation. }
   responses:
-    Judoka: { description: Judoka, content: { application/json: { schema: { $ref: '#/components/schemas/Judoka' } } } }
-    JudokaList: { description: Judoka array or a page object when limit is supplied, content: { application/json: { schema: { oneOf: [ { type: array, items: { $ref: '#/components/schemas/Judoka' } }, { type: object, required: [judoka], properties: { judoka: { type: array, items: { $ref: '#/components/schemas/Judoka' } }, nextCursor: { type: string } } } ] } } } }
-    Technique: { description: Technique, content: { application/json: { schema: { $ref: '#/components/schemas/Technique' } } } }
-    TechniqueList: { description: Technique array or a page object when limit is supplied, content: { application/json: { schema: { oneOf: [ { type: array, items: { $ref: '#/components/schemas/Technique' } }, { type: object, required: [techniques], properties: { techniques: { type: array, items: { $ref: '#/components/schemas/Technique' } }, nextCursor: { type: string } } } ] } } } }
-    Event: { description: Event, content: { application/json: { schema: { $ref: '#/components/schemas/Event' } } } }
-    EventList: { description: Event array or a page object when limit is supplied, content: { application/json: { schema: { oneOf: [ { type: array, items: { $ref: '#/components/schemas/Event' } }, { type: object, required: [events], properties: { events: { type: array, items: { $ref: '#/components/schemas/Event' } }, nextCursor: { type: string } } } ] } } } }
+    Judoka: { description: Public judoka record, headers: { ETag: { $ref: '#/components/headers/ETag' }, Cache-Control: { $ref: '#/components/headers/CacheControl' } }, content: { application/json: { schema: { $ref: '#/components/schemas/Judoka' } } } }
+    JudokaList: { description: Judoka array, or a named cursor page when limit is supplied, headers: { ETag: { $ref: '#/components/headers/ETag' }, Cache-Control: { $ref: '#/components/headers/CacheControl' } }, content: { application/json: { schema: { oneOf: [ { type: array, items: { $ref: '#/components/schemas/Judoka' } }, { $ref: '#/components/schemas/JudokaPage' } ] } } } }
+    Technique: { description: Canonical technique, headers: { ETag: { $ref: '#/components/headers/ETag' }, Cache-Control: { $ref: '#/components/headers/CacheControl' } }, content: { application/json: { schema: { $ref: '#/components/schemas/Technique' } } } }
+    TechniqueList: { description: Technique array, or a named cursor page when limit is supplied, headers: { ETag: { $ref: '#/components/headers/ETag' }, Cache-Control: { $ref: '#/components/headers/CacheControl' } }, content: { application/json: { schema: { oneOf: [ { type: array, items: { $ref: '#/components/schemas/Technique' } }, { $ref: '#/components/schemas/TechniquePage' } ] } } } }
+    Event: { description: Ruleset-scoped gameplay event, headers: { ETag: { $ref: '#/components/headers/ETag' }, Cache-Control: { $ref: '#/components/headers/CacheControl' } }, content: { application/json: { schema: { $ref: '#/components/schemas/Event' } } } }
+    EventList: { description: Event array, or a named cursor page when limit is supplied, headers: { ETag: { $ref: '#/components/headers/ETag' }, Cache-Control: { $ref: '#/components/headers/CacheControl' } }, content: { application/json: { schema: { oneOf: [ { type: array, items: { $ref: '#/components/schemas/Event' } }, { $ref: '#/components/schemas/EventPage' } ] } } } }
     EventDraw: { description: Event draw result, content: { application/json: { schema: { $ref: '#/components/schemas/EventDraw' } } } }
-    Countries: { description: Country map, content: { application/json: { schema: { type: object, additionalProperties: { type: object } } } } }
-    WeightCategories: { description: Weight-category array, content: { application/json: { schema: { type: array, items: { type: object } } } } }
-    Version: { description: Version metadata, content: { application/json: { schema: { $ref: '#/components/schemas/Version' } } } }
-    Status: { description: Service status and release metadata, content: { application/json: { schema: { $ref: '#/components/schemas/Status' } } } }
-    Coverage: { description: Representation and rarity coverage metrics, content: { application/json: { schema: { $ref: '#/components/schemas/Coverage' } } } }
+    Countries: { description: Supported-country map keyed by alpha-2 code, headers: { ETag: { $ref: '#/components/headers/ETag' }, Cache-Control: { $ref: '#/components/headers/CacheControl' } }, content: { application/json: { schema: { type: object, propertyNames: { pattern: '^[A-Z]{2}$' }, additionalProperties: { $ref: '#/components/schemas/Country' } } } } }
+    WeightCategories: { description: Senior weight categories, headers: { ETag: { $ref: '#/components/headers/ETag' }, Cache-Control: { $ref: '#/components/headers/CacheControl' } }, content: { application/json: { schema: { type: array, minItems: 2, maxItems: 2, items: { $ref: '#/components/schemas/WeightCategory' } } } } }
+    Version: { description: Immutable data and service release identity, headers: { ETag: { $ref: '#/components/headers/ETag' }, Cache-Control: { $ref: '#/components/headers/CacheControl' } }, content: { application/json: { schema: { $ref: '#/components/schemas/Version' } } } }
+    Status: { description: Liveness and release metadata, headers: { ETag: { $ref: '#/components/headers/ETag' }, Cache-Control: { $ref: '#/components/headers/CacheControl' } }, content: { application/json: { schema: { $ref: '#/components/schemas/Status' } } } }
+    LegacyCoverage: { description: Deprecated coverage response. Migrate to /v1/coverage/public., headers: { ETag: { $ref: '#/components/headers/ETag' }, Cache-Control: { $ref: '#/components/headers/CacheControl' }, Deprecation: { $ref: '#/components/headers/Deprecation' }, Sunset: { $ref: '#/components/headers/Sunset' }, Link: { $ref: '#/components/headers/SuccessorLink' } }, content: { application/json: { schema: { $ref: '#/components/schemas/Coverage' } } } }
+    PublicCoverage: { description: Public visible real-judoka coverage, headers: { ETag: { $ref: '#/components/headers/ETag' }, Cache-Control: { $ref: '#/components/headers/CacheControl' } }, content: { application/json: { schema: { $ref: '#/components/schemas/PublicCoverage' } } } }
     JudokaDraw: { description: Draw result, content: { application/json: { schema: { $ref: '#/components/schemas/JudokaDraw' } } } }
-    NotModified: { description: Representation has not changed; ETag is returned., headers: { ETag: { schema: { type: string }, description: Entity tag for the current representation. } } }
+    NotModified: { description: Public representation has not changed., headers: { ETag: { $ref: '#/components/headers/ETag' }, Cache-Control: { $ref: '#/components/headers/CacheControl' } } }
     BadRequest: { description: Invalid request, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-    Forbidden: { description: Internal visibility was requested without valid credentials, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
     NotFound: { description: Resource not found, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    MethodNotAllowed: { description: Unsupported method for this route, headers: { Allow: { schema: { type: string } } }, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    Conflict: { description: Requested draw cannot be fulfilled from the eligible pool, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
     RateLimited:
       description: Too many requests. Respect Retry-After before retrying.
       headers:
@@ -207,3 +485,4 @@ components:
         RateLimit-Limit: { schema: { type: integer }, description: Requests permitted per window. }
         RateLimit-Policy: { schema: { type: string }, description: "Window policy, for example 120;w=60." }
       content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    InternalError: { description: Unexpected server error, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }

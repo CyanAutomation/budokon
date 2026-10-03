@@ -19,7 +19,8 @@ test("every documented catalogue and metadata endpoint conforms", async () => {
   for (const [path, expected] of <[string, unknown][]>[
     ["/v1/judoka", catalog.listJudoka()], ["/v1/techniques", catalog.listTechniques()],
     ["/v1/countries", catalog.listCountries()],
-    ["/v1/weight-categories", catalog.listWeightCategories()], ["/v1/version", catalog.version()]
+    ["/v1/weight-categories", catalog.listWeightCategories()], ["/v1/version", catalog.version()],
+    ["/v1/coverage/public", catalog.publicCoverage()]
   ]) {
     const response = await request(path); assert.equal(response.status, 200, path);
     assert.match(response.headers.get("content-type"), /^application\/json/); assert.deepEqual(await body(response), expected);
@@ -53,6 +54,40 @@ test("coverage exposes public real-judoka counts and stable rarity percentages",
   assert.equal(coverage.publicReal, catalog.listJudoka().filter(record => record.personType === "real").length);
   assert.deepEqual(Object.keys(coverage.byRarity), ["Common", "Epic", "Legendary", "Rare"]);
   assert.ok(Math.abs(Object.values(coverage.rarityPercentages).reduce((sum, value) => sum + value, 0) - 100) <= 0.1);
+});
+
+test("public coverage omits totals that disclose hidden-record counts", async () => {
+  const response = await request("/v1/coverage/public");
+  assert.equal(response.status, 200);
+  const coverage = await body(response);
+  assert.equal(typeof coverage.publicReal, "number");
+  assert.equal("total" in coverage, false);
+  assert.equal("hidden" in coverage, false);
+  assert.ok("byGender" in coverage && "byCountry" in coverage && "byWeightClass" in coverage);
+});
+
+test("legacy coverage is deprecated with a migration link and at least 90 days of notice", async () => {
+  const response = await request("/v1/coverage");
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("deprecation"), "true");
+  assert.match(response.headers.get("sunset") ?? "", /^Fri, 15 Jan 2027 00:00:00 GMT$/);
+  assert.match(response.headers.get("link") ?? "", /<\/v1\/coverage\/public>; rel="successor-version"/);
+});
+
+test("technique search combines text and exact filters before cursor pagination", async () => {
+  const response = await request("/v1/techniques?q=背負&category=Nage-waza&subCategory=Te-waza&limit=1");
+  assert.equal(response.status, 200);
+  const page = await body(response);
+  assert.deepEqual(page.techniques.map((technique: { id: string }) => technique.id), ["ippon-seoi-nage"]);
+  assert.equal(page.nextCursor, "ippon-seoi-nage");
+  const followingPage = await request(`/v1/techniques?q=背負&category=Nage-waza&subCategory=Te-waza&limit=1&cursor=${page.nextCursor}`);
+  assert.deepEqual((await body(followingPage)).techniques.map((technique: { id: string }) => technique.id), ["seoi-nage"]);
+
+  const categoryValues = await request("/v1/techniques?category=Katame-waza,Nage-waza");
+  assert.equal(categoryValues.status, 200);
+  assert.equal((await body(categoryValues)).length, catalog.listTechniques().length);
+  assert.equal((await request("/v1/techniques?category=")).status, 400);
+  assert.equal((await request("/v1/techniques?unknown=x")).status, 400);
 });
 
 test("version and status expose an immutable, traceable release identity", async () => {
@@ -220,6 +255,7 @@ test("missing resources, unsupported input, and unexpected failures are stable",
     searchJudoka() { throw new Error("unexpected catalog call"); },
     getJudoka() { throw new Error("unexpected catalog call"); },
     listTechniques() { throw new Error("unexpected catalog call"); },
+    searchTechniques() { throw new Error("unexpected catalog call"); },
     getTechnique() { throw new Error("unexpected catalog call"); },
     listEvents() { throw new Error("unexpected catalog call"); },
     getEvent() { throw new Error("unexpected catalog call"); },
@@ -228,6 +264,7 @@ test("missing resources, unsupported input, and unexpected failures are stable",
     version() { throw new Error("secret database detail"); },
     status() { throw new Error("unexpected catalog call"); },
     coverage() { throw new Error("unexpected catalog call"); },
+    publicCoverage() { throw new Error("unexpected catalog call"); },
   };
   const failingDraw: RestDrawDependency = {
     draw() { throw new Error("unexpected draw call"); },

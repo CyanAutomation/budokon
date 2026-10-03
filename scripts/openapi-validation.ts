@@ -43,19 +43,20 @@ export function validateOpenApiYaml(source: string): void {
 }
 
 const expectedResponses: Record<string, Record<string, Record<string, string>>> = {
-    "/v1/judoka": { get: { "200": "JudokaList", "304": "NotModified", "429": "RateLimited" } },
-    "/v1/judoka/{id}": { get: { "200": "Judoka", "304": "NotModified", "429": "RateLimited" } },
-    "/v1/techniques": { get: { "200": "TechniqueList", "304": "NotModified", "429": "RateLimited" } },
-    "/v1/techniques/{id}": { get: { "200": "Technique", "304": "NotModified", "429": "RateLimited" } },
-    "/v1/events": { get: { "200": "EventList", "304": "NotModified", "429": "RateLimited" } },
-    "/v1/events/{id}": { get: { "200": "Event", "304": "NotModified", "429": "RateLimited" } },
-    "/v1/events/draw": { post: { "200": "EventDraw", "429": "RateLimited" } },
-    "/v1/countries": { get: { "200": "Countries", "304": "NotModified", "429": "RateLimited" } },
-    "/v1/weight-categories": { get: { "200": "WeightCategories", "304": "NotModified", "429": "RateLimited" } },
-    "/v1/version": { get: { "200": "Version", "304": "NotModified", "429": "RateLimited" } },
-    "/v1/status": { get: { "200": "Status", "304": "NotModified", "429": "RateLimited" } },
-    "/v1/coverage": { get: { "200": "Coverage", "304": "NotModified", "429": "RateLimited" } },
-    "/v1/draw": { post: { "200": "JudokaDraw", "429": "RateLimited" } },
+    "/v1/judoka": { get: { "200": "JudokaList", "304": "NotModified", "400": "BadRequest", "405": "MethodNotAllowed", "429": "RateLimited", "500": "InternalError" } },
+    "/v1/judoka/{id}": { get: { "200": "Judoka", "304": "NotModified", "400": "BadRequest", "404": "NotFound", "405": "MethodNotAllowed", "429": "RateLimited", "500": "InternalError" } },
+    "/v1/techniques": { get: { "200": "TechniqueList", "304": "NotModified", "400": "BadRequest", "405": "MethodNotAllowed", "429": "RateLimited", "500": "InternalError" } },
+    "/v1/techniques/{id}": { get: { "200": "Technique", "304": "NotModified", "404": "NotFound", "405": "MethodNotAllowed", "429": "RateLimited", "500": "InternalError" } },
+    "/v1/events": { get: { "200": "EventList", "304": "NotModified", "400": "BadRequest", "405": "MethodNotAllowed", "429": "RateLimited", "500": "InternalError" } },
+    "/v1/events/{id}": { get: { "200": "Event", "304": "NotModified", "400": "BadRequest", "404": "NotFound", "405": "MethodNotAllowed", "429": "RateLimited", "500": "InternalError" } },
+    "/v1/events/draw": { post: { "200": "EventDraw", "400": "BadRequest", "405": "MethodNotAllowed", "409": "Conflict", "429": "RateLimited", "500": "InternalError" } },
+    "/v1/countries": { get: { "200": "Countries", "304": "NotModified", "405": "MethodNotAllowed", "429": "RateLimited", "500": "InternalError" } },
+    "/v1/weight-categories": { get: { "200": "WeightCategories", "304": "NotModified", "405": "MethodNotAllowed", "429": "RateLimited", "500": "InternalError" } },
+    "/v1/version": { get: { "200": "Version", "304": "NotModified", "405": "MethodNotAllowed", "429": "RateLimited", "500": "InternalError" } },
+    "/v1/status": { get: { "200": "Status", "304": "NotModified", "405": "MethodNotAllowed", "429": "RateLimited", "500": "InternalError" } },
+    "/v1/coverage": { get: { "200": "LegacyCoverage", "304": "NotModified", "405": "MethodNotAllowed", "429": "RateLimited", "500": "InternalError" } },
+    "/v1/coverage/public": { get: { "200": "PublicCoverage", "304": "NotModified", "405": "MethodNotAllowed", "429": "RateLimited", "500": "InternalError" } },
+    "/v1/draw": { post: { "200": "JudokaDraw", "400": "BadRequest", "405": "MethodNotAllowed", "409": "Conflict", "429": "RateLimited", "500": "InternalError" } },
 };
 
 const responseSchemas: Record<string, string> = {
@@ -65,7 +66,8 @@ const responseSchemas: Record<string, string> = {
   EventDraw: "EventDraw",
   Version: "Version",
   Status: "Status",
-  Coverage: "Coverage",
+  LegacyCoverage: "Coverage",
+  PublicCoverage: "PublicCoverage",
   JudokaDraw: "JudokaDraw",
 };
 
@@ -77,6 +79,25 @@ function validateExpectedResponses(document: unknown): void {
         assertEqual(actual, `#/components/responses/${component}`, `${method.toUpperCase()} ${path} response ${status}`);
       }
     }
+  }
+}
+
+function validateOperationCoverage(document: unknown): void {
+  const expected = Object.entries(expectedResponses)
+    .flatMap(([path, methods]) => Object.keys(methods).map(method => `${method.toUpperCase()} ${path}`))
+    .sort();
+  const paths = asObject(valueAt(document, "paths")) ?? {};
+  const actual = Object.entries(paths).flatMap(([path, pathItemValue]) => {
+    const pathItem = asObject(pathItemValue) ?? {};
+    return Object.keys(pathItem)
+      .filter(method => ["get", "post", "put", "patch", "delete", "options", "head"].includes(method.toLowerCase()))
+      .map(method => `${method.toUpperCase()} ${path}`);
+  }).sort();
+  for (const operation of actual) {
+    if (!expected.includes(operation)) throw new Error(`unexpected OpenAPI operation ${operation}`);
+  }
+  for (const operation of expected) {
+    if (!actual.includes(operation)) throw new Error(`missing OpenAPI operation ${operation}`);
   }
 }
 
@@ -94,12 +115,12 @@ function validateVisibilityOperations(document: unknown): void {
       }
     }
   }
-  assertEqual(visibilityOperations, [["/v1/judoka", "get"]], "operations using IncludeHidden");
+  assertEqual(visibilityOperations, [], "operations using internal-only IncludeHidden controls");
 }
 
 function validateResponseHeaders(document: unknown): void {
   const notModifiedHeaders = asObject(valueAt(document, "components", "responses", "NotModified", "headers")) ?? {};
-  assertEqual(Object.keys(notModifiedHeaders), ["ETag"], "NotModified response headers");
+  assertEqual(Object.keys(notModifiedHeaders).sort(), ["Cache-Control", "ETag"].sort(), "NotModified response headers");
 
   const rateLimitedHeaders = asObject(valueAt(document, "components", "responses", "RateLimited", "headers")) ?? {};
   assertEqual(
@@ -133,6 +154,7 @@ function validateSourceSchemas(document: unknown): void {
 }
 
 export function validateOpenApiDocument(document: unknown): void {
+  validateOperationCoverage(document);
   validateExpectedResponses(document);
   validateVisibilityOperations(document);
   validateResponseHeaders(document);

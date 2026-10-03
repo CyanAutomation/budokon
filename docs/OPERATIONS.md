@@ -11,6 +11,10 @@ Monitor:
 * deployment identity from `/v1/status` (`datasetVersion`, source commit, and
   checksum), so a rollout serves the intended release.
 
+`/v1/status` is a liveness/release check for the Worker and bundled catalogue.
+It does not probe external services. Use platform health signals for deployment
+readiness and upstream dependencies.
+
 Alert on sustained non-zero `5xx`, on a latency threshold appropriate for game
 traffic, and on a material rise in `429` responses. Route alerts to the team’s
 on-call channel and include the endpoint, Cloudflare colo, deployment ID, and

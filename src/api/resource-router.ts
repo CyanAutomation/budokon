@@ -7,7 +7,7 @@ import type { RestHandlerContext } from "./handlers/context.js";
 import { drawHandler } from "./handlers/draw-handler.js";
 import { eventsDrawHandler, eventsGetHandler, eventsListHandler } from "./handlers/events-handler.js";
 import { judokaGetHandler, judokaListHandler } from "./handlers/judoka-handler.js";
-import { countriesHandler, coverageHandler, statusHandler, versionHandler, weightCategoriesHandler } from "./handlers/simple-handlers.js";
+import { countriesHandler, coverageHandler, publicCoverageHandler, statusHandler, versionHandler, weightCategoriesHandler } from "./handlers/simple-handlers.js";
 import { techniquesGetHandler, techniquesListHandler } from "./handlers/techniques-handler.js";
 import { failure, json, methodNotAllowed, namedPage } from "./router-response.js";
 
@@ -72,6 +72,9 @@ export function createResourceRouter({ catalog, draw, eventDraw }: ResourceRoute
   }
 
   async function routeSingleton(resource: string | undefined, id: string | undefined, method: string): Promise<Response | undefined> {
+    if (resource === "coverage" && id === "public") {
+      return method === "GET" ? publicCoverageHandler(context, catalog) : methodNotAllowed("GET");
+    }
     if (id !== undefined || resource === undefined) return undefined;
     const handler = singletonHandlers[resource];
     if (!handler) return undefined;

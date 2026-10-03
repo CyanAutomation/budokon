@@ -1,14 +1,10 @@
 import type { RestCatalogDependency } from "../router.js";
-import { parsePageQuery } from "../page-query-schema.js";
+import { parseTechniqueListQuery } from "../technique-list-query-schema.js";
 import type { RestHandlerContext as Context } from "./context.js";
 
 export async function techniquesListHandler(context: Context, url: URL, catalog: RestCatalogDependency): Promise<Response> {
-  const allowed = new Set(["limit", "cursor"]);
-  url.searchParams.forEach((_value, key) => {
-    if (!allowed.has(key)) throw new TypeError(`unsupported query parameter: ${key}`);
-  });
-  const page = parsePageQuery(url.searchParams);
-  return context.json(context.namedPage("techniques", catalog.listTechniques(), page.limit, page.cursor));
+  const query = parseTechniqueListQuery(url.searchParams);
+  return context.json(context.namedPage("techniques", catalog.searchTechniques(query), query.limit, query.cursor));
 }
 
 export async function techniquesGetHandler(context: Context, id: string, catalog: RestCatalogDependency): Promise<Response> {
