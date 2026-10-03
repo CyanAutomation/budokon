@@ -13,7 +13,7 @@ const endpoints = [
   ["GET", "/v1/judoka", "Search, filter, or page public judoka."],
   ["GET", "/v1/judoka/{id}", "Look up a judoka by UUID, slug, legacy slug, or name alias."],
   ["POST", "/v1/draw", "Draw one or more judoka, optionally with a reproducible seed."],
-  ["GET", "/v1/techniques", "List techniques, optionally using cursor pagination."],
+  ["GET", "/v1/techniques", "Search, filter, or page techniques."],
   ["GET", "/v1/techniques/{id}", "Get one technique by ID."],
   ["GET", "/v1/events", "List gameplay events for a ruleset and category."],
   ["GET", "/v1/events/{id}", "Get one gameplay event by ID."],
@@ -21,8 +21,9 @@ const endpoints = [
   ["GET", "/v1/countries", "List supported countries."],
   ["GET", "/v1/weight-categories", "List weight categories."],
   ["GET", "/v1/version", "Get catalogue and draw algorithm versions."],
-  ["GET", "/v1/status", "Get service health and release identity."],
-  ["GET", "/v1/coverage", "Get public representation and rarity coverage."],
+  ["GET", "/v1/status", "Get liveness status and release identity."],
+  ["GET", "/v1/coverage", "Legacy coverage metrics (deprecated)."],
+  ["GET", "/v1/coverage/public", "Get public real-judoka coverage metrics."],
 ] as const;
 
 const endpointCards = endpoints.map(([method, route, summary]) => {

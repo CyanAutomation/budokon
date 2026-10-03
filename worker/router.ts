@@ -72,11 +72,17 @@ function authenticateMcpRequest(request: Request, env: Pick<Env, "API_KEY" | "IN
   );
 }
 
-function discoveryResponse(path: string, origin: string, openApiSpecification: string): Response | undefined {
-  if (path === "/") return landingResponse(origin);
-  if (path === "/docs" || path === "/docs/") return documentationResponse(origin);
-  if (path === "/openapi/v1.yaml") return openApiResponse(openApiSpecification);
-  return undefined;
+function discoveryResponse(path: string, method: string, origin: string, openApiSpecification: string): Response | undefined {
+  let response: Response | undefined;
+  if (path === "/") response = landingResponse(origin);
+  else if (path === "/docs" || path === "/docs/") response = documentationResponse(origin);
+  else if (path === "/openapi/v1.yaml") response = openApiResponse(openApiSpecification);
+  if (!response) return undefined;
+  if (method === "GET") return response;
+  return new Response(JSON.stringify({ error: { code: "method_not_allowed", message: "method not allowed" } }), {
+    status: 405,
+    headers: { "content-type": "application/json; charset=utf-8", allow: "GET" },
+  });
 }
 
 async function handleMcpRequest(request: Request, env: Env): Promise<Response> {
@@ -140,7 +146,7 @@ export function createWorker(openApiSpecification: string, options: { cache?: Ed
     async fetch(request: Request, env: Env): Promise<Response> {
       const url = new URL(request.url);
       const path = url.pathname;
-      const discovery = discoveryResponse(path, url.origin, openApiSpecification);
+      const discovery = discoveryResponse(path, request.method, url.origin, openApiSpecification);
       if (discovery) return discovery;
       if (request.method === "OPTIONS") {
         return path.startsWith("/v1/")

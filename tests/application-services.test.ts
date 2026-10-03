@@ -315,10 +315,12 @@ test("search composes with filters, exclusions, and visibility in UUID order", (
   assert.deepEqual(service.searchJudoka({ query: "renee", includeHidden: true, authorizedInternal: true }).map(j => j.id), ["a", "b", "c", "d"]);
 });
 
-test("REST and MCP searches conform and an absent query retains list behavior", async () => {
+test("REST and MCP searches conform while unfiltered MCP search returns its bounded first page", async () => {
   const restResult = await restJson("/v1/judoka?q=%20%20SHOZO!%20&countryCode=JP&exclude=tatsuuma-ushiyama");
   const mcpResult = mcp.search_judoka({ query: "  SHOZO! ", filters: { countryCode: "JP" }, exclude: ["tatsuuma-ushiyama"] }).judoka;
   assert.deepEqual(restResult, mcpResult);
   assert.deepEqual(await restJson("/v1/judoka"), catalog.listJudoka());
-  assert.deepEqual(mcp.search_judoka().judoka, catalog.listJudoka());
+  const firstMcpPage = mcp.search_judoka();
+  assert.deepEqual(firstMcpPage.judoka, catalog.listJudoka().slice(0, 50));
+  assert.equal(firstMcpPage.nextCursor, firstMcpPage.judoka.at(-1)?.id);
 });

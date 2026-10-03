@@ -8,8 +8,10 @@ import type {
   JudoEvent,
   Judoka,
   ListJudokaOptions,
+  PublicCoverageResponse,
   RequestContext,
   SearchJudokaOptions,
+  SearchTechniqueOptions,
   StatusResponse,
   Technique,
   VersionResponse,
@@ -23,6 +25,7 @@ export interface RestCatalogDependency {
   searchJudoka(options?: SearchJudokaOptions): Judoka[];
   getJudoka(id: string | undefined, options?: Pick<ListJudokaOptions, "includeHidden" | "authorizedInternal">): Judoka | undefined;
   listTechniques(): Technique[];
+  searchTechniques(options?: SearchTechniqueOptions): Technique[];
   getTechnique(id: string | undefined): Technique | undefined;
   listEvents(options?: { ruleset?: string; category?: string }): JudoEvent[];
   getEvent(id: string | undefined): JudoEvent | undefined;
@@ -31,6 +34,7 @@ export interface RestCatalogDependency {
   version(): VersionResponse;
   status(): StatusResponse;
   coverage(): CoverageResponse;
+  publicCoverage(): PublicCoverageResponse;
 }
 
 export interface RestDrawDependency {

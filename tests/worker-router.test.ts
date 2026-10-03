@@ -78,16 +78,20 @@ test("MCP tools/list returns all available tools with schemas", async () => {
   assert.ok(Array.isArray(data.result.tools));
 
   type ListedTool = { name: string; inputSchema: unknown };
-  const listedTools = data.result.tools as ListedTool[];
+  const listedTools = data.result.tools as Array<ListedTool & { outputSchema?: unknown; title?: string; annotations?: { readOnlyHint?: boolean } }>;
   const expectedNames = [
     "draw_event",
     "draw_judoka",
     "get_event",
     "get_judoka",
+    "get_public_coverage",
     "get_technique",
+    "list_countries",
     "list_events",
     "list_techniques",
+    "list_weight_categories",
     "search_judoka",
+    "search_techniques",
     "version",
   ];
   const actualNames = listedTools.map(tool => tool.name);
@@ -96,10 +100,16 @@ test("MCP tools/list returns all available tools with schemas", async () => {
   const toolsByName = new Map(listedTools.map(tool => [tool.name, tool]));
 
   for (const name of expectedNames) {
-    const schema = toolsByName.get(name)?.inputSchema as { type?: string; additionalProperties?: boolean } | undefined;
+    const tool = toolsByName.get(name);
+    const schema = tool?.inputSchema as { type?: string; additionalProperties?: boolean } | undefined;
     assert.equal(schema?.type, "object", `${name} must expose an object input schema`);
     assert.equal(schema?.additionalProperties, false, `${name} must reject unknown input properties`);
+    assert.equal((tool?.outputSchema as { type?: string } | undefined)?.type, "object", `${name} must expose an output schema`);
+    assert.ok(tool?.title, `${name} must expose a display title`);
+    assert.equal(tool?.annotations?.readOnlyHint, true, `${name} must be identified as read-only`);
   }
+  const publicGetJudoka = toolsByName.get("get_judoka")?.inputSchema as { properties?: Record<string, unknown> } | undefined;
+  assert.equal("includeHidden" in (publicGetJudoka?.properties ?? {}), false, "public tool discovery must omit internal visibility controls");
 });
 
 test("JEV MCP tools are discoverable only to the internal credential when configured", async () => {
@@ -110,12 +120,20 @@ test("JEV MCP tools are discoverable only to the internal credential when config
       headers: { host: "example.test", authorization: `Bearer ${credential}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
       body: JSON.stringify({ jsonrpc: "2.0", id, method: "tools/list" }),
     }), env);
-    const body = await mcpJson(response) as { result: { tools: Array<{ name: string }> } };
-    return body.result.tools.map(tool => tool.name);
+    const body = await mcpJson(response) as { result: { tools: Array<{
+      name: string;
+      inputSchema: { properties?: Record<string, unknown> };
+      outputSchema?: { type?: string };
+      title?: string;
+      annotations?: { readOnlyHint?: boolean; destructiveHint?: boolean; openWorldHint?: boolean };
+    }> } };
+    return body.result.tools;
   };
 
-  const regularNames = await listTools(env.API_KEY, 20);
-  const internalNames = await listTools(env.INTERNAL_API_KEY!, 21);
+  const regularTools = await listTools(env.API_KEY, 20);
+  const internalTools = await listTools(env.INTERNAL_API_KEY!, 21);
+  const regularNames = regularTools.map(tool => tool.name);
+  const internalNames = internalTools.map(tool => tool.name);
   assert.ok(!regularNames.includes("semantic_search_judoka"));
   assert.ok(!regularNames.includes("review_proposed_judoka"));
   assert.ok(!regularNames.includes("review_proposed_judoka_batch"));
@@ -124,6 +142,59 @@ test("JEV MCP tools are discoverable only to the internal credential when config
   assert.ok(internalNames.includes("review_proposed_judoka"));
   assert.ok(internalNames.includes("review_proposed_judoka_batch"));
   assert.ok(internalNames.includes("interpret_judoka_query"));
+  for (const name of ["semantic_search_judoka", "review_proposed_judoka", "review_proposed_judoka_batch", "interpret_judoka_query"]) {
+    const tool = internalTools.find(candidate => candidate.name === name);
+    assert.equal(tool?.outputSchema?.type, "object", `${name} must expose an output schema`);
+    assert.ok(tool?.title, `${name} must expose a display title`);
+    assert.equal(tool?.annotations?.readOnlyHint, true, `${name} must be identified as read-only`);
+    assert.equal(tool?.annotations?.destructiveHint, false, `${name} must be identified as non-destructive`);
+    assert.equal(tool?.annotations?.openWorldHint, true, `${name} must identify external-model behavior`);
+  }
+  assert.ok("includeHidden" in (internalTools.find(tool => tool.name === "get_judoka")?.inputSchema.properties ?? {}));
+  assert.equal("includeHidden" in (regularTools.find(tool => tool.name === "get_judoka")?.inputSchema.properties ?? {}), false);
+});
+
+test("public MCP catalog tools support bounded, filterable result pages", async () => {
+  const call = async (id: number, name: string, args: unknown) => {
+    const response = await worker.fetch(new Request("https://example.test/mcp", {
+      method: "POST",
+      headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
+      body: JSON.stringify({ jsonrpc: "2.0", id, method: "tools/call", params: { name, arguments: args } }),
+    }), mockEnv);
+    return successfulMcpToolJson(response);
+  };
+
+  const judokaFirst = await call(70, "search_judoka", { limit: 1 });
+  assert.equal(judokaFirst.judoka.length, 1);
+  assert.equal(typeof judokaFirst.nextCursor, "string");
+  const judokaSecond = await call(71, "search_judoka", { limit: 1, cursor: judokaFirst.nextCursor });
+  assert.equal(judokaSecond.judoka.length, 1);
+  assert.notEqual(judokaSecond.judoka[0].id, judokaFirst.judoka[0].id);
+
+  const techniquePage = await call(72, "list_techniques", { limit: 1 });
+  assert.equal(techniquePage.techniques.length, 1);
+  assert.equal(typeof techniquePage.nextCursor, "string");
+  const techniqueSearch = await call(73, "search_techniques", { query: "背負", category: "Nage-waza", subCategory: "Te-waza" });
+  assert.deepEqual(techniqueSearch.techniques.map((technique: { id: string }) => technique.id), ["ippon-seoi-nage", "seoi-nage", "seoi-otoshi"]);
+
+  const eventPage = await call(74, "list_events", { ruleset: "ju-do-kon-v1", limit: 1 });
+  assert.equal(eventPage.events.length, 1);
+  assert.equal(typeof eventPage.nextCursor, "string");
+  assert.equal((await call(75, "list_countries", {})).countries.JP.code, "JP");
+  assert.ok(Array.isArray((await call(76, "list_weight_categories", {})).weightCategories));
+  const coverage = await call(77, "get_public_coverage", {});
+  assert.equal("hidden" in coverage, false);
+  assert.equal("total" in coverage, false);
+});
+
+test("MCP rejects ambiguous judoka search aliases", async () => {
+  const response = await worker.fetch(new Request("https://example.test/mcp", {
+    method: "POST",
+    headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 78, method: "tools/call", params: { name: "search_judoka", arguments: { query: "shozo", q: "teddy" } } }),
+  }), mockEnv);
+  const envelope = await mcpJson(response);
+  assert.equal(envelope.result.isError, true);
 });
 
 /**
@@ -466,9 +537,16 @@ test("regular MCP key can call public tools but cannot retrieve hidden records",
   const hiddenResponse = await worker.fetch(new Request("https://example.test/mcp", {
     method: "POST",
     headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: 43, method: "tools/call", params: { name: "get_judoka", arguments: { id: hidden.id, includeHidden: true } } }),
+    body: JSON.stringify({ jsonrpc: "2.0", id: 43, method: "tools/call", params: { name: "get_judoka", arguments: { id: hidden.id } } }),
   }), mockEnv);
   assert.equal((await successfulMcpToolJson(hiddenResponse)).judoka, null);
+
+  const explicitInternalOption = await worker.fetch(new Request("https://example.test/mcp", {
+    method: "POST",
+    headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 48, method: "tools/call", params: { name: "get_judoka", arguments: { id: hidden.id, includeHidden: true } } }),
+  }), mockEnv);
+  assert.equal((await mcpJson(explicitInternalOption)).result.isError, true, "public schemas reject internal visibility arguments");
 });
 
 test("separate internal MCP key authenticates and retrieves hidden records", async () => {
@@ -505,7 +583,7 @@ test("MCP internal authentication handles an unset key and equal configured secr
   });
 
   const withoutInternal = await worker.fetch(request(mockEnv.API_KEY), { ...mockEnv, INTERNAL_API_KEY: undefined });
-  assert.equal((await successfulMcpToolJson(withoutInternal)).judoka, null, "an unset internal key must not elevate the regular key");
+  assert.equal((await mcpJson(withoutInternal)).result.isError, true, "an unset internal key must not expose hidden-record arguments");
 
   const equalSecrets = await worker.fetch(request(mockEnv.API_KEY), { ...mockEnv, INTERNAL_API_KEY: mockEnv.API_KEY });
   assert.deepEqual((await successfulMcpToolJson(equalSecrets)).judoka, hidden, "equal secrets must confer internal authorization");
@@ -605,6 +683,16 @@ test("assembled worker exposes exactly the public judoka catalogue without crede
     false,
     "public catalogue must not expose hidden fixture records",
   );
+});
+
+test("public coverage is included in public representation caching", async () => {
+  const response = await worker.fetch(new Request("https://example.test/v1/coverage/public"), mockEnv);
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("etag") ?? "", /^"budokon-/);
+  assert.equal(response.headers.get("cache-control"), "public, max-age=300, s-maxage=86400, stale-while-revalidate=86400");
+  const body = await response.json() as Record<string, unknown>;
+  assert.equal("hidden" in body, false);
+  assert.equal("total" in body, false);
 });
 
 test("matching public revalidation bypasses quota and representation generation, while sensitive requests do not", async () => {

@@ -10,6 +10,16 @@ export interface SearchToolRequest extends DrawRequest {
   query?: string;
   q?: string;
   filters?: Filters;
+  limit?: number;
+  cursor?: string;
+}
+
+export interface TechniqueSearchToolRequest {
+  query?: string;
+  category?: string | string[];
+  subCategory?: string | string[];
+  limit?: number;
+  cursor?: string;
 }
 
 export interface McpToolDependencies {

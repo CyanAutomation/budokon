@@ -1035,6 +1035,7 @@ POST /v1/draw
 GET  /v1/version
 GET  /v1/status
 GET  /v1/coverage
+GET  /v1/coverage/public
 ```
 
 Consumers should eventually be able to filter by attributes such as:
@@ -1098,10 +1099,12 @@ compiled dataset checksum, and supported draw algorithms. `GET /v1/status` adds
 `"status": "ok"` for deployment smoke checks. Together these allow consumers to
 identify the exact immutable release behind a response.
 
-`GET /v1/coverage` exposes the public real-judoka draw-pool counts by gender,
-country, weight class, and rarity, plus one-decimal rarity percentages. It is the
-recommended source for game menus and curation dashboards; hidden and fictional
-records are intentionally excluded.
+`GET /v1/coverage/public` exposes the public real-judoka draw-pool counts by
+gender, country, weight class, and rarity, plus one-decimal rarity percentages.
+It is the recommended source for game menus and curation dashboards. The legacy
+`GET /v1/coverage` response includes all-record totals and hidden-record counts,
+is deprecated and sunsets on 15 January 2027. Use the public endpoint for new
+integrations.
 
 ### Browser games
 
@@ -1132,8 +1135,8 @@ cache adapter (or their own compliant shared cache) for edge storage.
 Use `limit` (1–100) to opt into cursor pagination for judoka, techniques, and
 events. The response becomes `{ judoka, nextCursor }`, `{ techniques,
 nextCursor }`, or `{ events, nextCursor }`; supply the returned `nextCursor` as
-`cursor` on the following request with the same filters. Pagination is applied
-after every filter and search.
+`cursor` on the following request with the same `limit` and filters. Pagination
+is applied after every filter and search.
 
 The deployed service has a JSON discovery document at `/`, a first-party API
 reference at `/docs`, and the machine-readable contract at `/openapi/v1.yaml`
@@ -1143,7 +1146,8 @@ reference at `/docs`, and the machine-readable contract at `/openapi/v1.yaml`
 
 ## 🤖 MCP
 
-BU-DO-KON may expose the same core capabilities through MCP for AI agents and conversational applications.
+BU-DO-KON exposes the same core catalogue and draw capabilities through MCP for
+AI agents and conversational applications.
 
 Optional JEV-backed query interpretation, editorial review, and bounded
 semantic candidate ranking are available only to an internally authenticated
@@ -1151,18 +1155,34 @@ MCP client. They are advisory, never mutate canonical data, and do not affect
 deterministic search, drawing, validation, or releases. See [docs/JEV.md](docs/JEV.md)
 for configuration, evaluation, and operational constraints.
 
-Potential MCP tools include:
+MCP tools include (internal tools are marked):
 
 ```text
 get_judoka
 search_judoka
 draw_judoka
 list_techniques
+search_techniques
 get_technique
+list_events
+get_event
+draw_event
+list_countries
+list_weight_categories
+get_public_coverage
+version
 interpret_judoka_query (internal JEV tool)
 semantic_search_judoka (internal JEV tool)
 review_proposed_judoka (internal JEV tool)
+review_proposed_judoka_batch (internal JEV tool)
 ```
+
+Collection tools return no more than 50 results by default and use `nextCursor`
+for subsequent pages. Repeat the same `limit` and filters when passing the
+cursor. MCP advertises result schemas and read-only annotations.
+The internal JEV tools invoke an external model and remain advisory. See
+[internal API access](docs/INTERNAL-API.md) for credential boundaries and the
+ChatGPT integration path.
 
 Example:
 
