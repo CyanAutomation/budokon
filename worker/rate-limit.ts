@@ -40,10 +40,16 @@ export async function rateLimitMcpRequest(request: Request, env: { MCP_RATE_LIMI
 
 /** Apply a second MCP quota per OAuth principal without placing subject IDs in limiter keys. */
 export async function rateLimitMcpPrincipal(
-  env: { MCP_RATE_LIMITER?: { limit(options: { key: string }): Promise<{ success: boolean }> }; API_KEY: string },
+  env: { MCP_RATE_LIMITER?: { limit(options: { key: string }): Promise<{ success: boolean }> }; API_KEY?: string },
   principal: string,
 ): Promise<Response | undefined> {
   if (!env.MCP_RATE_LIMITER) return undefined;
+  if (typeof env.API_KEY !== "string" || env.API_KEY.trim().length === 0) {
+    return new Response(JSON.stringify({ error: { code: "not_configured", message: "principal rate limiting is not configured" } }), {
+      status: 503,
+      headers: { "content-type": "application/json; charset=utf-8" },
+    });
+  }
   try {
     const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(env.API_KEY), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
     const digest = new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(principal)));
