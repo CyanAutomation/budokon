@@ -695,6 +695,18 @@ test("MCP rejects an invalid API key before invoking the SDK handler", async () 
   });
 });
 
+test("MCP rejects a Unicode whitespace-only configured API key", async () => {
+  const whitespaceKey = "\u00a0";
+  const response = await worker.fetch(new Request("https://example.test/mcp", {
+    method: "POST",
+    headers: { host: "example.test", "x-api-key": whitespaceKey, "content-type": "application/json", accept: "application/json, text/event-stream" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 390, method: "tools/list" }),
+  }), { ...mockEnv, API_KEY: whitespaceKey });
+
+  assert.equal(response.status, 401);
+  assert.deepEqual(await mcpJson(response), { error: { code: "unauthorized", message: "A valid API key is required" } });
+});
+
 test("regular MCP key can call public tools but cannot retrieve hidden records", async () => {
   const hidden = compiledModel.judoka.find(record => record.isHidden);
   assert.ok(hidden, "fixture must contain a hidden judoka");

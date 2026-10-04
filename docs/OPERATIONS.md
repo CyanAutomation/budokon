@@ -60,7 +60,9 @@ quota). OAuth requests consume the IP quota and an additional per-principal
 quota in the MCP binding. Monitor and tune `429` rates for each binding
 separately. OAuth introspection errors surface as MCP authentication failures;
 include the authorization server's availability and latency in upstream
-monitoring.
+monitoring. Keep `API_KEY` configured as a nonblank secret: when the MCP
+limiter is enabled, OAuth requests receive `503` if it cannot safely derive a
+principal quota key.
 
 The compiled `dist/manifest.json` identifies the canonical data commit used to
 create that artifact. It need not equal a later application-only commit in the
