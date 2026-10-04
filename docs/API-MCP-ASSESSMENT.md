@@ -1,152 +1,140 @@
 # BU-DO-KON API and MCP assessment
 
-> Baseline snapshot before the implementation follow-up dated 2026-10-03.
-> The completed changes are summarized at the end of this report.
+**Reviewed:** 2026-10-04
 
-**Scope:** static review of the REST router, published OpenAPI document, Worker entry points, MCP server/tools, and the API/MCP documentation. This reviews 13 REST operations, 3 discovery routes, the `/mcp` transport, 9 public MCP tools, and 4 internal JEV tools.
+**Review type:** Static source and contract review, followed by the implementation work below. Regression tests and runtime route checks were run locally; no production deployment or live-service check was performed.
 
-## Recommendation summary
+## Scope and overall assessment
 
-| Action | Recommendation |
-|---|---|
-| Remove | **None.** The current endpoints serve separate catalogue, draw, reference-data, or release-metadata needs. The overlap between `/v1/status` and `/v1/version` is small and does not justify breaking the stable `/v1` contract. |
-| Update | Bring OpenAPI in line with runtime behavior and canonical data schemas; clarify internal-only visibility/authentication; improve MCP output schemas and bound list/search results; narrow the public coverage response; clarify status semantics. |
-| Add | Add a technique search/filter operation and MCP reference-data/search tools. Consider a dedicated readiness check only if deployment monitoring needs one. |
+The review covers the public REST API and OpenAPI document, Worker routing, caching, authentication and rate limits, the Streamable HTTP MCP endpoint, MCP tools, and the API documentation. The current implementation exposes **14 REST operations**, 3 GET discovery routes (`/`, `/docs`, `/openapi/v1.yaml`), one `/mcp` transport, **13 public MCP tools**, and **5 internal JEV tools**.
 
-The foundation is sound: REST and MCP use the same catalog/draw services; REST is read-only; draws can be reproduced with a seed and returned algorithm/data versions; MCP uses the official Streamable HTTP SDK; hidden-record access and JEV tools have internal gates. The main readiness gap is contract quality: the OpenAPI schemas materially underdescribe returned records and omit some behavior the router accepts. The MCP tool layer has useful capabilities but is not yet optimized for bounded, typed, broadly authenticated ChatGPT use.
+The API is a good read-only catalogue service. REST and MCP share the same application services; draw results carry dataset and algorithm identity; public/internal visibility is explicitly gated; collections have cursor pagination; and OpenAPI and MCP describe typed responses. I recommend retaining the existing endpoints and tools.
+
+The REST/OpenAPI surface is a reasonable starting point for a ChatGPT GPT Action after running it through the current Action importer. The MCP transport now supports an external OAuth authorization server as a resource server, while the authorization-code and consent experience remains the provider's responsibility. The original conditional GET, equal-secret elevation, and oversized MCP result issues were fixed and covered by regression tests.
+
+## Findings and implementation status
+
+### 1. Conditional GET can return 304 for a missing record or invalid query
+
+**Priority: medium.** `publicNotModifiedResponse` decides eligibility from the URL shape, computes a predictable ETag from release identity and the request, and runs before REST routing. It does not confirm that the route resolves to a resource or that its query parameters validate. The ETag matcher also accepts `If-None-Match: *`. As a result, a request such as `GET /v1/judoka/no-such-record` with `If-None-Match: *` can receive `304` instead of `404`; a malformed query on a recognized collection can similarly bypass its normal `400` validation.
+
+**Resolution:** The pre-route shortcut was removed. A matching cached successful representation can still return `304`; a cache miss now reaches route/query validation first. Conditional misses cache the original successful `200`, avoiding cache poisoning by a `304`. Tests cover missing records, invalid queries, and cache revalidation.
+
+### 2. Static MCP keys do not provide user-connected authorization
+
+**Priority: high for public ChatGPT MCP distribution; acceptable for managed integrations.** Every `/mcp` request needs the shared `API_KEY` or `INTERNAL_API_KEY`. There is no OAuth authorization/discovery, user consent, per-user identity, or scope model. The internal key grants hidden-record access and exposes optional paid JEV tools. A shared key is difficult to distribute, revoke, and constrain for a public ChatGPT connection.
+
+**Resolution:** Static keys remain supported for managed clients. Optional OAuth introspection now validates active tokens, expiry, and resource audience; serves RFC 9728/RFC 8414 discovery; requires `budokon:read`; and separates `budokon:internal` and `budokon:jev`. OAuth calls also receive a principal-specific quota. The external authorization server still must provide consent, client registration, PKCE S256, code/token exchange, scopes, and token revocation. Confirm the current ChatGPT onboarding requirements against the selected provider before distribution.
+
+### 3. Reusing the public and internal MCP keys elevates the public credential
+
+**Priority: medium; configuration hardening.** The Worker checks the internal secret first. If `API_KEY` and `INTERNAL_API_KEY` have the same value, that credential is treated as internal and reveals hidden-record/JEV tools. The code comments and internal API guide explain this, but a deployment mistake silently widens access.
+
+**Resolution:** When the values are equal, the internal MCP key is disabled and the shared value stays public-only. REST hidden-record access also requires a distinct internal key. Deployment-time rejection remains a possible operational improvement, but the collision no longer elevates access.
+
+### 4. Contract checks still depend on duplicate hand-maintained definitions
+
+The OpenAPI document now describes the actual public routes and data fields much better than the earlier baseline. However, the OpenAPI validator compares it with an `expectedResponses` table maintained in the validator itself; that table is not generated from or mechanically linked to the runtime router. MCP tool schemas are separately hand-maintained, and the judoka output schema allows arbitrary extra fields and leaves nested fields such as stats and sources broadly typed.
+
+**Resolution:** OpenAPI validation remains in place and a runtime test now sends valid requests through every documented REST operation. MCP collection output schemas are strict compact-summary contracts; judoka detail output now has closed nested schemas for stats and source claims, and all canonical test-fixture records are checked against it. The validator response table and OpenAPI/MCP schemas are still maintained independently, so generating or mechanically comparing them against canonical domain schemas is a remaining opportunity. Keep internal-only controls out of any GPT Action projection.
+
+### 5. Large collection results can consume a lot of model context
+
+MCP collection tools return results as JSON text and structured content. Full judoka records can contain long biographies and source lists, and draws may contain multiple records.
+
+**Resolution:** MCP collection/search pages are capped at 50 and return compact judoka/technique summaries, with detail tools for full records. Judoka draws are capped at 10; draw algorithms are schema-enumerated. REST v1 behavior remains unchanged. Measure payloads with the target ChatGPT client before choosing final production budgets.
 
 ## REST endpoint review
 
-“Keep” means retain as part of the current contract. “Update” means retain the route and improve its contract or behavior. No row recommends removing an endpoint.
+“Keep” means the route serves a distinct public or operational purpose. The recommendations below focus on client clarity and future compatibility.
 
-| Endpoint | Assessment | Recommendation |
+| Endpoint | Evaluation | Recommendation |
 |---|---|---|
-| `GET /v1/judoka` | Strong central endpoint: deterministic text matching, composable filters, exclusions, hidden-record gate, and optional cursor pagination. | **Keep; update the OpenAPI contract.** Describe repeated and comma-separated filter values, OR-within/AND-between filter semantics, pagination, and actual response fields. Define how internal credentials are supplied, or omit hidden-record controls from a public ChatGPT Action schema. |
-| `GET /v1/judoka/{id}` | Useful direct lookup by UUID/slug/legacy slug/alias. Hidden records are concealed as `404` unless the internal key and `includeHidden=true` are supplied. | **Keep; update OpenAPI.** Add the supported `includeHidden` query parameter to the internal contract and document its authorization and 404 behavior. Keep it out of a public-only ChatGPT schema. |
-| `POST /v1/draw` | Clear consumer capability; filters/exclusions and deterministic seeds are appropriate. Runtime accepts `includeHidden`, but rejects it without internal authorization. | **Keep; update OpenAPI.** Add or explicitly exclude the internal-only body field in a separate internal contract. Document supported algorithms, seed reproducibility, `409` error shape, and the count/pool limit. |
-| `GET /v1/techniques` | Useful collection route with cursor pagination. | **Keep; update schema.** Runtime records include Japanese name, style, category, subcategory, description, and link; the published schema only specifies `id` and `name`. Add query filters/search as a separate additive enhancement (see missing endpoints). |
-| `GET /v1/techniques/{id}` | Useful direct lookup. | **Keep; update schema.** Use the full canonical technique shape and document not-found and validation responses. |
-| `GET /v1/events` | Good ruleset/category filters and pagination. | **Keep; update schema.** Specify the actual event/effect structure and supported query encoding; event effects are currently described as arbitrary objects. |
-| `GET /v1/events/{id}` | Useful event detail route. | **Keep; update schema.** Reuse the complete event/effect schema. |
-| `POST /v1/events/draw` | Correctly requires a ruleset and supports category, exclusions, and a seed. | **Keep; update OpenAPI.** Define the complete event/effect response and the JSON error body for `409`; document that an empty eligible pool causes a conflict. |
-| `GET /v1/countries` | Appropriate reference-data endpoint for country filters and display. | **Keep; update schema.** Replace the generic object-of-objects response with the country fields actually returned. |
-| `GET /v1/weight-categories` | Appropriate reference-data endpoint for weight-class filters and display. | **Keep; update schema.** Specify the gender/category group structure rather than generic objects. |
-| `GET /v1/version` | Useful immutable release identity, including data checksum and draw algorithm identifiers. | **Keep.** Keep as the stable machine-readable version endpoint. Ensure the OpenAPI document describes all fields. |
-| `GET /v1/status` | Currently returns `status: "ok"` plus the same release metadata as `/version`; it is a useful lightweight liveness check. | **Keep; clarify semantics.** Call this liveness/release status unless it checks dependencies/readiness. If readiness is needed, add a distinct operational check instead of removing either stable route. |
-| `GET /v1/coverage` | Useful public catalogue-coverage summary, but `total` and `hidden` count all records while the other distributions are computed only from public real judoka. | **Keep; update deliberately.** Review whether hidden-record totals should be public. Removing or changing `hidden`/`total` would break the documented v1 compatibility promise, so deprecate first and change only through an explicitly versioned transition. |
+| `GET /v1/judoka` | Main catalogue search. Supports normalized name/slug/alias text matching, composable filters, exclusions, hidden-record gating, and optional cursors. Filter values within one field are ORed; fields are ANDed. | **Keep.** Encourage `limit` pagination. Without `limit`, v1 retains its full-array response for compatibility, so response size grows with the catalogue. |
+| `GET /v1/judoka/{id}` | Direct lookup by UUID, slug, legacy slug, or supported alias. A hidden record is concealed as `404` unless an internal caller explicitly requests it. | **Keep.** Good complementary lookup route. Keep hidden controls out of public Action schemas. |
+| `POST /v1/draw` | Filtered, exclusion-aware draw with optional seed, count, and algorithm. Rejects counts larger than the eligible pool with `409`; returns dataset and algorithm identity. | **Keep.** Clear consumer capability. Clients that need reproducibility should retain the seed, `datasetVersion`, and `algorithm`. Hidden-record request fields remain internal-only. |
+| `GET /v1/techniques` | Text search over ID, names, Japanese name, and description; exact normalized category/subcategory filters; optional cursor pagination. | **Keep.** A strong searchable catalogue endpoint. |
+| `GET /v1/techniques/{id}` | Direct canonical technique lookup. | **Keep.** Useful for details after a search result. |
+| `GET /v1/events` | Lists gameplay events with optional ruleset/category filters and cursor pagination. | **Keep.** Document that event filters are exact-match values, unlike normalized technique filters. |
+| `GET /v1/events/{id}` | Direct event lookup with typed effects. | **Keep.** Good detail operation for consumers that apply gameplay effects. |
+| `POST /v1/events/draw` | Draws one event; requires a ruleset and accepts category, exclusions, and optional seed. Empty eligible pools return `409`. | **Keep.** Distinct from judoka draw and correctly ruleset-scoped. Preserve event algorithm and dataset metadata with replays. |
+| `GET /v1/countries` | Returns the supported country map used by catalogue filters and display. | **Keep.** Useful reference data. |
+| `GET /v1/weight-categories` | Returns supported senior weight categories grouped by gender. | **Keep.** Useful reference data for filters and UI. |
+| `GET /v1/version` | Returns dataset/service release identity, checksum, source commit, and draw algorithms. | **Keep.** Canonical machine-readable release metadata. |
+| `GET /v1/status` | Liveness response with `status: ok` and release metadata. It does not probe external services and overlaps with `/version`. | **Keep.** The distinct liveness meaning is useful; avoid adding dependency-readiness claims unless the handler checks them. |
+| `GET /v1/coverage` | Legacy coverage response includes all-record and hidden-record counts, while distributions describe public real judoka. It is deprecated and announces a successor and sunset date. | **Keep through the published migration window, then remove only under the compatibility policy.** Its total/hidden fields disclose internal catalogue counts; migrate clients to the public route. |
+| `GET /v1/coverage/public` | Coverage metrics over visible real judoka only; omits all-record and hidden counts. | **Keep.** This is the safer public successor and has clear, limited semantics. |
 
-### OpenAPI contract corrections
+### OpenAPI and discovery
 
-The published OpenAPI 3.1 document is a good foundation for a GPT Action, but it should not yet be treated as a complete generated client contract:
+The OpenAPI document is OpenAPI 3.1, describes the 14 REST operations, includes full catalogue shapes and common errors, and intentionally exposes no hidden-record controls. The public API is anonymous and read-only. The two draw operations are marked non-consequential for OpenAI tooling, which matches their lack of server-side mutation.
 
-- The `Judoka` schema includes only a small subset of fields returned by the API (for example, it omits `stats`, `bio`, `gender`, `rarity`, `isHidden`, `profileUrl`, and `lastUpdated`). The `Technique` schema omits most canonical fields; `Event.effects`, countries, and weight categories are too generic to guide a model reliably.
-- `includeHidden` is documented only for `GET /v1/judoka`, while the implementation also accepts it on judoka lookup and judoka draw. The lookup route returns `404` for an unauthorized hidden record, while list/draw return `403` for an unauthorized explicit request.
-- `POST /v1/draw` accepts `includeHidden` and the OpenAPI request body does not describe it. Do not expose this internal control in the public ChatGPT Action schema; if internal clients need it, publish a separate internal contract with explicit authentication.
-- Several real response cases are missing or inconsistently listed: validation `400`, visibility `403`, `404`, draw `409`, unsupported-method `405`, and server errors. The `ETag` is described for `304` but should also be documented on successful GET responses. Draw conflict responses should use the same error envelope schema as other failures.
-- Filter query serialization supports both repeated values and comma-separated values, while the OpenAPI definitions currently describe each as one string. State both accepted forms or standardize on one form in a future version.
-- The `oneOf` list response (legacy array without `limit`, named page object with `limit`) is backward compatible but more complex for generated clients and GPT Actions. Keep it in v1; consider always returning a stable envelope in a future major version.
-- The repository's OpenAPI validator checks selected response references and visibility placement, but it does not currently assert complete route/parameter/response parity with the runtime. In particular, its visibility rule enshrines the current list-only OpenAPI view despite lookup/draw behavior.
+The root response, HTML docs, and downloadable YAML are useful discovery surfaces. Keep their GET-only method handling. The current fixed OpenAPI server URL should be checked when deploying a different public origin.
 
-Prefer generating or checking OpenAPI component schemas against the canonical JSON schemas and runtime request validators. Keep a public contract for ChatGPT Actions free of internal-only controls; document the internal credential path separately. For optional internal visibility on REST, define the accepted `X-API-Key` and Bearer mechanisms without making authentication appear mandatory for ordinary public reads.
+The legacy list response remains an array when `limit` is omitted and becomes a named page object when pagination is requested. This preserves v1 compatibility but is awkward for generated clients and tool callers. Keep it in v1; prefer a single stable envelope if a future major API version is introduced.
 
 ## MCP review
 
-The server at `/mcp` is a stateless Streamable HTTP endpoint. It authenticates every request with `API_KEY` or `INTERNAL_API_KEY`, validates Host/Origin, applies its own rate limit, and registers public tools plus optional internal JEV tools. It currently returns both JSON text content and `structuredContent`, which is useful for clients that can consume structured results.
+### Transport and common behavior
 
-### Transport
+`/mcp` uses the official Streamable HTTP SDK in stateless mode. It checks a configured hostname and request origin, rate-limits MCP separately from REST, authenticates before exposing tools, and returns both text and structured tool results. OAuth discovery and introspection are optional. Public tools require `budokon:read`; the internal scope reveals hidden-record controls; and either `budokon:jev` or the static internal key can expose JEV tools when the model provider is configured. JEV-only OAuth callers do not receive hidden-record controls.
 
-| Surface | Assessment | Recommendation |
-|---|---|---|
-| `POST /mcp` (MCP Streamable HTTP) | Protocol/tool discovery and tool calls are implemented through the MCP SDK. A shared static key is required for every client; there is no OAuth authorization/discovery flow. | **Keep; update auth before broad ChatGPT distribution.** Static credentials can work for controlled server-to-server clients, but are not a portable user sign-in/consent path. Confirm the target ChatGPT MCP client’s current auth requirements; add OAuth 2.1/OIDC-compatible authorization and scopes if user-connected access is required. Retain shared keys only for managed integrations. |
-| `GET /`, `GET /docs`, `GET /openapi/v1.yaml` | Useful landing, human documentation, and machine contract routes. They are outside `/v1` and not part of the OpenAPI operation list. | **Keep.** Add method handling/`Allow` behavior consistently if these routes are intended to be GET-only; currently discovery is selected by path before method validation. |
-
-The REST API is the lower-friction ChatGPT path today: it is public, uses ordinary HTTP, and already publishes OpenAPI. For a GPT Action, import a public-only OpenAPI contract and add ChatGPT-specific action metadata where supported. For ChatGPT’s MCP path, keep Streamable HTTP and tool-first design, but do not assume a shared internal API key is an appropriate consumer authentication model. The retired legacy “ChatGPT plugin” manifest format should not be the target; use OpenAPI Actions and/or remote MCP instead.
+Keep Streamable HTTP. OAuth MCP calls consume both the IP quota and a per-principal quota; static-key calls keep the IP quota. A dedicated lower JEV quota or budget is still advisable before granting paid-model access broadly.
 
 ### Public MCP tools
 
-| Tool | Assessment | Recommendation |
+| Tool | Evaluation | Recommendation |
 |---|---|---|
-| `get_judoka` | Direct ID/slug lookup; returns `{datasetVersion, judoka}` and `null` on no public match. | **Keep; add output schema and state accepted IDs/null behavior.** Keep hidden lookup internal. |
-| `search_judoka` | Main search/filter tool. `query` and `q` are both accepted; if both are sent, `query` silently wins. It returns all matches with no page size/cursor. | **Keep; update.** Choose one argument name, describe deterministic name/slug/alias matching, and add bounded pagination/limit before catalogue growth. |
-| `draw_judoka` | Useful bounded draw tool with filters, exclusions, seed, and algorithm. | **Keep; add output schema and explicit supported algorithm/error description.** Do not expose hidden draw to public ChatGPT clients. |
-| `list_techniques` | Returns the complete technique catalogue without pagination/filtering. | **Keep; update or pair with search.** Add pagination and/or category/subcategory filtering so models need not ingest the whole collection. |
-| `get_technique` | Useful direct detail lookup. | **Keep; add output schema describing the full canonical technique record.** |
-| `list_events` | Supports ruleset/category filters but returns all matching records. | **Keep; add output schema and pagination.** |
-| `get_event` | Useful direct detail lookup. | **Keep; add output schema with typed effect action/target/value.** |
-| `draw_event` | Useful ruleset-required draw and deterministic seed. | **Keep; add output schema and describe empty-pool behavior.** |
-| `version` | Useful release/draw compatibility metadata. | **Keep; add output schema.** A separate MCP status tool is optional if a client has an operational use case. |
+| `get_judoka` | Looks up public judoka by immutable ID, slug, legacy slug, or alias; returns a versioned record or `null`. | **Keep.** Output schema and lookup semantics are explicit. |
+| `search_judoka` | Search/filter/exclude plus cursor pagination; supports `query` or `q`, rejecting both together. Results are deterministic and compact. | **Keep.** Page size is capped at 50; use `get_judoka` for biography, stats, and sources. |
+| `draw_judoka` | Filtered draw with exclusions and optional seed. | **Keep.** Count is capped at 10 and `algorithm` is restricted to supported values in the input schema. |
+| `list_techniques` | Stable-order paginated listing of compact summaries. | **Keep.** Use `get_technique` for description and link. |
+| `search_techniques` | Text/category/subcategory search with compact summaries and pagination. | **Keep.** Useful and aligned with REST semantics. |
+| `get_technique` | Full technique detail by ID. | **Keep.** Good pairing with search/list. |
+| `list_events` | Ruleset/category filtering plus pagination. | **Keep.** Results are typed and bounded. |
+| `get_event` | Direct event detail with typed effects. | **Keep.** Good pairing with listing/draw. |
+| `draw_event` | Ruleset-required event draw with category, exclusions, and seed. | **Keep.** Output includes dataset and algorithm identity. |
+| `list_countries` | Versioned country reference map. | **Keep.** Useful model grounding for country filters. |
+| `list_weight_categories` | Versioned senior weight groups. | **Keep.** Useful model grounding for weight filters. |
+| `get_public_coverage` | Versioned public-only real-judoka coverage. | **Keep.** Avoids the legacy hidden-count leak. |
+| `version` | Dataset, service, commit, checksum, and algorithm metadata. | **Keep.** Useful for reproducibility and debugging. |
 
 ### Internal JEV MCP tools
 
-| Tool | Assessment | Recommendation |
+These tools call an external model and remain properly separated from public discovery. They are advisory; editorial tools do not mutate catalogue data and require human approval.
+
+| Tool | Evaluation | Recommendation |
 |---|---|---|
-| `semantic_search_judoka` | Bounded, model-ranked search over a filtered candidate set; limited to internal credentials and at most 100 candidates. | **Keep internal-only.** Document provider/cost/latency behavior and preserve the deterministic search fallback. Promote only after labeled quality evaluation and per-user quotas. |
-| `review_proposed_judoka` | Bounded advisory review using caller-supplied evidence and duplicate candidates; does not mutate the catalogue. | **Keep internal-only.** This is editorial workflow functionality, not a public consumer ChatGPT tool. Preserve explicit human approval. |
-| `review_proposed_judoka_batch` | Same review for up to 10 proposals in one bounded request. | **Keep internal-only.** It is not redundant with single review for batch workflow/cost reasons; retain the documented size limits. |
-| `interpret_judoka_query` | Suggests existing filters and returns low-confidence choices without silently applying them. | **Keep internal-only initially.** It could be a later consumer-facing convenience after quality/cost evaluation and user-level rate limits. |
+| `semantic_search_judoka` | Model-ranks a bounded candidate set after catalogue filters; hidden candidates require internal access. | **Keep internal.** Preserve candidate bounds, cost monitoring, and a deterministic search path. |
+| `review_proposed_judoka` | Advisory review of one proposed record, supplied evidence, and duplicate candidates. | **Keep internal.** Human approval remains required before applying editorial changes. |
+| `review_proposed_judoka_batch` | Bounded review of up to 10 proposals in one call. | **Keep internal.** Useful for editorial throughput; apply explicit spend limits. |
+| `review_judoka_playstyle` | Proposes confidence-gated playstyle facets from a catalogue record and supplied evidence. | **Keep internal.** Maintain confidence thresholds and human approval. |
+| `interpret_judoka_query` | Suggests catalogue filters from natural language without applying low-confidence suggestions. | **Keep internal initially.** Consider public use only after quality, cost, and per-user quota evaluation. |
 
-Across all MCP tools, the implementation registers descriptions and input schemas but no MCP `outputSchema`, display `title`, or tool annotations. Add output schemas for successful results and MCP metadata such as read-only/idempotent hints where accurate. This improves client validation and helps ChatGPT choose tools safely. Keep descriptions short but specific about search semantics, result bounds, deterministic behavior, and whether a call invokes a paid model.
+## ChatGPT/OpenAI compatibility path
 
-## Implementation status (2026-10-03)
+“ChatGPT plugin” can refer to older plugin integrations or newer tool integrations. Do not target the retired legacy plugin manifest. Use one of these current shapes:
 
-The follow-up implementing the recommendations above is complete on the working
-branch. It adds REST technique search and public-safe coverage, deprecates the
-legacy coverage response with migration headers, bounds and paginates MCP
-collections, adds public reference/search/coverage MCP tools, gives each MCP
-tool an output schema/title/annotations, tightens discovery method handling,
-expands OpenAPI schemas and response contracts, and validates documented route
-parity. The public contract intentionally omits internal visibility controls.
+- **GPT Action:** expose a public-only OpenAPI contract for the anonymous REST API. Test the actual OpenAPI document with the current Action importer and keep internal visibility controls absent.
+- **Remote MCP / ChatGPT app:** retain Streamable HTTP and tool-first APIs. The Worker now validates OAuth tokens and scopes through an external authorization server; the selected provider must still supply consent, PKCE, registration, and token issuance. Static API keys remain appropriate for managed integrations.
 
-No existing endpoint or tool was removed. Static MCP credentials remain in
-place for managed integrations; a user-connected ChatGPT MCP deployment still
-needs an OAuth 2.1-compatible authorization design and scopes. Public REST with
-OpenAPI Actions remains the near-term ChatGPT integration path.
+Keep tool descriptions action-oriented, result bounds explicit, and draws marked non-consequential. Preserve dataset and algorithm metadata so clients can explain replay limits. Do not expose paid JEV or hidden-record operations to a general public connector.
 
-## Primary consumer review: `judokon-2600`
+## Improvement order
 
-Reviewed `CyanAutomation/judokon-2600` at its current `main` revision
-`35b265d`. Its `BudokonRequestBuilder` calls only `POST /v1/draw`, sending
-`count`, `seed`, optional `filters.weightClass`, and `exclude`. Those fields and
-the `{ judoka, ...metadata }` response envelope remain compatible. The consumer
-validates the required game fields, tolerates additive judoka fields, and reads
-only `judoka`; it does not call coverage, technique, reference-data, or MCP
-operations. The worker is configured with wildcard public CORS, so the browser
-integration does not need an origin change.
+1. Select and configure an external OAuth provider that satisfies the MCP resource metadata, audience, introspection, PKCE, registration, and ChatGPT client requirements.
+2. Add a dedicated lower JEV rate limit or explicit spend budget before granting `budokon:jev` broadly.
+3. Reduce remaining schema drift by deriving or cross-checking OpenAPI and MCP contracts against canonical schemas.
+4. Measure MCP payload sizes with the target ChatGPT client and tune page/draw budgets if needed.
+5. Keep the legacy coverage sunset and status/readiness semantics current in docs and monitoring.
 
-No consumer API migration is required for this service update. The consumer got
-a regression test for the versioned draw envelope and additive judoka fields,
-and its stale comment about optional API rarity was corrected while preserving
-the game's deliberate tolerance for older or incomplete fixtures.
+No endpoint removal is recommended. The existing status/version overlap is modest; the public coverage route is preferable to removing coverage; and the legacy coverage route should follow its already-published deprecation period.
 
-One replay limitation remains: the game stores/displays its seed, but currently
-discards the draw response's `datasetVersion` and `algorithm`. The same seed
-reproduces draws only against the same dataset release and algorithm. The UI
-now states this limitation. A later replay-integrity improvement should retain
-and display that release identity alongside the seed. Exact replay after a
-catalogue update would also require the service to support selecting or
-retaining historical dataset versions; merely saving the metadata can detect a
-mismatch, but cannot retrieve an old draw pool.
+## Verification summary
 
-## Remaining improvement opportunities
-
-- **ChatGPT MCP authorization.** The current server uses a static credential. Add a user-consented OAuth 2.1-compatible flow and scopes before broad user-connected MCP distribution. Keep the shared key for managed server-to-server use.
-- **Replay integrity in the primary consumer.** `judokon-2600` now explains that replay depends on the data release, but still does not retain or display `datasetVersion` and `algorithm`. Saving these would let it detect a mismatch. Exact replay across catalogue updates additionally needs historical dataset selection or retention in the service.
-- **Readiness monitoring.** `/v1/status` is documented as liveness. Add a distinct readiness probe only if deployment monitoring gains dependencies that need checking.
-- **Long-term pagination ergonomics.** V1 keeps its original array shape when `limit` is omitted and switches to an object for paged calls. Preserve that behavior for compatibility; use a new API version if a consistent envelope is later preferred.
-- **Schema generation.** The OpenAPI validator now verifies route and response parity, and contract tests cover representative runtime behavior. A future build step could generate or mechanically compare schemas against canonical JSON schemas to reduce remaining manual drift.
-
-## ChatGPT compatibility path
-
-- **GPT Actions:** the public REST/OpenAPI contract is the near-term integration path. It is anonymous and excludes internal visibility controls. The draw operations carry non-consequential metadata, and list pagination behavior is documented.
-- **Remote MCP:** `/mcp` remains Streamable HTTP and advertises typed tool results and annotations. OAuth and user scopes remain future work; internal visibility and JEV operations stay gated.
-- **Legacy plugins:** target GPT Actions and/or remote MCP rather than the retired ChatGPT plugin manifest format.
-
-## Review limits
-
-The endpoint baseline was reviewed from source. The implementation follow-up was
-verified with `npm run check` (including 263 service tests) and
-`npm run validate:openapi`. The downstream consumer was checked at `main`
-revision `35b265d`; its `npm run check` passed (277 tests, lint, and build). The
-consumer repository declares Node 22 while this workspace ran Node 24, so npm
-reported an engine warning during dependency installation; the checks passed
-under the available runtime.
+The follow-up used regression tests before and after the fixes. Targeted checks
+covered REST conditional/cache behavior, MCP output bounds and scopes, OAuth
+discovery/introspection, equal static credentials, and a runtime request to
+each documented REST operation. `npm test` passed all 285 tests. The current
+OAuth code is a resource-server integration, not a token issuer; no production
+OAuth provider was configured or contacted.

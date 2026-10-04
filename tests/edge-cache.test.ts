@@ -77,6 +77,24 @@ test("cached responses use weak comparison for If-None-Match validators", async 
   assert.equal(await miss?.text(), "public");
 });
 
+test("a conditional cache miss stores the successful representation rather than a 304", async () => {
+  const cache = new MemoryCache();
+  const url = "https://api.test/v1/version";
+  const conditionalRequest = new Request(url, { headers: { "if-none-match": "*" } });
+  const response = await writePublicCache(
+    cache,
+    conditionalRequest,
+    new Response("public", { status: 200 }),
+    revision,
+    { cacheablePublicly: true },
+  );
+  assert.equal(response.status, 304);
+
+  const cached = await readPublicCache(cache, new Request(url), revision);
+  assert.equal(cached?.status, 200);
+  assert.equal(await cached?.text(), "public");
+});
+
 test("private and randomized requests bypass cache lookup and storage", async () => {
   const requests = [
     new Request("https://api.test/v1/judoka", { headers: { authorization: "Bearer secret" } }),
