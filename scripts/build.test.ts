@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
-import { readdir, readFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readdir, readFile, writeFile } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import test from 'node:test';
 import { createHash } from 'node:crypto';
 
@@ -241,4 +243,31 @@ test('compiler produces a versioned manifest with counts and artifact checksums'
     assert.equal(manifest.checksums[name], `sha256:${createHash('sha256').update(content).digest('hex')}`);
   }
   assert.equal(Object.keys(manifest).some(key => /time|date/i.test(key)), false);
+});
+
+test('compiler preserves human-approved playstyle metadata in compiled judoka and REST data artifacts', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'budokon-playstyle-build-'));
+  await cp(new URL('../schema', import.meta.url), path.join(root, 'schema'), { recursive: true });
+  await cp(new URL('../tests/fixtures/canonical-minimal/data', import.meta.url), path.join(root, 'data'), { recursive: true });
+  await mkdir(path.join(root, 'migrations'), { recursive: true });
+  await mkdir(path.join(root, 'src/draw'), { recursive: true });
+  await cp(new URL('../migrations/ju-do-kon-judoka-import.json', import.meta.url), path.join(root, 'migrations/ju-do-kon-judoka-import.json'));
+  await cp(new URL('../src/draw/algorithm-contract.json', import.meta.url), path.join(root, 'src/draw/algorithm-contract.json'));
+  await writeFile(path.join(root, 'package.json'), await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+  const judokaPath = path.join(root, 'data/judoka/fixture-judoka.json');
+  const record = JSON.parse(await readFile(judokaPath, 'utf8'));
+  const approvedPlaystyle = {
+    tacticalStyle: 'counter',
+    tempo: 'patient',
+    gripStyle: 'adaptive',
+    newazaEmphasis: 'medium',
+    standingPreference: 'ashi_waza',
+  };
+  await writeFile(judokaPath, `${JSON.stringify({ ...record, playstyle: approvedPlaystyle }, null, 2)}\n`);
+
+  const artifacts = await compileArtifacts('1234567890abcdef1234567890abcdef12345678', root);
+  const aggregate = JSON.parse(artifacts['budokon.json']);
+  const judokaView = JSON.parse(artifacts['judoka.json']);
+  assert.deepEqual(aggregate.judoka[0].playstyle, approvedPlaystyle);
+  assert.deepEqual(judokaView[0].playstyle, approvedPlaystyle);
 });

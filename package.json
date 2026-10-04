@@ -44,6 +44,7 @@
     "test:validation:integration": "tsx --test --test-name-pattern='integration: canonical repository release gate' tests/validation.test.ts",
     "test": "npm run build && tsx --test scripts/*.test.ts tests/*.test.ts",
     "jev:evaluate": "tsx scripts/evaluate-jev.ts",
+    "jev:evaluate:playstyle": "tsx scripts/evaluate-playstyle.ts",
     "release": "tsx scripts/release.ts",
     "release:plan": "tsx scripts/release.ts --plan-only",
     "release:dry": "tsx scripts/release.ts --dry-run",

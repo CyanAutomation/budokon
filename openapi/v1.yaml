@@ -302,6 +302,17 @@ components:
             kumikata: { type: integer, minimum: 0, maximum: 10 }
             newaza: { type: integer, minimum: 0, maximum: 10 }
         signatureMoveIds: { type: array, minItems: 1, items: { type: string } }
+        playstyle:
+          type: object
+          description: Optional human-approved editorial playstyle metadata. JEV proposals are not exposed here.
+          minProperties: 1
+          additionalProperties: false
+          properties:
+            tacticalStyle: { type: string, enum: [pressure, counter, balanced] }
+            tempo: { type: string, enum: [patient, balanced, aggressive] }
+            gripStyle: { type: string, enum: [dominant, adaptive, defensive, mixed] }
+            newazaEmphasis: { type: string, enum: [low, medium, high] }
+            standingPreference: { type: string, enum: [ashi_waza, te_waza, koshi_waza, ma_sutemi_waza, yoko_sutemi_waza, mixed] }
         lastUpdated: { type: string, format: date-time }
         profileUrl: { type: string, format: uri }
         bio: { type: string, minLength: 20 }

@@ -1,6 +1,7 @@
 import { EVENT_ACTIONS, EVENT_TARGETS } from "../contracts/event-effects.js";
+import type { ApprovedJudokaPlaystyle } from "./playstyle.js";
 export type JsonPrimitive = string | number | boolean | null;
-export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
+export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue } | ApprovedJudokaPlaystyle;
 
 export interface Judoka {
   id: string;
@@ -16,6 +17,8 @@ export interface Judoka {
   sourceUrls?: string[];
   /** Verifiable references for factual profile claims; ratings and rarity remain editorial. */
   sources?: Array<{ url: string; publisher?: string; claims: string[]; checkedAt: string }>;
+  /** Optional playstyle metadata added only after explicit human approval. */
+  playstyle?: ApprovedJudokaPlaystyle;
   personType?: string;
   signatureMoveIds: string[];
   isHidden?: boolean;
