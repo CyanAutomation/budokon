@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { meaningfulText, ensureUnique, rejectGameStateProperties, rejectFutureDate } from "./validators.js";
 import { normalizeCatalogText } from "../contracts/text-normalization.js";
+import { NUMERIC_EVENT_TARGETS, STATE_EVENT_TARGETS } from '../contracts/event-effects.js';
 import type {
   CanonicalCountries,
   CanonicalEffect,
@@ -120,8 +121,8 @@ function validateTechniques(techniques: CanonicalTechnique[]): void {
   }
 }
 
-const numericEventTargets = new Set(['power', 'speed', 'technique', 'kumikata', 'newaza', 'shido', 'waza_ari', 'score']);
-const stateEventTargets = new Set(['shido', 'waza_ari', 'score', 'match_result']);
+const numericEventTargets: Set<string> = new Set(NUMERIC_EVENT_TARGETS);
+const stateEventTargets: Set<string> = new Set(STATE_EVENT_TARGETS);
 
 function validateEventEffect(eventId: string, index: number, effect: CanonicalEffect): void {
   if (effect.action === 'modify' && (!numericEventTargets.has(effect.target) || !Number.isInteger(effect.value))) {
