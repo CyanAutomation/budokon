@@ -35,11 +35,12 @@ not reveal all-record totals or hidden-record counts. The legacy
 headers during the migration window.
 
 All public GET responses include `ETag`. Send it as `If-None-Match` to receive
-`304 Not Modified` when the representation has not changed. A matching public
-revalidation bypasses request quota because it is resolved from immutable release
-identity without generating the representation. Mismatches, requests carrying
-credentials, and `includeHidden=true` requests follow the normal rate-limit and
-authorization flow. On `429`, honour
+`304 Not Modified` when the representation has not changed. A matching validator
+for a cached successful response can return `304` before rate limiting. Cache
+misses are routed and validated before a `304` is generated, so they can consume
+quota; this also ensures missing records still return `404` and invalid requests
+still return `400`. Requests carrying credentials and `includeHidden=true` follow
+the normal rate-limit and authorization flow. On `429`, honour
 `Retry-After` before retrying; that response also includes `RateLimit-Limit`
 and `RateLimit-Policy`.
 
@@ -86,11 +87,16 @@ not check external dependencies.
 
 The MCP server returns both JSON text content and structured content, with an
 output schema advertised for every tool. Collection tools return at most 50
-records by default and include `nextCursor` when more records are available;
-continue with the same filters, the same `limit`, and the returned cursor.
+records per page and include `nextCursor` when more are available; continue
+with the same filters, the same `limit`, and the returned cursor. Judoka and
+technique collections use compact summaries; `get_judoka` and `get_technique`
+return the full records. Judoka draws are capped at 10 records per call.
 Public discovery omits internal visibility controls. Country,
 weight-category, technique-search, and public-coverage tools are also available.
-Internal JEV tools remain gated by the internal credential; see [JEV assistance](JEV.md).
+MCP supports managed static credentials and optional OAuth scopes; see
+[internal access and OAuth configuration](INTERNAL-API.md#mcp-credentials-and-oauth).
+JEV tools remain unavailable unless the OAuth `budokon:jev` scope or the
+managed internal key grants access; see [JEV assistance](JEV.md).
 
 The public `get_judoka` MCP tool accepts an immutable judoka `id` or `slug` in
 an `id` argument. Its JSON content has the shape

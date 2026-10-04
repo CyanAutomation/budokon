@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { CatalogService, DRAW_ALGORITHM, DrawService, EventDrawService, JsonReadModelRepository, createMcpTools } from "../src/index.js";
+import { judokaOutputSchema, techniqueOutputSchema } from "../src/mcp/server.js";
 import { createWorker } from "../worker/router.js";
 import type { Env } from "../worker/router.js";
 import compiledModel from "./fixtures/compiled-model.js";
@@ -18,6 +19,17 @@ const mockEnv: Env = {
 };
 
 const worker = createWorker("openapi: 3.0.0");
+
+test("strict MCP detail schemas accept every canonical fixture record", () => {
+  for (const record of compiledModel.judoka) {
+    const parsed = judokaOutputSchema.safeParse(record);
+    assert.equal(parsed.success, true, `canonical judoka ${record.slug} must satisfy the MCP detail schema${parsed.success ? "" : `: ${JSON.stringify(parsed.error.issues)}`}`);
+  }
+  for (const technique of compiledModel.techniques) {
+    const parsed = techniqueOutputSchema.safeParse(technique);
+    assert.equal(parsed.success, true, `canonical technique ${technique.id} must satisfy the MCP detail schema${parsed.success ? "" : `: ${JSON.stringify(parsed.error.issues)}`}`);
+  }
+});
 
 async function mcpJson(response: Response) {
   const body = await response.text();
@@ -110,6 +122,14 @@ test("MCP tools/list returns all available tools with schemas", async () => {
   }
   const publicGetJudoka = toolsByName.get("get_judoka")?.inputSchema as { properties?: Record<string, unknown> } | undefined;
   assert.equal("includeHidden" in (publicGetJudoka?.properties ?? {}), false, "public tool discovery must omit internal visibility controls");
+  const getJudokaOutput = toolsByName.get("get_judoka")?.outputSchema as { properties?: Record<string, any>; additionalProperties?: boolean } | undefined;
+  const judokaVariants = getJudokaOutput?.properties?.judoka?.anyOf as Array<Record<string, any>> | undefined;
+  const fullJudokaOutput = (getJudokaOutput?.properties?.judoka?.type === "object"
+    ? getJudokaOutput.properties.judoka
+    : judokaVariants?.find(schema => schema.type === "object")) as Record<string, any> | undefined;
+  assert.equal(fullJudokaOutput?.additionalProperties, false, "full judoka output must reject undocumented fields");
+  assert.equal(fullJudokaOutput?.properties?.stats?.additionalProperties, false, "judoka stats must use a closed typed schema");
+  assert.deepEqual(fullJudokaOutput?.properties?.sources?.items?.properties?.claims?.items?.enum, ["identity", "nationality", "weightClass", "biography", "competitionHistory"]);
 });
 
 test("JEV MCP tools are discoverable only to the internal credential when configured", async () => {
@@ -169,12 +189,15 @@ test("public MCP catalog tools support bounded, filterable result pages", async 
   const judokaFirst = await call(70, "search_judoka", { limit: 1 });
   assert.equal(judokaFirst.judoka.length, 1);
   assert.equal(typeof judokaFirst.nextCursor, "string");
+  assert.deepEqual(Object.keys(judokaFirst.judoka[0]).sort(), ["countryCode", "gender", "id", "name", "personType", "rarity", "signatureMoveIds", "slug", "weightClass"].sort());
+  assert.equal("bio" in judokaFirst.judoka[0], false, "collection tools should return compact judoka summaries");
   const judokaSecond = await call(71, "search_judoka", { limit: 1, cursor: judokaFirst.nextCursor });
   assert.equal(judokaSecond.judoka.length, 1);
   assert.notEqual(judokaSecond.judoka[0].id, judokaFirst.judoka[0].id);
 
   const techniquePage = await call(72, "list_techniques", { limit: 1 });
   assert.equal(techniquePage.techniques.length, 1);
+  assert.equal("description" in techniquePage.techniques[0], false, "collection tools should return compact technique summaries");
   assert.equal(typeof techniquePage.nextCursor, "string");
   const techniqueSearch = await call(73, "search_techniques", { query: "背負", category: "Nage-waza", subCategory: "Te-waza" });
   assert.deepEqual(techniqueSearch.techniques.map((technique: { id: string }) => technique.id), ["ippon-seoi-nage", "seoi-nage", "seoi-otoshi"]);
@@ -187,6 +210,144 @@ test("public MCP catalog tools support bounded, filterable result pages", async 
   const coverage = await call(77, "get_public_coverage", {});
   assert.equal("hidden" in coverage, false);
   assert.equal("total" in coverage, false);
+});
+
+test("MCP collection and draw bounds reject oversized requests", async () => {
+  const call = async (id: number, name: string, args: unknown) => {
+    const response = await worker.fetch(new Request("https://example.test/mcp", {
+      method: "POST",
+      headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
+      body: JSON.stringify({ jsonrpc: "2.0", id, method: "tools/call", params: { name, arguments: args } }),
+    }), mockEnv);
+    return mcpJson(response);
+  };
+  const oversizedPage = await call(79, "search_judoka", { limit: 51 });
+  assert.equal(oversizedPage.result.isError, true);
+  const oversizedDraw = await call(80, "draw_judoka", { count: 11 });
+  assert.equal(oversizedDraw.result.isError, true);
+  const unsupportedAlgorithm = await call(81, "draw_judoka", { algorithm: "unknown" });
+  assert.equal(unsupportedAlgorithm.result.isError, true);
+});
+
+test("OAuth discovery and scoped access are available for MCP clients", async () => {
+  const env: Env = {
+    ...mockEnv,
+    MCP_OAUTH_ISSUER: "https://auth.example.test",
+    MCP_OAUTH_AUTHORIZATION_ENDPOINT: "https://auth.example.test/authorize",
+    MCP_OAUTH_TOKEN_ENDPOINT: "https://auth.example.test/token",
+    MCP_OAUTH_INTROSPECTION_ENDPOINT: "https://auth.example.test/introspect",
+    MCP_OAUTH_CLIENT_ID: "budokon-resource",
+    MCP_OAUTH_CLIENT_SECRET: "resource-secret",
+    MCP_RESOURCE_URL: "https://example.test/mcp",
+    JEV_OPENROUTER_API_KEY: "unused-model-key",
+  };
+  const originalFetch = globalThis.fetch;
+  const introspected: string[] = [];
+  const limiterKeys: string[] = [];
+  let rejectPrincipalQuota = false;
+  env.MCP_RATE_LIMITER = { async limit({ key }) {
+    limiterKeys.push(key);
+    return { success: !(rejectPrincipalQuota && key.endsWith(":mcp:principal")) };
+  } };
+  globalThis.fetch = async (input, init) => {
+    assert.equal(String(input), env.MCP_OAUTH_INTROSPECTION_ENDPOINT);
+    assert.equal(new Headers(init?.headers).get("authorization"), `Basic ${btoa("budokon-resource:resource-secret")}`);
+    const token = new URLSearchParams(String(init?.body)).get("token") ?? "";
+    introspected.push(token);
+    const scopes = token === "internal-token" ? "budokon:read budokon:internal"
+      : token === "jev-token" ? "budokon:read budokon:jev"
+        : token === "no-read-token" ? "budokon:internal" : "budokon:read";
+    return new Response(JSON.stringify({
+      active: ["public-token", "internal-token", "jev-token", "no-read-token", "wrong-audience", "expired-token", "missing-expiry"].includes(token),
+      client_id: "chatgpt-client",
+      sub: token === "public-token" ? "athlete-public" : token === "internal-token" ? "athlete-internal" : token === "jev-token" ? "athlete-jev" : "athlete-other",
+      scope: scopes,
+      aud: token === "wrong-audience" ? "https://other.example.test/mcp" : env.MCP_RESOURCE_URL,
+      ...(token === "missing-expiry" ? {} : { exp: Math.floor(Date.now() / 1_000) + (token === "expired-token" ? -1 : 600) }),
+    }), { headers: { "content-type": "application/json" } });
+  };
+  try {
+    const protectedResource = await worker.fetch(new Request("https://example.test/.well-known/oauth-protected-resource/mcp"), env);
+    assert.equal(protectedResource.status, 200);
+    const protectedMetadata = await protectedResource.json() as { resource: string; authorization_servers: string[]; scopes_supported: string[] };
+    assert.equal(protectedMetadata.resource, env.MCP_RESOURCE_URL);
+    assert.deepEqual(protectedMetadata.authorization_servers, [env.MCP_OAUTH_ISSUER]);
+    assert.ok(protectedMetadata.scopes_supported.includes("budokon:internal"));
+
+    const authorizationServer = await worker.fetch(new Request("https://example.test/.well-known/oauth-authorization-server"), env);
+    assert.equal(authorizationServer.status, 200);
+    const serverMetadata = await authorizationServer.json() as { authorization_endpoint: string; code_challenge_methods_supported: string[] };
+    assert.equal(serverMetadata.authorization_endpoint, env.MCP_OAUTH_AUTHORIZATION_ENDPOINT);
+    assert.ok(serverMetadata.code_challenge_methods_supported.includes("S256"));
+
+    const challenge = await worker.fetch(new Request("https://example.test/mcp", {
+      method: "POST",
+      headers: { host: "example.test", "content-type": "application/json", accept: "application/json, text/event-stream" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 87, method: "tools/list" }),
+    }), env);
+    assert.equal(challenge.status, 401);
+    assert.match(challenge.headers.get("www-authenticate") ?? "", /resource_metadata=/u);
+
+    const listTools = async (token: string, id: number) => {
+      const response = await worker.fetch(new Request("https://example.test/mcp", {
+        method: "POST",
+        headers: { host: "example.test", authorization: `Bearer ${token}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
+        body: JSON.stringify({ jsonrpc: "2.0", id, method: "tools/list" }),
+      }), env);
+      assert.equal(response.status, 200);
+      return (await mcpJson(response)).result.tools as Array<{ name: string; inputSchema: { properties?: Record<string, unknown> } }>;
+    };
+    const publicTools = await listTools("public-token", 82);
+    const internalTools = await listTools("internal-token", 83);
+    const jevTools = await listTools("jev-token", 85);
+    assert.equal("includeHidden" in (publicTools.find(tool => tool.name === "get_judoka")?.inputSchema.properties ?? {}), false);
+    assert.equal("includeHidden" in (internalTools.find(tool => tool.name === "get_judoka")?.inputSchema.properties ?? {}), true);
+    assert.ok(!publicTools.some(tool => tool.name === "semantic_search_judoka"));
+    assert.ok(internalTools.some(tool => tool.name === "semantic_search_judoka"));
+    assert.ok(jevTools.some(tool => tool.name === "semantic_search_judoka"));
+    assert.equal("includeHidden" in (jevTools.find(tool => tool.name === "semantic_search_judoka")?.inputSchema.properties ?? {}), false);
+    assert.deepEqual(introspected, ["public-token", "internal-token", "jev-token"]);
+
+    const insufficientScope = await worker.fetch(new Request("https://example.test/mcp", {
+      method: "POST",
+      headers: { host: "example.test", authorization: "Bearer no-read-token", "content-type": "application/json", accept: "application/json, text/event-stream" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 86, method: "tools/list" }),
+    }), env);
+    assert.equal(insufficientScope.status, 403);
+    assert.match(insufficientScope.headers.get("www-authenticate") ?? "", /insufficient_scope/u);
+
+    for (const token of ["wrong-audience", "expired-token", "missing-expiry"]) {
+      const invalid = await worker.fetch(new Request("https://example.test/mcp", {
+        method: "POST",
+        headers: { host: "example.test", authorization: `Bearer ${token}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 89, method: "tools/list" }),
+      }), env);
+      assert.equal(invalid.status, 401, `${token} must not authenticate`);
+    }
+
+    const denied = await worker.fetch(new Request("https://example.test/mcp", {
+      method: "POST",
+      headers: { host: "example.test", authorization: "Bearer revoked-token", "content-type": "application/json", accept: "application/json, text/event-stream" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 84, method: "tools/list" }),
+    }), env);
+    assert.equal(denied.status, 401);
+    assert.match(denied.headers.get("www-authenticate") ?? "", /resource_metadata=/u);
+    const principalKeys = limiterKeys.filter(key => key.endsWith(":mcp:principal"));
+    assert.equal(principalKeys.length, 3, "each authenticated OAuth subject is independently rate limited");
+    assert.equal(new Set(principalKeys).size, 3, "different OAuth subjects must receive distinct quotas");
+    assert.ok(principalKeys.every(key => !key.includes("athlete-")), "limiter keys must not contain subject identifiers");
+
+    rejectPrincipalQuota = true;
+    const limited = await worker.fetch(new Request("https://example.test/mcp", {
+      method: "POST",
+      headers: { host: "example.test", authorization: "Bearer public-token", "content-type": "application/json", accept: "application/json, text/event-stream" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 88, method: "tools/list" }),
+    }), env);
+    assert.equal(limited.status, 429);
+    assert.equal(limited.headers.get("retry-after"), "60");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test("MCP rejects ambiguous judoka search aliases", async () => {
@@ -222,7 +383,17 @@ test("MCP tools/call dispatches by tool name and serializes results as text cont
       id: 4,
       name: "search_judoka",
       arguments: { query: "shozo" },
-      expected: { datasetVersion: compiledModel.datasetVersion, judoka: [shozo] },
+      expected: { datasetVersion: compiledModel.datasetVersion, judoka: [{
+        id: shozo.id,
+        slug: shozo.slug,
+        name: `${shozo.firstname} ${shozo.surname}`,
+        personType: shozo.personType,
+        countryCode: shozo.countryCode,
+        gender: shozo.gender,
+        weightClass: shozo.weightClass,
+        rarity: shozo.rarity,
+        signatureMoveIds: shozo.signatureMoveIds,
+      }] },
       expectedJudokaIds: [shozoId],
     },
   ] as const;
@@ -575,7 +746,7 @@ test("unrelated MCP key remains rejected when regular and internal keys are conf
   assert.deepEqual(await mcpJson(response), { error: { code: "unauthorized", message: "A valid API key is required" } });
 });
 
-test("MCP internal authentication handles an unset key and equal configured secrets", async () => {
+test("MCP internal authentication handles an unset key and does not elevate equal configured secrets", async () => {
   const hidden = compiledModel.judoka.find(record => record.isHidden);
   assert.ok(hidden, "fixture must contain a hidden judoka");
   const request = (credential: string) => new Request("https://example.test/mcp", {
@@ -588,7 +759,12 @@ test("MCP internal authentication handles an unset key and equal configured secr
   assert.equal((await mcpJson(withoutInternal)).result.isError, true, "an unset internal key must not expose hidden-record arguments");
 
   const equalSecrets = await worker.fetch(request(mockEnv.API_KEY), { ...mockEnv, INTERNAL_API_KEY: mockEnv.API_KEY });
-  assert.deepEqual((await successfulMcpToolJson(equalSecrets)).judoka, hidden, "equal secrets must confer internal authorization");
+  assert.equal((await mcpJson(equalSecrets)).result.isError, true, "equal secrets must leave the credential at public access");
+
+  const hiddenRest = await worker.fetch(new Request("https://example.test/v1/judoka?includeHidden=true", {
+    headers: { authorization: `Bearer ${mockEnv.API_KEY}` },
+  }), { ...mockEnv, INTERNAL_API_KEY: mockEnv.API_KEY });
+  assert.equal(hiddenRest.status, 403, "the colliding public secret must not authorize hidden REST records");
 });
 
 test("MCP rejects requests for an unconfigured Host or Origin before invoking the SDK handler", async () => {
@@ -697,9 +873,15 @@ test("public coverage is included in public representation caching", async () =>
   assert.equal("total" in body, false);
 });
 
-test("matching public revalidation bypasses quota and representation generation, while sensitive requests do not", async () => {
+test("matching cached public revalidation bypasses quota, while sensitive requests do not", async () => {
   const url = "https://example.test/v1/judoka";
-  const initial = await createWorker("openapi: 3.0.0", { cache: null }).fetch(new Request(url), mockEnv);
+  const entries = new Map<string, Response>();
+  const cache = {
+    async match(request: Request) { return entries.get(request.url)?.clone(); },
+    async put(request: Request, response: Response) { entries.set(request.url, response.clone()); },
+  };
+  const revalidationWorker = createWorker("openapi: 3.0.0", { cache });
+  const initial = await revalidationWorker.fetch(new Request(url), mockEnv);
   const etag = initial.headers.get("etag");
   assert.ok(etag);
 
@@ -714,12 +896,6 @@ test("matching public revalidation bypasses quota and representation generation,
       },
     },
   };
-  const revalidationWorker = createWorker("openapi: 3.0.0", {
-    cache: {
-      async match() { throw new Error("matching revalidation must not read or generate a representation"); },
-      async put() { throw new Error("matching revalidation must not store a representation"); },
-    },
-  });
 
   const notModified = await revalidationWorker.fetch(new Request(url, {
     headers: { "if-none-match": etag, origin: "https://example.com" },
@@ -730,7 +906,7 @@ test("matching public revalidation bypasses quota and representation generation,
   assert.equal(notModified.headers.get("cache-control"), "public, max-age=300, s-maxage=86400, stale-while-revalidate=86400");
   assert.equal(notModified.headers.get("vary"), "Origin");
   assert.equal(notModified.headers.get("access-control-allow-origin"), "https://example.com");
-  assert.equal(limiterCalls.length, 0, "a valid public revalidation must bypass public quota");
+  assert.equal(limiterCalls.length, 0, "a cached successful representation must bypass public quota");
 
   const mismatched = await createWorker("openapi: 3.0.0", { cache: null }).fetch(new Request(url, {
     headers: { "if-none-match": '"unrelated"' },
@@ -753,6 +929,21 @@ test("matching public revalidation bypasses quota and representation generation,
   assert.equal(hidden.headers.get("etag"), null);
   assert.equal(hidden.headers.get("cache-control"), "private, no-store");
   assert.equal(limiterCalls.length, 3, "credentialed and hidden-record requests must retain normal quota handling");
+});
+
+test("conditional requests do not turn missing resources or invalid queries into 304", async () => {
+  const noCacheWorker = createWorker("openapi: 3.0.0", { cache: null });
+  const cases = [
+    { path: "/v1/judoka/no-such-record", expectedStatus: 404 },
+    { path: "/v1/judoka?unknownFilter=value", expectedStatus: 400 },
+  ];
+
+  for (const { path, expectedStatus } of cases) {
+    const response = await noCacheWorker.fetch(new Request(`https://example.test${path}`, {
+      headers: { "if-none-match": "*" },
+    }), mockEnv);
+    assert.equal(response.status, expectedStatus, path);
+  }
 });
 
 test("an authorized hidden-record representation cannot contaminate the public cache", async () => {

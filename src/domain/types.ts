@@ -67,7 +67,7 @@ export interface VisibilityOptions { includeHidden?: boolean; authorizedInternal
 export interface ListJudokaOptions extends VisibilityOptions { filters?: Filters; exclude?: string[]; }
 export interface SearchJudokaOptions extends ListJudokaOptions { query?: string; q?: string; }
 export interface DrawRequest extends ListJudokaOptions { count?: number; seed?: string; algorithm?: string; }
-export interface RequestContext { authorizedInternal?: boolean; }
+export interface RequestContext { authorizedInternal?: boolean; authorizedJev?: boolean; }
 export interface DrawResponse { datasetVersion: string; algorithm: string; seed?: string; poolSize: number; judoka: Judoka[]; }
 export interface EventDrawRequest { ruleset: string; category?: string; seed?: string; exclude?: string[]; }
 export interface EventDrawResponse { datasetVersion: string; algorithm: string; seed?: string; poolSize: number; event: JudoEvent; }

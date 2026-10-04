@@ -30,5 +30,8 @@ namespace_id = "870284"
   limit = 30
   period = 60
 
-# API_KEY, MCP_ALLOWED_HOSTNAMES, INTERNAL_API_KEY and the optional JEV_OPENROUTER_API_KEY are Worker secrets.
-# Configure them with `wrangler secret put`; never add their values to this file.
+# API_KEY, MCP_ALLOWED_HOSTNAMES, INTERNAL_API_KEY, the optional JEV_OPENROUTER_API_KEY,
+# and MCP_OAUTH_CLIENT_SECRET are Worker secrets. OAuth issuer, endpoint, and
+# resource values may be configured as vars or secrets. Keep credentials out of
+# this file and enable OAuth only with a compatible external authorization server.
+# Configure secrets with `wrangler secret put`; never add their values here.

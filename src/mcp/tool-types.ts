@@ -44,3 +44,9 @@ export function versioned<T extends object>(catalog: CatalogService, body: T) {
 export function requireInternal(context: { authorizedInternal?: boolean }): void {
   if (context.authorizedInternal !== true) throw new Error("internal authorization is required for JEV tools");
 }
+
+export function requireJev(context: { authorizedInternal?: boolean; authorizedJev?: boolean }): void {
+  if (context.authorizedInternal !== true && context.authorizedJev !== true) {
+    throw new Error("internal authorization is required for JEV tools");
+  }
+}
