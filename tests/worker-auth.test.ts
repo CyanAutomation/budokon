@@ -39,3 +39,9 @@ test("authorized accepts only an exact credential match", () => {
   assert.equal(authorized(request({ "x-api-key": "secret" }), undefined), false);
   assert.equal(authorized(request(), "secret"), false);
 });
+
+test("authorized rejects secrets made only of whitespace", () => {
+  for (const secret of ["", " \t\n", "\u00a0"]) {
+    assert.equal(authorized(request({ "x-api-key": secret }), secret), false, JSON.stringify(secret));
+  }
+});

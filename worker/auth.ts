@@ -21,9 +21,10 @@ export function credential(request: Request): string {
  * @param {string | undefined} expected
  */
 export function authorized(request: Request, expected: string | undefined): boolean {
-  // Secrets are mandatory. A missing secret must never accidentally allow access.
+  // Secrets must contain a non-whitespace character; blank configuration must
+  // never accidentally authorize a request.
   const credValue = credential(request);
-  if (!expected) return false;
+  if (!expected || expected.trim().length === 0) return false;
   const maxLen = Math.max(credValue.length, expected.length);
   let matches = credValue.length ^ expected.length;
   for (let i = 0; i < maxLen; i++) {
