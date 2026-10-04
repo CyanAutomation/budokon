@@ -252,6 +252,42 @@ test("internal MCP review resolves a single canonical judoka and never writes it
   assert.equal(Object.hasOwn(catalog.repository.listJudoka()[0], "playstyle"), false);
 });
 
+test("internal MCP review rejects invalid biographies before calling the classifier", async () => {
+  const invalidCases: Array<{ name: string; bio: string | undefined; error: RegExp }> = [
+    { name: "missing biography", bio: undefined, error: /non-empty string/u },
+    { name: "empty biography", bio: "", error: /non-empty string/u },
+    { name: "whitespace biography", bio: " \t\n", error: /non-empty string/u },
+    { name: "overlong biography", bio: "x".repeat(8_001), error: /8000 characters/u },
+  ];
+
+  for (const { name, bio, error } of invalidCases) {
+    const invalidRecord: Judoka = { ...record, bio };
+    const catalog = new CatalogService(new JsonReadModelRepository({
+      datasetVersion: "test-version",
+      judoka: [invalidRecord],
+      techniques,
+      events: [],
+      countries: {},
+      weightCategories: [],
+      manifest: { datasetVersion: "test-version", serviceVersion: "test", drawAlgorithms: [], defaultDrawAlgorithm: "test", sourceGitCommit: "test", checksums: { "budokon.json": "test" } },
+    }));
+    let calls = 0;
+    const mcp = createJevTools({ catalog, playstyleClassification: {
+      async classify() {
+        calls += 1;
+        throw new Error("classifier must not be called");
+      },
+    } });
+
+    await assert.rejects(
+      mcp.review_judoka_playstyle({ judokaId: invalidRecord.id }, { authorizedInternal: true }),
+      error,
+      name,
+    );
+    assert.equal(calls, 0, name);
+  }
+});
+
 test("MCP playstyle input is bounded and requires supplied excerpts to use HTTPS", () => {
   assert.equal(playstyleClassificationInputSchema.safeParse({ judokaId: "shohei-ono" }).success, true);
   assert.equal(playstyleClassificationInputSchema.safeParse({ judokaId: "shohei-ono", evidence: [{ url: "https://example.test/source", excerpt: "A supplied excerpt." }] }).success, true);
