@@ -1,3 +1,4 @@
+import { EVENT_ACTIONS, EVENT_TARGETS } from "../contracts/event-effects.js";
 export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
 
@@ -22,8 +23,8 @@ export interface Judoka {
 }
 
 export interface Technique { id: string; [key: string]: JsonValue; }
-export type EventAction = "modify" | "set";
-export type EventTarget = "power" | "speed" | "technique" | "kumikata" | "newaza" | "shido" | "waza_ari" | "score" | "match_result";
+export type EventAction = (typeof EVENT_ACTIONS)[number];
+export type EventTarget = (typeof EVENT_TARGETS)[number];
 export interface EventEffect { action: EventAction; target: EventTarget; value: number | string; }
 /** A ruleset-scoped gameplay prompt. Consumers apply effects to their own match state. */
 export interface JudoEvent { id: string; ruleset: string; category: string; description: string; effects: EventEffect[]; }
