@@ -137,12 +137,14 @@ test("JEV MCP tools are discoverable only to the internal credential when config
   assert.ok(!regularNames.includes("semantic_search_judoka"));
   assert.ok(!regularNames.includes("review_proposed_judoka"));
   assert.ok(!regularNames.includes("review_proposed_judoka_batch"));
+  assert.ok(!regularNames.includes("review_judoka_playstyle"));
   assert.ok(!regularNames.includes("interpret_judoka_query"));
   assert.ok(internalNames.includes("semantic_search_judoka"));
   assert.ok(internalNames.includes("review_proposed_judoka"));
   assert.ok(internalNames.includes("review_proposed_judoka_batch"));
+  assert.ok(internalNames.includes("review_judoka_playstyle"));
   assert.ok(internalNames.includes("interpret_judoka_query"));
-  for (const name of ["semantic_search_judoka", "review_proposed_judoka", "review_proposed_judoka_batch", "interpret_judoka_query"]) {
+  for (const name of ["semantic_search_judoka", "review_proposed_judoka", "review_proposed_judoka_batch", "review_judoka_playstyle", "interpret_judoka_query"]) {
     const tool = internalTools.find(candidate => candidate.name === name);
     assert.equal(tool?.outputSchema?.type, "object", `${name} must expose an output schema`);
     assert.ok(tool?.title, `${name} must expose a display title`);

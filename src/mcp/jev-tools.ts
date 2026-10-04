@@ -1,10 +1,11 @@
 import type { RequestContext } from "../domain/types.js";
 import { rankDuplicateCandidates } from "../jev/duplicate-shortlist.js";
 import type { EditorialReviewInput } from "../jev/editorial-review-contracts.js";
+import type { PlaystyleEditorialRatings, PlaystyleJudokaRecord } from "../jev/playstyle-classification-contracts.js";
 import { DEFAULT_SEMANTIC_SEARCH_MAX_CANDIDATES } from "../jev/semantic-search.js";
 import { requireInternal, versioned, type JevToolDependencies, type SearchToolRequest } from "./tool-types.js";
 
-export function createJevTools({ catalog, semanticSearch, editorialReview, queryInterpreter }: JevToolDependencies) {
+export function createJevTools({ catalog, semanticSearch, editorialReview, playstyleClassification, queryInterpreter }: JevToolDependencies) {
   return {
     async semantic_search_judoka(
       { query, q, filters = {}, exclude = [], includeHidden, maxCandidates = DEFAULT_SEMANTIC_SEARCH_MAX_CANDIDATES }: SearchToolRequest & { maxCandidates?: number },
@@ -28,6 +29,27 @@ export function createJevTools({ catalog, semanticSearch, editorialReview, query
         catalog.listJudoka({ includeHidden: true, authorizedInternal: context.authorizedInternal }),
       );
       return editorialReview.review({ ...input, duplicateCandidates, techniques });
+    },
+    async review_judoka_playstyle(
+      { judokaId, evidence = [] }: { judokaId: string; evidence?: Array<{ url: string; excerpt: string }> },
+      context: RequestContext = {},
+    ) {
+      requireInternal(context);
+      if (!playstyleClassification) throw new Error("JEV playstyle classification is not configured");
+      const record = catalog.getJudoka(judokaId, { includeHidden: true, authorizedInternal: context.authorizedInternal });
+      if (!record) throw new Error("judoka not found");
+      const techniques = record.signatureMoveIds.map(id => catalog.getTechnique(id)).filter((technique): technique is NonNullable<typeof technique> => technique !== undefined);
+      const source = record as unknown as Record<string, unknown>;
+      const inputRecord: PlaystyleJudokaRecord = {
+        id: record.id,
+        slug: record.slug,
+        ...(typeof record.firstname === "string" ? { firstname: record.firstname } : {}),
+        ...(typeof record.surname === "string" ? { surname: record.surname } : {}),
+        bio: source.bio as string,
+        signatureMoveIds: [...record.signatureMoveIds],
+        stats: source.stats as PlaystyleEditorialRatings | undefined,
+      };
+      return versioned(catalog, await playstyleClassification.classify({ record: inputRecord, evidence, techniques }));
     },
     async review_proposed_judoka_batch({ proposals }: { proposals: EditorialReviewInput[] }, context: RequestContext = {}) {
       requireInternal(context);

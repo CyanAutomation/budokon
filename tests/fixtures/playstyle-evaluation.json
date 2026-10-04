@@ -1,0 +1,89 @@
+[
+  {
+    "id": "clear-pressure-ashi-waza",
+    "record": {
+      "id": "evaluation-clear-pressure",
+      "slug": "evaluation-clear-pressure",
+      "firstname": "Synthetic",
+      "surname": "Pressure",
+      "bio": "Synthetic evaluation profile used only to check the playstyle decision contract.",
+      "stats": { "technique": 8, "kumikata": 8, "newaza": 2 },
+      "signatureMoveIds": ["uchi-mata", "o-soto-gari"]
+    },
+    "evidence": [
+      { "url": "https://evaluation.invalid/clear-pressure", "excerpt": "Synthetic scenario: match notes across several bouts describe repeated first attacks and combinations that keep opponents defending. The athlete secures and maintains a preferred sleeve-and-lapel grip, attacks at a sustained pace, and rarely follows exchanges to the ground. Their scoring attacks repeatedly use Ashi-waza." }
+    ],
+    "expected": {
+      "tacticalStyle": "pressure",
+      "tempo": "aggressive",
+      "gripStyle": "dominant",
+      "newazaEmphasis": "low",
+      "standingPreference": "ashi_waza"
+    }
+  },
+  {
+    "id": "mixed-balanced-adaptive",
+    "record": {
+      "id": "evaluation-mixed-style",
+      "slug": "evaluation-mixed-style",
+      "firstname": "Synthetic",
+      "surname": "Adaptive",
+      "bio": "Synthetic evaluation profile used only to check the playstyle decision contract.",
+      "stats": { "technique": 7, "kumikata": 6, "newaza": 5 },
+      "signatureMoveIds": ["seoi-nage", "uchi-mata", "kesa-gatame"]
+    },
+    "evidence": [
+      { "url": "https://evaluation.invalid/mixed-style", "excerpt": "Synthetic scenario: supplied match notes show the athlete attacks when openings appear and also scores from opponents' committed attacks. They change grips based on the opponent, use both patient setup and quick attack sequences, regularly use groundwork as a secondary route, and score with both Te-waza and Ashi-waza." }
+    ],
+    "expected": {
+      "tacticalStyle": "balanced",
+      "tempo": "balanced",
+      "gripStyle": "adaptive",
+      "newazaEmphasis": "medium",
+      "standingPreference": "mixed"
+    }
+  },
+  {
+    "id": "insufficient-evidence",
+    "record": {
+      "id": "evaluation-unknown-style",
+      "slug": "evaluation-unknown-style",
+      "firstname": "Synthetic",
+      "surname": "Unknown",
+      "bio": "Synthetic evaluation profile used only to check the playstyle decision contract.",
+      "stats": { "technique": 8, "kumikata": 8, "newaza": 8 },
+      "signatureMoveIds": ["uchi-mata"]
+    },
+    "evidence": [],
+    "expected": {
+      "tacticalStyle": "insufficient_evidence",
+      "tempo": "insufficient_evidence",
+      "gripStyle": "insufficient_evidence",
+      "newazaEmphasis": "insufficient_evidence",
+      "standingPreference": "insufficient_evidence"
+    }
+  },
+  {
+    "id": "conflicting-tempo-and-grip",
+    "record": {
+      "id": "evaluation-conflicting-reports",
+      "slug": "evaluation-conflicting-reports",
+      "firstname": "Synthetic",
+      "surname": "Conflicted",
+      "bio": "Synthetic evaluation profile used only to check the playstyle decision contract.",
+      "stats": { "technique": 8, "kumikata": 7, "newaza": 5 },
+      "signatureMoveIds": ["seoi-nage", "tani-otoshi"]
+    },
+    "evidence": [
+      { "url": "https://evaluation.invalid/conflict-a", "excerpt": "Synthetic scenario source A describes an aggressive pace and a grip strategy built around imposing one preferred sleeve grip." },
+      { "url": "https://evaluation.invalid/conflict-b", "excerpt": "Synthetic scenario source B describes a patient pace and says the athlete varies grips by opponent. Neither source gives match counts or enough examples to resolve the disagreement." }
+    ],
+    "expected": {
+      "tacticalStyle": "insufficient_evidence",
+      "tempo": "insufficient_evidence",
+      "gripStyle": "insufficient_evidence",
+      "newazaEmphasis": "insufficient_evidence",
+      "standingPreference": "insufficient_evidence"
+    }
+  }
+]

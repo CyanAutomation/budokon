@@ -3,6 +3,7 @@ import type { DrawRequest, Filters } from "../domain/types.js";
 import type { DrawService } from "../draw/draw-service.js";
 import type { EventDrawService } from "../draw/event-draw-service.js";
 import type { EditorialReviewInput, EditorialReviewer } from "../jev/editorial-review-contracts.js";
+import type { PlaystyleClassifier } from "../jev/playstyle-classification-contracts.js";
 import type { JudokaQueryInterpreter } from "../jev/query-interpreter.js";
 import type { SemanticJudokaSearcher } from "../jev/semantic-search.js";
 
@@ -28,10 +29,11 @@ export interface McpToolDependencies {
   eventDraw?: EventDrawService;
   semanticSearch?: SemanticJudokaSearcher;
   editorialReview?: EditorialReviewer;
+  playstyleClassification?: PlaystyleClassifier;
   queryInterpreter?: JudokaQueryInterpreter;
 }
 
-export interface JevToolDependencies extends Pick<McpToolDependencies, "catalog" | "semanticSearch" | "editorialReview" | "queryInterpreter"> {}
+export interface JevToolDependencies extends Pick<McpToolDependencies, "catalog" | "semanticSearch" | "editorialReview" | "playstyleClassification" | "queryInterpreter"> {}
 
 export interface CatalogToolDependencies extends Pick<McpToolDependencies, "catalog" | "draw" | "eventDraw"> {}
 

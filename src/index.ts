@@ -1,4 +1,5 @@
 export * from "./domain/types.js";
+export * from "./domain/playstyle.js";
 export * from "./domain/catalog-service.js";
 export * from "./domain/filter-service.js";
 export * from "./domain/search-service.js";
@@ -17,3 +18,4 @@ export * from "./jev/client.js";
 export * from "./jev/editorial-review.js";
 export * from "./jev/semantic-search.js";
 export * from "./jev/query-interpreter.js";
+export * from "./jev/playstyle-classification.js";
