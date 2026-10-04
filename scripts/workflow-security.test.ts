@@ -5,6 +5,7 @@ import path from "node:path";
 import { parse } from "yaml";
 
 interface WorkflowStep {
+  name?: string;
   uses?: string;
   run?: string;
   env?: Record<string, unknown>;
@@ -20,6 +21,7 @@ interface WorkflowJob {
 
 interface Workflow {
   permissions?: Record<string, string>;
+  env?: Record<string, unknown>;
   jobs: Record<string, WorkflowJob>;
 }
 
@@ -38,7 +40,7 @@ test("Kaseki DRY dispatch is default-branch-only and pins the token destination"
   assert.match(source, /KASEKI_BASE_URL" != "https:\/\/kaseki-tunnel\.scheimann\.xyz"/u);
   assert.equal(job.env?.KASEKI_API_TOKEN, undefined);
   const tokenSteps = job.steps.filter(step => Object.hasOwn(step.env ?? {}, "KASEKI_API_TOKEN"));
-  assert.equal(tokenSteps.length, 3);
+  assert.equal(tokenSteps.length, 5);
 });
 
 test("every Kaseki Docs job is restricted to main", async () => {
@@ -81,4 +83,78 @@ test("Dependabot keeps pinned GitHub Actions revisions on a weekly update cadenc
   assert.equal(document.version, 2);
   assert.ok(document.updates.some(update =>
     update["package-ecosystem"] === "github-actions" && update.directory === "/" && update.schedule.interval === "weekly"));
+  assert.ok(document.updates.some(update =>
+    update["package-ecosystem"] === "npm" && update.directory === "/" && update.schedule.interval === "weekly"));
+});
+
+test("Kaseki sweeps always target main and request regular pull requests", async () => {
+  const docs = await readWorkflow("kaseki-docs.yaml");
+  const dry = await readWorkflow("kaseki-dry.yaml");
+
+  assert.equal(docs.document.env?.REF, "main");
+  assert.equal(dry.document.jobs.dry_sweep.env?.REF, "main");
+
+  for (const source of [docs.source, dry.source]) {
+    assert.match(source, /publishMode: "pr"/u);
+    assert.doesNotMatch(source, /draft_pr/u);
+    assert.doesNotMatch(source, /github\.event\.repository\.default_branch/u);
+  }
+});
+
+test("Kaseki sweeps check API capabilities and runner preflight before submission", async () => {
+  const docs = await readWorkflow("kaseki-docs.yaml");
+  const dry = await readWorkflow("kaseki-dry.yaml");
+
+  const docsApiChecks = docs.document.jobs.api_connection.steps.map(step => step.run ?? "").join("\n");
+  const drySteps = dry.document.jobs.dry_sweep.steps.map(step => step.run ?? "").join("\n");
+
+  for (const workflowText of [docsApiChecks, drySteps]) {
+    assert.match(workflowText, /\/api\/capabilities/u);
+    assert.match(workflowText, /\/api\/preflight/u);
+    assert.match(workflowText, /publishModes[\s\S]{0,120}pr/u);
+  }
+});
+
+test("Kaseki Docs API credentials are limited to request steps", async () => {
+  const { document } = await readWorkflow("kaseki-docs.yaml");
+  const apiConnection = document.jobs.api_connection;
+  const dispatch = document.jobs.dispatch;
+
+  assert.equal(apiConnection.env?.KASEKI_API_TOKEN, undefined);
+  assert.equal(apiConnection.steps.filter(step => Object.hasOwn(step.env ?? {}, "KASEKI_API_TOKEN")).length, 3);
+  assert.equal(dispatch.env?.KASEKI_API_TOKEN, undefined);
+  assert.equal(dispatch.steps.filter(step => Object.hasOwn(step.env ?? {}, "KASEKI_API_TOKEN")).length, 2);
+});
+
+test("Kaseki sweeps treat an empty diff as a successful no-op", async () => {
+  const docs = await readWorkflow("kaseki-docs.yaml");
+  const dry = await readWorkflow("kaseki-dry.yaml");
+
+  const docsWait = docs.document.jobs.dispatch.steps.find(step => step.name === "Wait for Kaseki completion");
+  const dryWait = dry.document.jobs.dry_sweep.steps.find(step => step.name === "Wait for Kaseki completion");
+
+  for (const step of [docsWait, dryWait]) {
+    assert.ok(step?.run);
+    assert.match(step.run, /failureClass/u);
+    assert.match(step.run, /empty-diff/u);
+    assert.match(step.run, /no_changes/u);
+  }
+});
+
+test("JEV API credentials are limited to the evaluation steps", async () => {
+  const { document } = await readWorkflow("jev-advisory.yaml");
+  const job = document.jobs["evaluate-search"];
+
+  assert.equal(job.env?.JEV_OPENROUTER_API_KEY, undefined);
+  const evaluationSteps = job.steps.filter(step => /npm run jev:evaluate/u.test(step.run ?? ""));
+  assert.equal(evaluationSteps.length, 2);
+  for (const step of evaluationSteps) assert.ok(Object.hasOwn(step.env ?? {}, "JEV_OPENROUTER_API_KEY"));
+  for (const step of job.steps.filter(step => !evaluationSteps.includes(step))) {
+    assert.equal(Object.hasOwn(step.env ?? {}, "JEV_OPENROUTER_API_KEY"), false);
+  }
+});
+
+test("dataset releases run the repository test suite before publishing artifacts", async () => {
+  const { document } = await readWorkflow("dataset-release.yml");
+  assert.ok(document.jobs.build.steps.some(step => step.run === "npm run test"));
 });

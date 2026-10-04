@@ -17,7 +17,6 @@ jobs:
     timeout-minutes: 10
     environment: jev-assessment
     env:
-      JEV_OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
       JEV_MODEL: ${{ vars.JEV_MODEL }}
       JEV_TIMEOUT_MS: "20000"
       JEV_MINIMUM_RELEVANCE: "0.5"
@@ -41,6 +40,10 @@ jobs:
 
       - name: Evaluate semantic search
         run: npm run jev:evaluate
+        env:
+          JEV_OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
 
       - name: Evaluate playstyle classification
         run: npm run jev:evaluate:playstyle
+        env:
+          JEV_OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}

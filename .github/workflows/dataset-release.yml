@@ -30,6 +30,8 @@ jobs:
       - name: Type-check tooling and tests
         run: npm run typecheck:tools
       - run: npm run check:typescript-only
+      - name: Run tests
+        run: npm run test
       - name: Validate canonical data
         run: npm run validate
       - name: Associate dataset version, tag, and commit
