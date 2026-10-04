@@ -79,8 +79,26 @@ export async function writePublicCache(
   revision: EdgeCacheRevision,
   metadata: RepresentationCacheability,
 ): Promise<Response> {
-  const decorated = await cachePublicGet(response, request, revision.dataset, revision.service, metadata);
   const key = publicCacheKey(request, revision);
-  if (cache && key && response.status === 200 && metadata.cacheablePublicly) await cache.put(key, decorated.clone());
+  const cacheable = cache !== undefined && key !== undefined && response.status === 200 && metadata.cacheablePublicly;
+  const conditionalRepresentation = cacheable && request.headers.has("if-none-match") ? response.clone() : undefined;
+  const decorated = await cachePublicGet(response, request, revision.dataset, revision.service, metadata);
+  if (cache && key && cacheable) {
+    if (decorated.status === 304) {
+      const headers = new Headers(request.headers);
+      headers.delete("if-none-match");
+      const unconditionalRequest = new Request(request, { headers });
+      const successfulRepresentation = await cachePublicGet(
+        conditionalRepresentation ?? response.clone(),
+        unconditionalRequest,
+        revision.dataset,
+        revision.service,
+        metadata,
+      );
+      await cache.put(key, successfulRepresentation);
+    } else {
+      await cache.put(key, decorated.clone());
+    }
+  }
   return decorated;
 }

@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { parseOpenApiYaml, validateOpenApiDocument } from "../scripts/openapi-validation.js";
+import { createWorker } from "../worker/router.js";
+import type { Env } from "../worker/router.js";
 
 const source = await readFile(new URL("../openapi/v1.yaml", import.meta.url), "utf8");
 const originalDocument = parseOpenApiYaml(source);
@@ -12,6 +14,29 @@ function documentCopy(): Record<string, any> {
 
 test("published OpenAPI contract satisfies the repository requirements", () => {
   assert.doesNotThrow(() => validateOpenApiDocument(originalDocument));
+});
+
+test("each documented REST operation reaches a successful runtime route", async () => {
+  const env: Env = { API_KEY: "openapi-parity", PUBLIC_ALLOWED_ORIGINS: "*" };
+  const worker = createWorker(source, { cache: null });
+  const examples: Record<string, string> = {
+    "/v1/judoka/{id}": "/v1/judoka/shozo-fujii",
+    "/v1/techniques/{id}": "/v1/techniques/ippon-seoi-nage",
+    "/v1/events/{id}": "/v1/events/failed-judogi-control",
+  };
+  const paths = (originalDocument as { paths: Record<string, Record<string, unknown>> }).paths;
+
+  for (const [documentedPath, pathItem] of Object.entries(paths)) {
+    for (const method of Object.keys(pathItem)) {
+      const runtimePath = examples[documentedPath] ?? documentedPath;
+      const body = documentedPath === "/v1/events/draw" ? { ruleset: "ju-do-kon-v1" } : {};
+      const response = await worker.fetch(new Request(`https://api.example.test${runtimePath}`, {
+        method: method.toUpperCase(),
+        ...(method.toLowerCase() === "post" ? { headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {}),
+      }), env);
+      assert.equal(response.status, 200, `${method.toUpperCase()} ${documentedPath} should be implemented`);
+    }
+  }
 });
 
 test("public OpenAPI covers technique search and the privacy-safe coverage route", () => {

@@ -7,7 +7,7 @@ Monitor:
 
 * availability and server-error rate (`5xx`);
 * request latency, including p95 and p99;
-* `429` responses by route, to tune the public limiter; and
+* `429` responses by route and OAuth principal quota, to tune the limiters; and
 * deployment identity from `/v1/status` (`datasetVersion`, source commit, and
   checksum), so a rollout serves the intended release.
 
@@ -34,12 +34,11 @@ commit, plus normalized representation-affecting query parameters. A new data or
 service revision therefore misses old entries without requiring a purge (old
 entries expire under the configured cache policy).
 
-Matching public `If-None-Match` requests are resolved from the release identity
-before cache lookup, rate limiting, or REST routing and therefore do not consume
-public quota. This is an intentional bypass rather than a cheaper secondary
-limiter: computing the validator is bounded work and does not generate or read
-the representation. Validator mismatches and authorization-sensitive requests
-continue through the standard public limiter and routing path.
+Matching public `If-None-Match` requests can bypass quota when a cached successful
+representation exists. Cache misses continue through rate limiting and REST
+routing before a conditional `304` is generated. This preserves normal `400` and
+`404` behavior for invalid requests and missing records. Authorization-sensitive
+requests do not use the public cache.
 
 Only successful responses that the REST layer explicitly marks public are
 stored. Authorization/API-key requests, `includeHidden=true`, non-GET requests,
@@ -57,7 +56,11 @@ The Worker intentionally routes authenticated `/mcp` traffic through the
 `PUBLIC_RATE_LIMITER`. Keep these as distinct bindings when changing or cloning
 an environment: they have independent policies and prevent public catalogue
 traffic from consuming the MCP quota (or MCP clients from consuming the public
-quota). Monitor and tune `429` rates for each binding separately.
+quota). OAuth requests consume the IP quota and an additional per-principal
+quota in the MCP binding. Monitor and tune `429` rates for each binding
+separately. OAuth introspection errors surface as MCP authentication failures;
+include the authorization server's availability and latency in upstream
+monitoring.
 
 The compiled `dist/manifest.json` identifies the canonical data commit used to
 create that artifact. It need not equal a later application-only commit in the

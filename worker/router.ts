@@ -13,11 +13,11 @@ import { JevJudokaQueryInterpreter } from "../src/jev/query-interpreter.js";
 import { JsonReadModelRepository } from "../src/repository/json-read-model-repository.js";
 import { authorized } from "./auth.js";
 import { preflightResponse, withCors } from "./cors.js";
-import { publicNotModifiedResponse } from "./representation-cache.js";
 import { defaultEdgeCache, readPublicCache, writePublicCache, type EdgeCacheStorage } from "./edge-cache.js";
-import { rateLimitMcpRequest, rateLimitPublicRequest } from "./rate-limit.js";
+import { rateLimitMcpPrincipal, rateLimitMcpRequest, rateLimitPublicRequest } from "./rate-limit.js";
 import { documentationResponse, landingResponse, openApiResponse } from "./discovery.js";
-import { hostHeaderValidationResponse, originValidationResponse } from "@modelcontextprotocol/server";
+import { hostHeaderValidationResponse, originValidationResponse, type AuthInfo } from "@modelcontextprotocol/server";
+import { MCP_INTERNAL_SCOPE, MCP_JEV_SCOPE, authenticateOAuthBearer, oauthDiscoveryResponse, type McpOAuthConfig } from "./oauth.js";
 
 export interface Env {
   API_KEY: string;
@@ -31,6 +31,15 @@ export interface Env {
   MCP_RATE_LIMITER?: { limit(options: { key: string }): Promise<{ success: boolean }> };
   /** Optional secret enabling internal-only JEV editorial review and semantic MCP tools. */
   JEV_OPENROUTER_API_KEY?: string;
+  /** OAuth authorization-server issuer and endpoints; this Worker only validates access tokens. */
+  MCP_OAUTH_ISSUER?: string;
+  MCP_OAUTH_AUTHORIZATION_ENDPOINT?: string;
+  MCP_OAUTH_TOKEN_ENDPOINT?: string;
+  MCP_OAUTH_INTROSPECTION_ENDPOINT?: string;
+  MCP_OAUTH_CLIENT_ID?: string;
+  MCP_OAUTH_CLIENT_SECRET?: string;
+  /** Exact resource identifier expected in introspected access-token audience claims. */
+  MCP_RESOURCE_URL?: string;
   JEV_MODEL?: string;
   JEV_TIMEOUT_MS?: string;
   JEV_MINIMUM_RELEVANCE?: string;
@@ -54,19 +63,51 @@ function configuredProbability(value: string | undefined, fallback: number): num
   return Number.isFinite(parsed) && parsed >= 0 && parsed <= 1 ? parsed : fallback;
 }
 
-type McpAuthentication = { authorizedInternal: boolean };
+type McpAuthentication = { authorizedInternal: boolean; authorizedJev: boolean; authInfo?: AuthInfo; principal?: string };
+
+function mcpOAuthConfig(env: Env): McpOAuthConfig | undefined {
+  const values = [env.MCP_OAUTH_ISSUER, env.MCP_OAUTH_AUTHORIZATION_ENDPOINT, env.MCP_OAUTH_TOKEN_ENDPOINT,
+    env.MCP_OAUTH_INTROSPECTION_ENDPOINT, env.MCP_OAUTH_CLIENT_ID, env.MCP_OAUTH_CLIENT_SECRET, env.MCP_RESOURCE_URL];
+  if (values.some(value => !value)) return undefined;
+  return {
+    issuer: env.MCP_OAUTH_ISSUER!,
+    authorizationEndpoint: env.MCP_OAUTH_AUTHORIZATION_ENDPOINT!,
+    tokenEndpoint: env.MCP_OAUTH_TOKEN_ENDPOINT!,
+    introspectionEndpoint: env.MCP_OAUTH_INTROSPECTION_ENDPOINT!,
+    clientId: env.MCP_OAUTH_CLIENT_ID!,
+    clientSecret: env.MCP_OAUTH_CLIENT_SECRET!,
+    resourceUrl: env.MCP_RESOURCE_URL!,
+  };
+}
+
+function distinctInternalApiKey(env: Pick<Env, "API_KEY" | "INTERNAL_API_KEY">): string | undefined {
+  if (!env.INTERNAL_API_KEY || env.INTERNAL_API_KEY === env.API_KEY) return undefined;
+  return env.INTERNAL_API_KEY;
+}
 
 /**
- * Authenticate the single credential selected by auth.ts for MCP access.
- *
- * A configured internal key is both an MCP credential and an elevation signal.
- * When it is unset, only API_KEY authenticates and no request is elevated. If
- * both configured secrets have the same value, that value is treated as the
- * internal key and therefore elevates the request.
+ * Authenticate one managed key or one introspected OAuth bearer token.
+ * A configured internal key grants internal and JEV access; OAuth uses scopes.
  */
-function authenticateMcpRequest(request: Request, env: Pick<Env, "API_KEY" | "INTERNAL_API_KEY">): McpAuthentication | Response {
-  const authorizedInternal = authorized(request, env.INTERNAL_API_KEY);
-  if (authorizedInternal || authorized(request, env.API_KEY)) return { authorizedInternal };
+async function authenticateMcpRequest(request: Request, env: Env): Promise<McpAuthentication | Response> {
+  const authorizedInternal = authorized(request, distinctInternalApiKey(env));
+  if (authorizedInternal) return { authorizedInternal: true, authorizedJev: true };
+  if (authorized(request, env.API_KEY)) return { authorizedInternal: false, authorizedJev: false };
+  if (request.headers.has("x-api-key") && request.headers.has("authorization")) {
+    return json({ error: { code: "unauthorized", message: "A valid API key is required" } }, 401, { "www-authenticate": "Bearer" });
+  }
+  const oauth = mcpOAuthConfig(env);
+  if (oauth) {
+    const authInfo = await authenticateOAuthBearer(request, oauth);
+    if (authInfo instanceof Response) return authInfo;
+    const scopes = new Set(authInfo.scopes);
+    return {
+      authorizedInternal: scopes.has(MCP_INTERNAL_SCOPE),
+      authorizedJev: scopes.has(MCP_INTERNAL_SCOPE) || scopes.has(MCP_JEV_SCOPE),
+      authInfo,
+      principal: `${String(authInfo.extra?.client_id ?? authInfo.clientId)}:${authInfo.clientId}`,
+    };
+  }
   return json(
     { error: { code: "unauthorized", message: "A valid API key is required" } },
     401,
@@ -94,12 +135,17 @@ async function handleMcpRequest(request: Request, env: Env): Promise<Response> {
     return json({ error: { code: "not_configured", message: "MCP allowed hostnames are required" } }, 503);
   }
 
-  const authentication = authenticateMcpRequest(request, env);
+  const authentication = await authenticateMcpRequest(request, env);
   if (authentication instanceof Response) return authentication;
   const allowedHostnames = env.MCP_ALLOWED_HOSTNAMES.split(",").map(value => value.trim()).filter(Boolean);
   const rejected = hostHeaderValidationResponse(request, allowedHostnames)
     ?? originValidationResponse(request, allowedHostnames.map(hostname => `https://${hostname}`));
   if (rejected) return rejected;
+
+  if (authentication.principal) {
+    const limited = await rateLimitMcpPrincipal(env, authentication.principal);
+    if (limited) return limited;
+  }
 
   const client = env.JEV_OPENROUTER_API_KEY ? new OpenRouterJevClient({
     apiKey: env.JEV_OPENROUTER_API_KEY,
@@ -107,13 +153,15 @@ async function handleMcpRequest(request: Request, env: Env): Promise<Response> {
     timeoutMs: Number(env.JEV_TIMEOUT_MS),
   }) : undefined;
   const mcp = createBudokonMcpHandler({
-    catalog, draw, eventDraw, authorizeInternal: () => authentication.authorizedInternal,
+    catalog, draw, eventDraw,
+    authorizeInternal: () => authentication.authorizedInternal,
+    authorizeJev: () => authentication.authorizedJev,
     semanticSearch: client ? new SemanticJudokaSearchService(client, { minimumRelevance: configuredProbability(env.JEV_MINIMUM_RELEVANCE, 0.5) }) : undefined,
     editorialReview: client ? new EditorialReviewService(client, configuredProbability(env.JEV_EDITORIAL_THRESHOLD, 0.8)) : undefined,
     playstyleClassification: client ? new PlaystyleClassificationService(client, configuredProbability(env.JEV_PLAYSTYLE_THRESHOLD, 0.78)) : undefined,
     queryInterpreter: client ? new JevJudokaQueryInterpreter(client, { minimumConfidence: configuredProbability(env.JEV_QUERY_MINIMUM_CONFIDENCE, 0.7) }) : undefined,
   });
-  return mcp.fetch(request);
+  return mcp.fetch(request, authentication.authInfo ? { authInfo: authentication.authInfo } : undefined);
 }
 
 async function handleRestRequest(
@@ -126,18 +174,12 @@ async function handleRestRequest(
   // while the awaited REST request is being routed.
   const cacheability = { cacheablePublicly: false };
   const revision = { dataset: catalog.version().datasetVersion, service: manifest.sourceGitCommit };
-  // A matching, authorization-insensitive conditional GET is answered from
-  // release identity alone. It consumes no public quota because it neither
-  // routes nor generates a response representation.
-  const notModified = await publicNotModifiedResponse(request, revision.dataset, revision.service);
-  if (notModified) return notModified;
-
   const edgeCache = cacheOption === null ? undefined : cacheOption ?? defaultEdgeCache();
   const cached = await readPublicCache(edgeCache, request, revision);
   if (cached) return cached;
 
   const rest = createRestRouter({ catalog, draw, eventDraw }, {
-    authorizeInternal: candidate => authorized(candidate, env.INTERNAL_API_KEY),
+    authorizeInternal: candidate => authorized(candidate, distinctInternalApiKey(env)),
     onRepresentation: metadata => { cacheability.cacheablePublicly = metadata.cacheablePublicly; },
   });
   const rateLimited = await rateLimitPublicRequest(request, env);
@@ -149,6 +191,10 @@ export function createWorker(openApiSpecification: string, options: { cache?: Ed
     async fetch(request: Request, env: Env): Promise<Response> {
       const url = new URL(request.url);
       const path = url.pathname;
+      if (path.startsWith("/.well-known/oauth-")) {
+        const oauthDiscovery = oauthDiscoveryResponse(request, mcpOAuthConfig(env));
+        if (oauthDiscovery) return oauthDiscovery;
+      }
       const discovery = discoveryResponse(path, request.method, url.origin, openApiSpecification);
       if (discovery) return discovery;
       if (request.method === "OPTIONS") {
