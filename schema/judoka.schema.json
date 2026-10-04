@@ -57,7 +57,19 @@
     "bio": { "type": "string", "minLength": 20 },
     "gender": { "enum": ["male", "female"] },
     "isHidden": { "type": "boolean" },
-    "rarity": { "enum": ["Common", "Rare", "Epic", "Legendary"] }
+    "rarity": { "enum": ["Common", "Rare", "Epic", "Legendary"] },
+    "playstyle": {
+      "type": "object",
+      "properties": {
+        "tacticalStyle": { "enum": ["pressure", "counter", "balanced"] },
+        "tempo": { "enum": ["patient", "balanced", "aggressive"] },
+        "gripStyle": { "enum": ["dominant", "adaptive", "defensive", "mixed"] },
+        "newazaEmphasis": { "enum": ["low", "medium", "high"] },
+        "standingPreference": { "enum": ["ashi_waza", "te_waza", "koshi_waza", "ma_sutemi_waza", "yoko_sutemi_waza", "mixed"] }
+      },
+      "additionalProperties": false,
+      "minProperties": 1
+    }
   },
   "additionalProperties": false,
   "$defs": {

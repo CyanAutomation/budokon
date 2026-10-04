@@ -36,6 +36,19 @@ test("every documented catalogue and metadata endpoint conforms", async () => {
   assert.deepEqual(await body(await request("/v1/judoka/shozo-fujii")), catalog.getJudoka("shozo-fujii"));
 });
 
+test("REST returns approved canonical playstyle metadata as part of the deterministic judoka record", async () => {
+  const approvedPlaystyle = { tacticalStyle: "counter", tempo: "patient", standingPreference: "ashi_waza" } as const;
+  const judoka = { ...catalog.listJudoka()[0], playstyle: approvedPlaystyle };
+  const approvedCatalog = new CatalogService(new JsonReadModelRepository({
+    ...compiledModel,
+    judoka: [judoka],
+  }));
+  const approvedRouter = createRestRouter({ catalog: approvedCatalog, draw: new DrawService(approvedCatalog) });
+  const response = await approvedRouter(new Request(`https://example.test/v1/judoka/${judoka.slug}`));
+  assert.equal(response.status, 200);
+  assert.deepEqual((await body(response)).playstyle, approvedPlaystyle);
+});
+
 test("coverage returns empty rarity percentages when no public real judoka exist", () => {
   const coverage = summarizeCoverage([
     { id: "hidden-real", slug: "hidden-real", personType: "real", isHidden: true, rarity: "Rare", signatureMoveIds: [] },
