@@ -6,6 +6,7 @@ import { EventDrawService } from "../src/draw/event-draw-service.js";
 import { createRestRouter } from "../src/api/router.js";
 import { createBudokonMcpHandler } from "../src/mcp/server.js";
 import { EditorialReviewService } from "../src/jev/editorial-review-service.js";
+import { PlaystyleClassificationService } from "../src/jev/playstyle-classification-service.js";
 import { OpenRouterJevClient } from "../src/jev/openrouter-client.js";
 import { SemanticJudokaSearchService } from "../src/jev/semantic-search.js";
 import { JevJudokaQueryInterpreter } from "../src/jev/query-interpreter.js";
@@ -35,6 +36,7 @@ export interface Env {
   JEV_MINIMUM_RELEVANCE?: string;
   JEV_EDITORIAL_THRESHOLD?: string;
   JEV_QUERY_MINIMUM_CONFIDENCE?: string;
+  JEV_PLAYSTYLE_THRESHOLD?: string;
 }
 
 const repository = new JsonReadModelRepository({ ...dataset, manifest });
@@ -108,6 +110,7 @@ async function handleMcpRequest(request: Request, env: Env): Promise<Response> {
     catalog, draw, eventDraw, authorizeInternal: () => authentication.authorizedInternal,
     semanticSearch: client ? new SemanticJudokaSearchService(client, { minimumRelevance: configuredProbability(env.JEV_MINIMUM_RELEVANCE, 0.5) }) : undefined,
     editorialReview: client ? new EditorialReviewService(client, configuredProbability(env.JEV_EDITORIAL_THRESHOLD, 0.8)) : undefined,
+    playstyleClassification: client ? new PlaystyleClassificationService(client, configuredProbability(env.JEV_PLAYSTYLE_THRESHOLD, 0.78)) : undefined,
     queryInterpreter: client ? new JevJudokaQueryInterpreter(client, { minimumConfidence: configuredProbability(env.JEV_QUERY_MINIMUM_CONFIDENCE, 0.7) }) : undefined,
   });
   return mcp.fetch(request);

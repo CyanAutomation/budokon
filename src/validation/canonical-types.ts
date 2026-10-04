@@ -28,10 +28,18 @@ export interface ValidatedCanonicalData {
 
 export interface CanonicalCountry { code: string; country: string; active: boolean; lastUpdated: string; }
 export type CanonicalCountries = Record<string, CanonicalCountry>;
+export interface CanonicalPlaystyle {
+  tacticalStyle?: "pressure" | "counter" | "balanced";
+  tempo?: "patient" | "balanced" | "aggressive";
+  gripStyle?: "dominant" | "adaptive" | "defensive" | "mixed";
+  newazaEmphasis?: "low" | "medium" | "high";
+  standingPreference?: "ashi_waza" | "te_waza" | "koshi_waza" | "ma_sutemi_waza" | "yoko_sutemi_waza" | "mixed";
+}
 export interface CanonicalJudoka {
   id: string; slug: string; legacySlugs?: string[]; firstname: string; surname: string;
   aliases?: string[]; personType: string; isHidden?: boolean; countryCode: string;
   signatureMoveIds: string[]; gender: string; weightClass: string; lastUpdated: string; bio: string;
+  playstyle?: CanonicalPlaystyle;
   sources?: Array<{ checkedAt: string }>;
 }
 export interface CanonicalTechnique { id: string; slug?: string; name: string; japanese: string; description: string; }

@@ -5,6 +5,9 @@ import type { DrawService } from "../draw/draw-service.js";
 import type { EventDrawService } from "../draw/event-draw-service.js";
 import { createMcpTools } from "./tools.js";
 import { MAX_EDITORIAL_REVIEW_BATCH_SIZE, type EditorialReviewer } from "../jev/editorial-review-contracts.js";
+import { PLAYSTYLE_OPTIONS } from "../domain/playstyle.js";
+import type { PlaystyleClassifier } from "../jev/playstyle-classification-contracts.js";
+import { MAX_PLAYSTYLE_EVIDENCE_ITEMS } from "../jev/playstyle-classification-contracts.js";
 import type { SemanticJudokaSearcher } from "../jev/semantic-search.js";
 import { MAX_SEMANTIC_SEARCH_CANDIDATES } from "../jev/semantic-search.js";
 import type { JudokaQueryInterpreter } from "../jev/query-interpreter.js";
@@ -64,6 +67,13 @@ const searchTechniquesInput = z.object({
 
 export const semanticSearchInputSchema = z.object({ query: z.string().min(1).max(1_000), filters: filters.optional(), exclude: z.array(z.string()).optional(), includeHidden: z.boolean().optional(), maxCandidates: z.number().int().min(1).max(MAX_SEMANTIC_SEARCH_CANDIDATES).optional() }).strict();
 const slug = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/u);
+const approvedPlaystyleSchema = z.object({
+  tacticalStyle: z.enum(["pressure", "counter", "balanced"]).optional(),
+  tempo: z.enum(["patient", "balanced", "aggressive"]).optional(),
+  gripStyle: z.enum(["dominant", "adaptive", "defensive", "mixed"]).optional(),
+  newazaEmphasis: z.enum(["low", "medium", "high"]).optional(),
+  standingPreference: z.enum(["ashi_waza", "te_waza", "koshi_waza", "ma_sutemi_waza", "yoko_sutemi_waza", "mixed"]).optional(),
+}).strict().refine(value => Object.keys(value).length > 0, "playstyle must contain at least one approved facet");
 const canonicalJudoka = z.object({
   id: z.string().uuid(), slug, firstname: z.string().min(1).max(200), surname: z.string().min(1).max(200),
   personType: z.enum(["real", "fictional"]), countryCode: z.string().regex(/^[A-Z]{2}$/u),
@@ -82,6 +92,7 @@ const canonicalJudoka = z.object({
   }).strict()).max(20).optional(),
   bio: z.string().min(20).max(8_000), gender: z.enum(["male", "female"]), isHidden: z.boolean(),
   rarity: z.enum(["Common", "Rare", "Epic", "Legendary"]),
+  playstyle: approvedPlaystyleSchema.optional(),
 }).strict().superRefine((record, context) => {
   if (new TextEncoder().encode(JSON.stringify(record)).byteLength > 16_000) {
     context.addIssue({ code: "custom", message: "record exceeds the 16 KB JEV review input limit" });
@@ -100,6 +111,18 @@ export const editorialReviewInputSchema = editorialReviewProposalSchema.superRef
 export const editorialReviewBatchInputSchema = z.object({ proposals: z.array(editorialReviewProposalSchema).min(1).max(MAX_EDITORIAL_REVIEW_BATCH_SIZE) }).strict().superRefine((input, context) => {
   if (new TextEncoder().encode(JSON.stringify(input)).byteLength > 64_000) {
     context.addIssue({ code: "custom", message: "review batch exceeds the 64 KB JEV request limit" });
+  }
+});
+const playstyleEvidenceSchema = z.object({
+  url: z.string().url().max(2_048).refine(value => value.startsWith("https://")),
+  excerpt: z.string().trim().min(1).max(4_000),
+}).strict();
+export const playstyleClassificationInputSchema = z.object({
+  judokaId: z.string().trim().min(1).max(200),
+  evidence: z.array(playstyleEvidenceSchema).max(MAX_PLAYSTYLE_EVIDENCE_ITEMS).optional(),
+}).strict().superRefine((input, context) => {
+  if (new TextEncoder().encode(JSON.stringify(input)).byteLength > 64_000) {
+    context.addIssue({ code: "custom", message: "playstyle input exceeds the 64 KB JEV request limit" });
   }
 });
 const interpretJudokaQueryInput = z.object({ query: z.string().trim().min(1).max(1_000) }).strict();
@@ -171,6 +194,18 @@ const queryInterpretationOutputSchema = z.object({
   model: z.string(), usage: usageOutputSchema, filters: filters,
   suggestions: z.record(z.string(), z.object({ value: z.string(), confidence: z.number(), applied: z.boolean() }).strict()),
 }).strict();
+const playstyleClassificationOutputSchema = z.object({
+  datasetVersion: z.string(), model: z.string(), usage: usageOutputSchema,
+  judokaId: z.string(), judokaSlug: z.string(), confidenceThreshold: z.number().min(0).max(1),
+  requiresHumanApproval: z.literal(true),
+  classification: z.object({
+    tacticalStyle: z.object({ proposed: z.enum(PLAYSTYLE_OPTIONS.tacticalStyle), confidence: z.number().min(0).max(1), policyAccepted: z.enum(["pressure", "counter", "balanced"]).nullable() }).strict(),
+    tempo: z.object({ proposed: z.enum(PLAYSTYLE_OPTIONS.tempo), confidence: z.number().min(0).max(1), policyAccepted: z.enum(["patient", "balanced", "aggressive"]).nullable() }).strict(),
+    gripStyle: z.object({ proposed: z.enum(PLAYSTYLE_OPTIONS.gripStyle), confidence: z.number().min(0).max(1), policyAccepted: z.enum(["dominant", "adaptive", "defensive", "mixed"]).nullable() }).strict(),
+    newazaEmphasis: z.object({ proposed: z.enum(PLAYSTYLE_OPTIONS.newazaEmphasis), confidence: z.number().min(0).max(1), policyAccepted: z.enum(["low", "medium", "high"]).nullable() }).strict(),
+    standingPreference: z.object({ proposed: z.enum(PLAYSTYLE_OPTIONS.standingPreference), confidence: z.number().min(0).max(1), policyAccepted: z.enum(["ashi_waza", "te_waza", "koshi_waza", "ma_sutemi_waza", "yoko_sutemi_waza", "mixed"]).nullable() }).strict(),
+  }).strict(),
+}).strict();
 
 function textResult(value: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(value) }], structuredContent: value };
@@ -180,7 +215,7 @@ const localReadAnnotations = { readOnlyHint: true, destructiveHint: false, openW
 const externalReadAnnotations = { readOnlyHint: true, destructiveHint: false, openWorldHint: true };
 
 /** Builds a stateless Streamable HTTP MCP endpoint over the shared application services. */
-export function createBudokonMcpHandler(dependencies: { catalog: CatalogService; draw: DrawService; eventDraw: EventDrawService; authorizeInternal(request: Request): boolean; semanticSearch?: SemanticJudokaSearcher; editorialReview?: EditorialReviewer; queryInterpreter?: JudokaQueryInterpreter }) {
+export function createBudokonMcpHandler(dependencies: { catalog: CatalogService; draw: DrawService; eventDraw: EventDrawService; authorizeInternal(request: Request): boolean; semanticSearch?: SemanticJudokaSearcher; editorialReview?: EditorialReviewer; playstyleClassification?: PlaystyleClassifier; queryInterpreter?: JudokaQueryInterpreter }) {
   return createMcpHandler(({ requestInfo }) => {
     const tools = createMcpTools(dependencies);
     const context = { authorizedInternal: requestInfo ? dependencies.authorizeInternal(requestInfo) : false };
@@ -217,6 +252,9 @@ export function createBudokonMcpHandler(dependencies: { catalog: CatalogService;
     }
     if (context.authorizedInternal && dependencies.editorialReview?.reviewMany) {
       register("review_proposed_judoka_batch", "Review judoka proposals", "Review up to 10 proposed records in one bounded external-model request. Results are advisory and require human approval.", editorialReviewBatchInputSchema, reviewBatchOutputSchema, input => tools.review_proposed_judoka_batch(input as Parameters<typeof tools.review_proposed_judoka_batch>[0], context), externalReadAnnotations);
+    }
+    if (context.authorizedInternal && dependencies.playstyleClassification) {
+      register("review_judoka_playstyle", "Review a judoka playstyle", "Propose confidence-gated playstyle labels from one canonical judoka, resolved signature techniques, and supplied source excerpts. This calls an external model, never changes canonical data, and always requires human approval.", playstyleClassificationInputSchema, playstyleClassificationOutputSchema, input => tools.review_judoka_playstyle(input as Parameters<typeof tools.review_judoka_playstyle>[0], context), externalReadAnnotations);
     }
     if (context.authorizedInternal && dependencies.queryInterpreter) {
       register("interpret_judoka_query", "Interpret a judoka query", "Suggest existing catalogue filters from natural language. Calls an external model; low-confidence suggestions are not applied.", interpretJudokaQueryInput, queryInterpretationOutputSchema, input => tools.interpret_judoka_query(input as Parameters<typeof tools.interpret_judoka_query>[0], context), externalReadAnnotations);

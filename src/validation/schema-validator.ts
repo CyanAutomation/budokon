@@ -71,6 +71,10 @@ function validateSchemaObject(value: Record<string, unknown>, schema: any, locat
 export function validateSchema(value: unknown, schema: any, location = '$', rootSchema = schema): void {
   if (schema.$ref) return validateSchema(value, resolveSchemaReference(schema.$ref, rootSchema, location), location, rootSchema);
   validateSchemaType(value, schema, location);
+  if (schema.minProperties !== undefined && value && typeof value === 'object' && !Array.isArray(value)
+    && Object.keys(value).length < schema.minProperties) {
+    fail(location, `must contain at least ${schema.minProperties} properties`);
+  }
   if (typeof value === 'string') validateSchemaString(value, schema, location);
   if (typeof value === 'number') validateSchemaNumber(value, schema, location);
   if (Array.isArray(value)) validateSchemaArray(value, schema, location, rootSchema);

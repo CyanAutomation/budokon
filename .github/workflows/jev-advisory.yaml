@@ -1,4 +1,4 @@
-name: JEV Search Evaluation
+name: JEV Advisory Evaluation
 
 on:
   workflow_dispatch:
@@ -21,6 +21,7 @@ jobs:
       JEV_MODEL: ${{ vars.JEV_MODEL }}
       JEV_TIMEOUT_MS: "20000"
       JEV_MINIMUM_RELEVANCE: "0.5"
+      JEV_PLAYSTYLE_THRESHOLD: "0.78"
 
     steps:
       - name: Checkout trusted default branch
@@ -40,3 +41,6 @@ jobs:
 
       - name: Evaluate semantic search
         run: npm run jev:evaluate
+
+      - name: Evaluate playstyle classification
+        run: npm run jev:evaluate:playstyle
