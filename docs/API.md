@@ -34,7 +34,8 @@ not reveal all-record totals or hidden-record counts. The legacy
 15 January 2027; it carries `Deprecation`, `Sunset`, and successor `Link`
 headers during the migration window.
 
-All public GET responses include `ETag`. Send it as `If-None-Match` to receive
+All public GET responses include an opaque `ETag`; clients should store and
+resend it without parsing its value. Send it as `If-None-Match` to receive
 `304 Not Modified` when the representation has not changed. A matching validator
 for a cached successful response can return `304` before rate limiting. Cache
 misses are routed and validated before a `304` is generated, so they can consume
