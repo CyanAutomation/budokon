@@ -51,7 +51,7 @@
     "deploy": "wrangler deploy"
   },
   "devDependencies": {
-    "@types/node": "^26.4.0",
+    "@types/node": "^26.6.3",
     "tsx": "^4.23.12",
     "typescript": "^5.7.2",
     "wrangler": "^4.144.0",
