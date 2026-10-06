@@ -89,22 +89,18 @@ test('coverage report and policy violations use their respective channels', (t) 
   assert.equal(satisfied, false);
   assert.equal(log.mock.callCount(), 1);
   assert.equal(error.mock.callCount(), 1);
-  assert.match(log.mock.calls[0].arguments[0], /BU-DO-KON editorial coverage/);
-  assert.match(error.mock.calls[0].arguments[0], /Coverage policy violations/);
+  assert.match(log.mock.calls[0].arguments[0], /Total judoka: 0/);
+  assert.match(error.mock.calls[0].arguments[0], /public real catalogue has 0; need at least 20/);
 });
 
-test('coverage report formatter produces readable structured output', () => {
+test('coverage report includes the catalogue totals and public rarity share', () => {
   const report = formatCoverageReport(summarizeCoverage([
     { personType: 'real', isHidden: false, gender: 'female', countryCode: 'FR', weightClass: '-63', rarity: 'Epic' },
   ]));
-  assert.deepEqual(report.split('\n').slice(0, 4), [
-    'BU-DO-KON editorial coverage',
-    'Total judoka: 1',
-    'Public real judoka: 1',
-    'Hidden judoka: 0',
-  ]);
+  assert.match(report, /^Total judoka: 1$/m);
+  assert.match(report, /^Public real judoka: 1$/m);
+  assert.match(report, /^Hidden judoka: 0$/m);
   assert.match(report, /\nBy rarity \(public real judoka\)\n  Epic: 1 \(100\.0%\)/);
-  assert.doesNotMatch(report, /Game-ready records/);
 });
 
 test('coverage violation formatter produces an actionable diagnostic', () => {

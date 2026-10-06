@@ -17,7 +17,6 @@ import {
 import { validateCanonicalRules } from "../src/validation/canonical-rules.js";
 import type { ValidatedCanonicalData } from "../src/validation/canonical-types.js";
 import { validateSchema } from "../src/validation/schema-validator.js";
-import { validateCanonical } from "../src/validation/validate-canonical.js";
 
 function judoka(id: string): Judoka {
   return { id, slug: id, firstname: id, surname: "Judoka", signatureMoveIds: ["move"], bio: "A sufficiently detailed biography." };
@@ -84,23 +83,58 @@ test("editorial review policy validates evidence, asks about duplicate candidate
   assert.equal(editorialReviewRecommendation({ ...input, evidence: [] }, answers, 0.8), "needs_human_review");
 });
 
-test("schema and cross-record validators accept valid canonical data and report broken rules", async () => {
+test("schema validator accepts required fields and rejects an empty identifier", () => {
   const simpleSchema = { type: "object", required: ["id"], properties: { id: { type: "string", minLength: 1 } }, additionalProperties: false };
   assert.doesNotThrow(() => validateSchema({ id: "record" }, simpleSchema));
   assert.throws(() => validateSchema({ id: "" }, simpleSchema), /at least 1 characters/);
+});
 
-  const canonical = await validateCanonical();
-  const data: ValidatedCanonicalData = {
-    judokaFiles: canonical.judoka.map(value => ({ name: `${value.slug}.json`, value })),
-    techniqueFiles: canonical.techniques.map(value => ({ name: `${value.id}.json`, value })),
-    eventFiles: canonical.events.map(value => ({ name: `${value.id}.json`, value })),
-    countries: canonical.countries,
-    weights: canonical.weights,
-    dataset: canonical.dataset,
+function minimalCanonicalData(): ValidatedCanonicalData {
+  return {
+    judokaFiles: [{
+      name: "fixture-judoka.json",
+      value: {
+        id: "00000000-0000-4000-8000-000000000001",
+        slug: "fixture-judoka",
+        firstname: "Fixture",
+        surname: "Judoka",
+        personType: "real",
+        countryCode: "GB",
+        signatureMoveIds: ["fixture-throw"],
+        gender: "male",
+        weightClass: "-73",
+        lastUpdated: "2025-01-01T00:00:00Z",
+        bio: "A sufficiently detailed fixture biography.",
+      },
+    }],
+    techniqueFiles: [{
+      name: "fixture-throw.json",
+      value: { id: "fixture-throw", name: "Fixture Throw", japanese: "Fixture", description: "A fixture technique." },
+    }],
+    eventFiles: [],
+    countries: {
+      GB: { code: "GB", country: "United Kingdom", active: true, lastUpdated: "2025-01-01T00:00:00Z" },
+    },
+    weights: [{
+      gender: "male",
+      description: "Male weight categories.",
+      categories: [{ weight: "-73", descriptor: "Fixture category." }],
+    }],
+    dataset: { datasetVersion: "2025.01.1" },
   };
-  assert.doesNotThrow(() => validateCanonicalRules(data));
+}
+
+test("cross-record validation accepts a minimal canonical dataset", () => {
+  assert.doesNotThrow(() => validateCanonicalRules(minimalCanonicalData()));
+});
+
+test("cross-record validation rejects a judoka filename that differs from its slug", () => {
+  const data = minimalCanonicalData();
   assert.throws(
-    () => validateCanonicalRules({ ...data, judokaFiles: [{ ...data.judokaFiles[0], name: "wrong.json" }, ...data.judokaFiles.slice(1)] }),
-    /filename must match canonical slug/,
+    () => validateCanonicalRules({
+      ...data,
+      judokaFiles: [{ ...data.judokaFiles[0], name: "wrong.json" }],
+    }),
+    /data\/judoka\/wrong\.json: filename must match canonical slug fixture-judoka/,
   );
 });

@@ -127,14 +127,32 @@ test("JEV evaluation reports fixture references to missing records", async () =>
 
 test("JEV evaluation writes to stdout when no workflow summary file is configured", async () => {
   const output: string[] = [];
+  let searches = 0;
   await runEvaluation({
     environment: { JEV_OPENROUTER_API_KEY: "test-key" },
-    async readText() { return "[]"; },
-    createSearchService() { return { async search() { return { model: "unused", usage: {}, results: [] }; } }; },
+    async readText(filePath) {
+      if (filePath.endsWith("jev-evaluation.json")) return JSON.stringify([{
+        id: "empty-results",
+        query: "fixture query",
+        candidateSlugs: ["candidate"],
+        relevantSlugs: ["candidate"],
+      }]);
+      return JSON.stringify({ id: "candidate-id", slug: "candidate", signatureMoveIds: [] });
+    },
+    createSearchService() {
+      return {
+        async search() {
+          searches += 1;
+          return { model: "test-model", usage: {}, results: [] };
+        },
+      };
+    },
     writeOutput(report) { output.push(report); },
   });
 
+  assert.equal(searches, 1);
   assert.equal(output.length, 1);
   assert.match(output[0], /Threshold: 0\.5/);
   assert.match(output[0], /Precision: 100\.0% \(0\/0 retrieved\)/);
+  assert.match(output[0], /Recall: 0\.0% \(0\/1 labeled relevant\)/);
 });
