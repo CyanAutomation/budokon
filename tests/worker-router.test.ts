@@ -948,6 +948,7 @@ test("conditional requests do not turn missing resources or invalid queries into
   const cases = [
     { path: "/v1/judoka/no-such-record", expectedStatus: 404 },
     { path: "/v1/judoka?unknownFilter=value", expectedStatus: 400 },
+    { path: "/v1/techniques/%ZZ", expectedStatus: 400 },
   ];
 
   for (const { path, expectedStatus } of cases) {

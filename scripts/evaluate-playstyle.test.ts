@@ -46,10 +46,19 @@ test("playstyle evaluation reports per-facet accuracy and abstention accuracy", 
     },
   ] as unknown as PlaystyleEvaluationFixture[];
   const results = fixtures.map(resultFor);
+  results[0].classification.tacticalStyle.proposed = "counter";
+  results[0].classification.tacticalStyle.policyAccepted = "counter";
+  results[1].classification.tempo.proposed = "aggressive";
+  results[1].classification.tempo.policyAccepted = "aggressive";
   const score = scorePlaystyleEvaluation(fixtures, results);
-  assert.equal(score.facets.tacticalStyle.accuracy, 1);
-  assert.equal(score.facets.standingPreference.accuracy, 1);
-  assert.deepEqual(score.abstention, { correct: 10, total: 10, accuracy: 1 });
+  assert.deepEqual(score.facets, {
+    tacticalStyle: { correct: 1, total: 2, accuracy: 0.5 },
+    tempo: { correct: 1, total: 2, accuracy: 0.5 },
+    gripStyle: { correct: 2, total: 2, accuracy: 1 },
+    newazaEmphasis: { correct: 2, total: 2, accuracy: 1 },
+    standingPreference: { correct: 2, total: 2, accuracy: 1 },
+  });
+  assert.deepEqual(score.abstention, { correct: 9, total: 10, accuracy: 0.9 });
   assert.throws(() => scorePlaystyleEvaluation(fixtures, results.slice(1)), /counts must match/u);
 });
 
@@ -69,7 +78,13 @@ test("live playstyle evaluation is injectable for offline tests and reports mode
         calls += 1;
         const fixture = expectedBySlug.get(input.record.slug);
         assert.ok(fixture, `fixture exists for ${input.record.slug}`);
-        return resultFor(fixture!);
+        const result = resultFor(fixture!);
+        if (calls === 1) {
+          const differentOption = fixture!.expected.tacticalStyle === "pressure" ? "counter" : "pressure";
+          result.classification.tacticalStyle.proposed = differentOption;
+          result.classification.tacticalStyle.policyAccepted = differentOption;
+        }
+        return result;
       },
     }),
     writeOutput: value => { report = value; },
@@ -77,8 +92,7 @@ test("live playstyle evaluation is injectable for offline tests and reports mode
   assert.equal(calls, fixtures.length);
   assert.match(report, /Requested model: typesafe\/jev-configured-test/u);
   assert.match(report, /Resolved model\(s\): typesafe\/jev-evaluation-fake/u);
-  assert.match(report, /tacticalStyle \| 4 \| 4 \| 100\.0%/u);
-  assert.match(report, /Abstention \| 20 \| 20 \| 100\.0%/u);
+  assert.match(report, /tacticalStyle \| 3 \| 4 \| 75\.0%/u);
   assert.match(report, /80 input tokens, 32 output tokens/u);
   assert.match(report, /non-gating/u);
 });
