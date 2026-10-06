@@ -54,7 +54,7 @@ jobs:
         run: npm run test
 
       - name: Fallow - Codebase Intelligence
-        uses: fallow-rs/fallow@7efec6de07a5aff41d8e047cab2734d69580d2fc # v2.95.0
+        uses: fallow-rs/fallow@71369f80d099e25726ad04382f15aef14a251abc # v3.31.0
         with:
           version: "2.95.0"
           command: health
