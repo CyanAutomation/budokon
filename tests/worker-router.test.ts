@@ -48,7 +48,9 @@ async function successfulMcpToolJson(response: Response) {
 }
 
 /**
- * Test MCP protocol initialization and tool listing.
+ * MCP initialization returns the requested supported protocol revision and the
+ * server capabilities advertised by this read-only catalogue.
+ * @see https://modelcontextprotocol.io/specification/2025-06-18/basic/lifecycle#initialization
  */
 test("MCP initialize request returns proper protocol version and capabilities", async () => {
   const response = await worker.fetch(
@@ -64,9 +66,9 @@ test("MCP initialize request returns proper protocol version and capabilities", 
   const data = await mcpJson(response);
   assert.equal(data.jsonrpc, "2.0");
   assert.equal(data.id, 1);
-  assert.equal(typeof data.result.protocolVersion, "string");
+  assert.equal(data.result.protocolVersion, "2025-06-18");
   assert.equal(data.result.serverInfo.name, "budokon");
-  assert.equal(typeof data.result.serverInfo.version, "string");
+  assert.match(data.result.serverInfo.version, /^\d+\.\d+\.\d+$/u);
   assert.equal(data.result.capabilities.tools.listChanged, true);
 });
 
@@ -212,6 +214,7 @@ test("public MCP catalog tools support bounded, filterable result pages", async 
   assert.equal("total" in coverage, false);
 });
 
+/** @see ../docs/API.md#MCP-tools */
 test("MCP collection and draw bounds reject oversized requests", async () => {
   const call = async (id: number, name: string, args: unknown) => {
     const response = await worker.fetch(new Request("https://example.test/mcp", {
@@ -221,12 +224,31 @@ test("MCP collection and draw bounds reject oversized requests", async () => {
     }), mockEnv);
     return mcpJson(response);
   };
-  const oversizedPage = await call(79, "search_judoka", { limit: 51 });
-  assert.equal(oversizedPage.result.isError, true);
-  const oversizedDraw = await call(80, "draw_judoka", { count: 11 });
-  assert.equal(oversizedDraw.result.isError, true);
-  const unsupportedAlgorithm = await call(81, "draw_judoka", { algorithm: "unknown" });
-  assert.equal(unsupportedAlgorithm.result.isError, true);
+
+  const maximumPage = await call(78, "search_judoka", { limit: 50 });
+  assert.equal(maximumPage.result.isError, undefined);
+  const page = JSON.parse(maximumPage.result.content[0].text);
+  assert.ok(page.judoka.length <= 50);
+
+  const maximumDraw = await call(79, "draw_judoka", { count: 10, seed: "mcp-boundary" });
+  assert.equal(maximumDraw.result.isError, undefined);
+  assert.equal(JSON.parse(maximumDraw.result.content[0].text).judoka.length, 10);
+
+  const oversizedPage = await call(80, "search_judoka", { limit: 51 });
+  const oversizedDraw = await call(81, "draw_judoka", { count: 11 });
+  const unsupportedAlgorithm = await call(82, "draw_judoka", { algorithm: "unknown" });
+  for (const [toolName, field, result] of [
+    ["search_judoka", "limit", oversizedPage],
+    ["draw_judoka", "count", oversizedDraw],
+    ["draw_judoka", "algorithm", unsupportedAlgorithm],
+  ] as const) {
+    assert.equal(result.jsonrpc, "2.0");
+    assert.equal(result.result.isError, true);
+    assert.equal(result.result.content.length, 1);
+    assert.equal(result.result.content[0].type, "text");
+    assert.match(result.result.content[0].text, new RegExp(`Invalid arguments for tool ${toolName}`, "u"));
+    assert.match(result.result.content[0].text, new RegExp(field, "u"));
+  }
 });
 
 test("OAuth discovery and scoped access are available for MCP clients", async () => {
@@ -350,6 +372,7 @@ test("OAuth discovery and scoped access are available for MCP clients", async ()
   }
 });
 
+/** @see ../docs/API.md#MCP-tools */
 test("MCP rejects ambiguous judoka search aliases", async () => {
   const response = await worker.fetch(new Request("https://example.test/mcp", {
     method: "POST",
@@ -358,6 +381,10 @@ test("MCP rejects ambiguous judoka search aliases", async () => {
   }), mockEnv);
   const envelope = await mcpJson(response);
   assert.equal(envelope.result.isError, true);
+  assert.equal(envelope.result.content.length, 1);
+  assert.equal(envelope.result.content[0].type, "text");
+  assert.match(envelope.result.content[0].text, /Invalid arguments for tool search_judoka/u);
+  assert.match(envelope.result.content[0].text, /q/u);
 });
 
 /**
