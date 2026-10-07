@@ -20,7 +20,7 @@ env:
   REF: main
   TASK_DESCRIPTION: Keep README.md and docs/ accurate against the current implementation.
   ALLOWLIST: README.md,docs/**/*.md
-  VALIDATION_COMMAND: npm run check
+  VALIDATION_COMMAND: node -e 'const [major, minor] = process.versions.node.split(".").map(Number); if (major !== 24 || minor < 10) process.exit(1)' && npm run check
 
 jobs:
   system_status:
@@ -199,6 +199,16 @@ jobs:
       KASEKI_BASE_URL: ${{ vars.KASEKI_BASE_URL }}
 
     steps:
+      - name: Check out trusted main-branch helper
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+
       - name: Check required tools
         shell: bash
         run: |
@@ -334,61 +344,7 @@ jobs:
         env:
           RUN_ID: ${{ steps.submit.outputs.run_id }}
           KASEKI_API_TOKEN: ${{ secrets.KASEKI_API_TOKEN }}
-        run: |
-          set -euo pipefail
-
-          response_file="$(mktemp)"
-          trap 'rm -f "$response_file"' EXIT
-
-          # Kaseki can run for up to three hours; leave time for a final poll.
-          for attempt in $(seq 1 185); do
-            curl --fail-with-body \
-              --silent \
-              --show-error \
-              --retry 3 \
-              --retry-all-errors \
-              --connect-timeout 10 \
-              --max-time 60 \
-              --output "$response_file" \
-              --header "Authorization: Bearer $KASEKI_API_TOKEN" \
-              "$KASEKI_BASE_URL/api/runs/$RUN_ID/status"
-
-            status="$(jq -er '.status' "$response_file")"
-
-            case "$status" in
-              completed)
-                echo "status=$status" >> "$GITHUB_OUTPUT"
-                echo "Kaseki status: completed"
-                exit 0
-                ;;
-
-              failed)
-                failure_class="$(jq -r '.failureClass // ""' "$response_file")"
-                if [[ "$failure_class" == "empty-diff" ]]; then
-                  echo "status=no_changes" >> "$GITHUB_OUTPUT"
-                  echo "Kaseki completed without changes; treating the expected empty diff as a successful no-op."
-                  exit 0
-                fi
-
-                echo "status=failed" >> "$GITHUB_OUTPUT"
-                echo "Kaseki run failed (failure class: ${failure_class:-unknown})."
-                exit 1
-                ;;
-
-              queued|running)
-                echo "Kaseki status: $status (poll $attempt/185)"
-                sleep 60
-                ;;
-
-              *)
-                echo "::error title=Unexpected Kaseki status::The controller returned an unsupported status."
-                exit 1
-                ;;
-            esac
-          done
-
-          echo "::error title=Kaseki run timed out::No terminal status after 185 minutes."
-          exit 1
+        run: node scripts/wait-for-kaseki.ts
 
       - name: Publish submission details
         if: always()
