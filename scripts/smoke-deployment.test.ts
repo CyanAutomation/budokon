@@ -4,10 +4,12 @@ import { request, runSmokeDeployment } from "./smoke-deployment.js";
 
 test("smoke request accepts successful responses and an explicitly expected status", async () => {
   const ok = await request("https://example.test", "/status", undefined, undefined, async () => new Response("ok"));
+  assert.equal(ok.status, 200);
   assert.equal(await ok.text(), "ok");
 
   const notModified = await request("https://example.test", "/catalog", undefined, 304, async () => new Response(null, { status: 304 }));
   assert.equal(notModified.status, 304);
+  assert.equal(await notModified.text(), "");
 });
 
 test("smoke request reports unexpected HTTP statuses", async () => {
