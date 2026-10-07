@@ -44,7 +44,7 @@ export async function waitForKasekiRun(options: WaitForKasekiOptions): Promise<K
 
   const requestStatus = options.requestStatus ?? requestStatusFromController;
   const sleep = options.sleep ?? delay;
-  const statusUrl = `${baseUrl}/api/runs/${encodeURIComponent(options.runId)}/status`;
+  const statusUrl = `${baseUrl}/api/v1/runs/${encodeURIComponent(options.runId)}/status`;
 
   for (let attempt = 1; attempt <= maxPolls; attempt += 1) {
     const response = await requestStatus(statusUrl, options.token);
