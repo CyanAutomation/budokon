@@ -15,6 +15,7 @@ interface WorkflowStep {
 interface WorkflowJob {
   if?: string;
   permissions?: Record<string, string>;
+  environment?: string | { name?: string; url?: string };
   env?: Record<string, unknown>;
   steps: WorkflowStep[];
 }
@@ -31,6 +32,29 @@ async function readWorkflow(fileName: string): Promise<{ document: Workflow; sou
   const source = await readFile(path.join(repositoryRoot, ".github", "workflows", fileName), "utf8");
   return { document: parse(source) as Workflow, source };
 }
+
+test("Node 24 is the supported runtime and every workflow uses it", async () => {
+  const packageJson = JSON.parse(await readFile(path.join(repositoryRoot, "package.json"), "utf8")) as {
+    engines: { node: string };
+  };
+  const packageLock = JSON.parse(await readFile(path.join(repositoryRoot, "package-lock.json"), "utf8")) as {
+    packages: { "": { engines: { node: string } } };
+  };
+
+  assert.equal(packageJson.engines.node, "^24.10.0");
+  assert.equal(packageLock.packages[""].engines.node, packageJson.engines.node);
+
+  const workflowDirectory = path.join(repositoryRoot, ".github", "workflows");
+  const workflowFiles = (await readdir(workflowDirectory)).filter(file => /\.ya?ml$/u.test(file));
+  for (const fileName of workflowFiles) {
+    const { document } = await readWorkflow(fileName);
+    for (const job of Object.values(document.jobs)) {
+      for (const step of job.steps.filter(candidate => candidate.uses?.startsWith("actions/setup-node@"))) {
+        assert.equal(String(step.with?.["node-version"]), "24", `${fileName} must use Node 24`);
+      }
+    }
+  }
+});
 
 test("Kaseki DRY dispatch is default-branch-only and pins the token destination", async () => {
   const { document, source } = await readWorkflow("kaseki-dry.yaml");
@@ -74,6 +98,15 @@ test("read-only validation and deployment checkouts do not retain GitHub credent
       if (checkout) assert.equal(checkout.with?.["persist-credentials"], false, fileName);
     }
   }
+});
+
+test("production deployment requires the protected default branch", async () => {
+  const { document } = await readWorkflow("deploy-cloudflare.yml");
+  const deploy = document.jobs.deploy;
+
+  assert.match(deploy.if ?? "", /github\.event\.repository\.default_branch/u);
+  assert.match(deploy.if ?? "", /github\.ref_protected/u);
+  assert.equal(typeof deploy.environment === "object" ? deploy.environment.name : deploy.environment, "production");
 });
 
 test("Dependabot checks npm and GitHub Actions weekly", async () => {
@@ -152,12 +185,39 @@ test("Kaseki sweeps treat an empty diff as a successful no-op", async () => {
 
   const docsWait = docs.document.jobs.dispatch.steps.find(step => step.name === "Wait for Kaseki completion");
   const dryWait = dry.document.jobs.dry_sweep.steps.find(step => step.name === "Wait for Kaseki completion");
+  const helper = await readFile(path.join(repositoryRoot, "scripts", "wait-for-kaseki.ts"), "utf8");
+
+  assert.match(docsWait?.run ?? "", /scripts\/wait-for-kaseki\.ts/u);
+  assert.match(dryWait?.run ?? "", /scripts\/wait-for-kaseki\.ts/u);
+  assert.match(helper, /failureClass/u);
+  assert.match(helper, /empty-diff/u);
+  assert.match(helper, /no_changes/u);
+});
+
+test("Kaseki sweeps use the shared Node polling helper", async () => {
+  const docs = await readWorkflow("kaseki-docs.yaml");
+  const dry = await readWorkflow("kaseki-dry.yaml");
+
+  const docsWait = docs.document.jobs.dispatch.steps.find(step => step.name === "Wait for Kaseki completion");
+  const dryWait = dry.document.jobs.dry_sweep.steps.find(step => step.name === "Wait for Kaseki completion");
 
   for (const step of [docsWait, dryWait]) {
     assert.ok(step?.run);
-    assert.match(step.run, /failureClass/u);
-    assert.match(step.run, /empty-diff/u);
-    assert.match(step.run, /no_changes/u);
+    assert.match(step.run, /node scripts\/wait-for-kaseki\.ts/u);
+    assert.doesNotMatch(step.run, /for attempt in/u);
+  }
+
+  const docsCheckout = docs.document.jobs.dispatch.steps.find(step => step.uses?.startsWith("actions/checkout@"));
+  const dryCheckout = dry.document.jobs.dry_sweep.steps.find(step => step.uses?.startsWith("actions/checkout@"));
+  assert.equal(docsCheckout?.with?.["persist-credentials"], false);
+  assert.equal(dryCheckout?.with?.["persist-credentials"], false);
+  for (const command of [
+    String(docs.document.env?.VALIDATION_COMMAND),
+    String(dry.document.jobs.dry_sweep.env?.VALIDATION_COMMAND),
+  ]) {
+    assert.match(command, /major !== 24/u);
+    assert.match(command, /minor < 10/u);
+    assert.match(command, /npm run check/u);
   }
 });
 
