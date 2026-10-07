@@ -93,13 +93,17 @@ test('coverage report and policy violations use their respective channels', (t) 
   assert.match(error.mock.calls[0].arguments[0], /public real catalogue has 0; need at least 20/);
 });
 
-test('coverage report includes the catalogue totals and public rarity share', () => {
+/** @see ../README.md#editorial-coverage-and-rarity-policy */
+test('coverage report renders editorial balance sections and public rarity share', () => {
   const report = formatCoverageReport(summarizeCoverage([
     { personType: 'real', isHidden: false, gender: 'female', countryCode: 'FR', weightClass: '-63', rarity: 'Epic' },
   ]));
   assert.match(report, /^Total judoka: 1$/m);
   assert.match(report, /^Public real judoka: 1$/m);
   assert.match(report, /^Hidden judoka: 0$/m);
+  assert.match(report, /\nBy gender\n  female: 1 \(100\.0%\)/u);
+  assert.match(report, /\nBy country\n  FR: 1 \(100\.0%\)/u);
+  assert.match(report, /\nBy weight class\n  -63: 1 \(100\.0%\)/u);
   assert.match(report, /\nBy rarity \(public real judoka\)\n  Epic: 1 \(100\.0%\)/);
 });
 

@@ -98,5 +98,19 @@ test("live playstyle evaluation is injectable for offline tests and reports mode
 });
 
 test("playstyle evaluation requires credentials before loading fixtures", async () => {
-  await assert.rejects(runPlaystyleEvaluation({ environment: {} }), /JEV_OPENROUTER_API_KEY is required/u);
+  let fixtureReads = 0;
+  let classifierCreations = 0;
+  await assert.rejects(runPlaystyleEvaluation({
+    environment: {},
+    async readText() {
+      fixtureReads += 1;
+      return "[]";
+    },
+    createClassifier() {
+      classifierCreations += 1;
+      throw new Error("classifier must not be created without credentials");
+    },
+  }), /JEV_OPENROUTER_API_KEY is required/u);
+  assert.equal(fixtureReads, 0);
+  assert.equal(classifierCreations, 0);
 });

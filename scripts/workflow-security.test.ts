@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { parse } from "yaml";
 
@@ -76,7 +76,7 @@ test("read-only validation and deployment checkouts do not retain GitHub credent
   }
 });
 
-test("Dependabot keeps pinned GitHub Actions revisions on a weekly update cadence", async () => {
+test("Dependabot checks npm and GitHub Actions weekly", async () => {
   const source = await readFile(path.join(repositoryRoot, ".github", "dependabot.yml"), "utf8");
   const document = parse(source) as { version: number; updates: Array<{ "package-ecosystem": string; directory: string; schedule: { interval: string } }> };
 
@@ -85,6 +85,26 @@ test("Dependabot keeps pinned GitHub Actions revisions on a weekly update cadenc
     update["package-ecosystem"] === "github-actions" && update.directory === "/" && update.schedule.interval === "weekly"));
   assert.ok(document.updates.some(update =>
     update["package-ecosystem"] === "npm" && update.directory === "/" && update.schedule.interval === "weekly"));
+});
+
+test("external workflow actions are pinned to full commit SHAs", async () => {
+  const workflowDirectory = path.join(repositoryRoot, ".github", "workflows");
+  const workflowFiles = (await readdir(workflowDirectory)).filter(file => /\.ya?ml$/u.test(file));
+  let externalActionCount = 0;
+
+  for (const fileName of workflowFiles) {
+    const { document } = await readWorkflow(fileName);
+    for (const [jobName, job] of Object.entries(document.jobs)) {
+      for (const step of job.steps) {
+        if (!step.uses || step.uses.startsWith("./")) continue;
+        externalActionCount += 1;
+        const revision = step.uses.slice(step.uses.lastIndexOf("@") + 1);
+        assert.match(revision, /^[0-9a-f]{40}$/u, `${fileName}:${jobName} action ${step.uses} must use a full commit SHA`);
+      }
+    }
+  }
+
+  assert.ok(externalActionCount > 0, "the pinning check must inspect at least one external workflow action");
 });
 
 test("Kaseki sweeps always target main and request regular pull requests", async () => {
