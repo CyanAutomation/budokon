@@ -31,7 +31,7 @@ test("polls queued and running runs until completion", async () => {
   assert.equal(result, "completed");
   assert.deepEqual(slept, [DEFAULT_POLL_INTERVAL_MS, DEFAULT_POLL_INTERVAL_MS]);
   assert.deepEqual(requested[0], {
-    url: "https://kaseki.example/api/runs/run_123/status",
+    url: "https://kaseki.example/api/v1/runs/run_123/status",
     token: "test-token",
   });
   assert.equal(requested.length, 3);
