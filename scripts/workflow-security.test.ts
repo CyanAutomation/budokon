@@ -33,6 +33,12 @@ async function readWorkflow(fileName: string): Promise<{ document: Workflow; sou
   return { document: parse(source) as Workflow, source };
 }
 
+function runOf(job: WorkflowJob, stepName: string): string {
+  const step = job.steps.find(candidate => candidate.name === stepName);
+  assert.ok(step, `workflow is missing the ${stepName} step`);
+  return step.run ?? "";
+}
+
 test("Node 24 is the supported runtime and every workflow uses it", async () => {
   const packageJson = JSON.parse(await readFile(path.join(repositoryRoot, "package.json"), "utf8")) as {
     engines: { node: string };
@@ -154,17 +160,47 @@ test("Kaseki sweeps always target main and request regular pull requests", async
   }
 });
 
-test("Kaseki sweeps check API capabilities and runner preflight before submission", async () => {
+test("Kaseki sweeps use the versioned API base for checks and submissions", async () => {
   const docs = await readWorkflow("kaseki-docs.yaml");
   const dry = await readWorkflow("kaseki-dry.yaml");
 
-  const docsApiChecks = docs.document.jobs.api_connection.steps.map(step => step.run ?? "").join("\n");
-  const drySteps = dry.document.jobs.dry_sweep.steps.map(step => step.run ?? "").join("\n");
+  const expectedApiBase = "${{ vars.KASEKI_BASE_URL }}/api/v1";
+  assert.equal(docs.document.jobs.api_connection.env?.KASEKI_API_BASE_URL, expectedApiBase);
+  assert.equal(docs.document.jobs.dispatch.env?.KASEKI_API_BASE_URL, expectedApiBase);
+  assert.equal(dry.document.jobs.dry_sweep.env?.KASEKI_API_BASE_URL, expectedApiBase);
 
-  for (const workflowText of [docsApiChecks, drySteps]) {
-    assert.match(workflowText, /\/api\/capabilities/u);
-    assert.match(workflowText, /\/api\/preflight/u);
-    assert.match(workflowText, /publishModes[\s\S]{0,120}pr/u);
+  const workflows = [
+    {
+      name: "Kaseki Docs",
+      gateway: runOf(docs.document.jobs.api_connection, "Verify gateway connectivity and authentication"),
+      capabilities: runOf(docs.document.jobs.api_connection, "Verify Kaseki API capabilities"),
+      preflight: runOf(docs.document.jobs.api_connection, "Verify Kaseki runner preflight"),
+      submit: runOf(docs.document.jobs.dispatch, "Submit documentation sweep"),
+    },
+    {
+      name: "Kaseki DRY",
+      gateway: runOf(dry.document.jobs.dry_sweep, "Verify gateway connectivity and authentication"),
+      capabilities: runOf(dry.document.jobs.dry_sweep, "Verify Kaseki API capabilities"),
+      preflight: runOf(dry.document.jobs.dry_sweep, "Verify Kaseki runner preflight"),
+      submit: runOf(dry.document.jobs.dry_sweep, "Submit DRY sweep"),
+    },
+  ];
+
+  for (const workflow of workflows) {
+    assert.match(workflow.gateway, /\$KASEKI_API_BASE_URL\/gateway-test\?stage=1/u, workflow.name);
+    assert.match(workflow.capabilities, /\$KASEKI_API_BASE_URL\/capabilities/u, workflow.name);
+    assert.match(workflow.preflight, /\$KASEKI_API_BASE_URL\/preflight/u, workflow.name);
+    assert.match(workflow.submit, /--request POST "\$KASEKI_API_BASE_URL\/runs"/u, workflow.name);
+    assert.doesNotMatch(workflow.capabilities, /--retry-all-errors/u, workflow.name);
+    assert.doesNotMatch(workflow.preflight, /--retry-all-errors/u, workflow.name);
+    assert.match(workflow.capabilities, /publishModes[\s\S]{0,120}pr/u, workflow.name);
+  }
+});
+
+test("Kaseki workflows do not retry permanent HTTP errors", async () => {
+  for (const fileName of ["kaseki-docs.yaml", "kaseki-dry.yaml"]) {
+    const { source } = await readWorkflow(fileName);
+    assert.doesNotMatch(source, /--retry-all-errors/u, fileName);
   }
 });
 
@@ -192,6 +228,7 @@ test("Kaseki sweeps treat an empty diff as a successful no-op", async () => {
   assert.match(helper, /failureClass/u);
   assert.match(helper, /empty-diff/u);
   assert.match(helper, /no_changes/u);
+  assert.match(helper, /environment\.KASEKI_API_BASE_URL/u);
 });
 
 test("Kaseki sweeps use the shared Node polling helper", async () => {
