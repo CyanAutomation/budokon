@@ -18,7 +18,7 @@ test("polls queued and running runs until completion", async () => {
   const requested: Array<{ url: string; token: string }> = [];
 
   const result = await waitForKasekiRun({
-    baseUrl: "https://kaseki.example/",
+    apiBaseUrl: "https://kaseki.example/api/v1/",
     token: "test-token",
     runId: "run_123",
     requestStatus: async (url, token) => {
@@ -37,9 +37,30 @@ test("polls queued and running runs until completion", async () => {
   assert.equal(requested.length, 3);
 });
 
+test("does not retry permanent Kaseki HTTP errors", async () => {
+  const originalFetch = globalThis.fetch;
+  let requestCount = 0;
+  globalThis.fetch = async () => {
+    requestCount += 1;
+    return new Response("not found", { status: 404 });
+  };
+
+  try {
+    await assert.rejects(waitForKasekiRun({
+      apiBaseUrl: "https://kaseki.example/api/v1",
+      token: "test-token",
+      runId: "run_123",
+      maxPolls: 1,
+    }));
+    assert.equal(requestCount, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("treats the expected empty diff as a successful no-op", async () => {
   const result = await waitForKasekiRun({
-    baseUrl: "https://kaseki.example",
+    apiBaseUrl: "https://kaseki.example/api/v1",
     token: "test-token",
     runId: "run_123",
     requestStatus: async () => ({ status: "failed", failureClass: "empty-diff" }),
@@ -51,7 +72,7 @@ test("treats the expected empty diff as a successful no-op", async () => {
 
 test("fails on a terminal Kaseki error", async () => {
   await assert.rejects(waitForKasekiRun({
-    baseUrl: "https://kaseki.example",
+    apiBaseUrl: "https://kaseki.example/api/v1",
     token: "test-token",
     runId: "run_123",
     requestStatus: async () => ({ status: "failed", failureClass: "validation" }),
@@ -61,7 +82,7 @@ test("fails on a terminal Kaseki error", async () => {
 
 test("rejects unknown statuses and times out after the configured polls", async () => {
   await assert.rejects(waitForKasekiRun({
-    baseUrl: "https://kaseki.example",
+    apiBaseUrl: "https://kaseki.example/api/v1",
     token: "test-token",
     runId: "run_123",
     requestStatus: async () => ({ status: "finished" }),
@@ -69,7 +90,7 @@ test("rejects unknown statuses and times out after the configured polls", async 
 
   let polls = 0;
   await assert.rejects(waitForKasekiRun({
-    baseUrl: "https://kaseki.example",
+    apiBaseUrl: "https://kaseki.example/api/v1",
     token: "test-token",
     runId: "run_123",
     maxPolls: 2,
