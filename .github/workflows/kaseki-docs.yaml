@@ -79,7 +79,6 @@ jobs:
             --silent \
             --show-error \
             --retry 3 \
-            --retry-all-errors \
             --connect-timeout 10 \
             --max-time 20 \
             --output "$response_file" \
@@ -96,6 +95,7 @@ jobs:
     environment: kaseki-agent
     env:
       KASEKI_BASE_URL: ${{ vars.KASEKI_BASE_URL }}
+      KASEKI_API_BASE_URL: ${{ vars.KASEKI_BASE_URL }}/api/v1
 
     steps:
       - name: Verify gateway connectivity and authentication
@@ -125,7 +125,7 @@ jobs:
             --max-time 60 \
             --output "$response_file" \
             --header "Authorization: Bearer $KASEKI_API_TOKEN" \
-            "$KASEKI_BASE_URL/api/v1/gateway-test?stage=1"
+            "$KASEKI_API_BASE_URL/gateway-test?stage=1"
 
           jq -e '.status == "ok"' "$response_file" >/dev/null
 
@@ -143,12 +143,11 @@ jobs:
             --silent \
             --show-error \
             --retry 3 \
-            --retry-all-errors \
             --connect-timeout 10 \
             --max-time 30 \
             --output "$response_file" \
             --header "Authorization: Bearer $KASEKI_API_TOKEN" \
-            "$KASEKI_BASE_URL/api/capabilities"
+            "$KASEKI_API_BASE_URL/capabilities"
 
           if ! jq -e '(.taskModes | index("patch")) != null and (.publishModes | index("pr")) != null' \
             "$response_file" >/dev/null; then
@@ -171,13 +170,12 @@ jobs:
               --silent \
               --show-error \
               --retry 3 \
-              --retry-all-errors \
               --connect-timeout 10 \
               --max-time 60 \
               --output "$response_file" \
               --write-out '%{http_code}' \
               --header "Authorization: Bearer $KASEKI_API_TOKEN" \
-              "$KASEKI_BASE_URL/api/preflight"
+              "$KASEKI_API_BASE_URL/preflight"
           )"
 
           if [[ "$http_status" != "200" ]] || \
@@ -196,6 +194,7 @@ jobs:
     environment: kaseki-agent
     env:
       KASEKI_BASE_URL: ${{ vars.KASEKI_BASE_URL }}
+      KASEKI_API_BASE_URL: ${{ vars.KASEKI_BASE_URL }}/api/v1
 
     steps:
       - name: Check out trusted main-branch helper
@@ -304,12 +303,11 @@ jobs:
               --silent \
               --show-error \
               --retry 3 \
-              --retry-all-errors \
               --connect-timeout 10 \
               --max-time 60 \
               --output "$response_file" \
               --write-out '%{http_code}' \
-              --request POST "$KASEKI_BASE_URL/api/v1/runs" \
+              --request POST "$KASEKI_API_BASE_URL/runs" \
               --header "Authorization: Bearer $KASEKI_API_TOKEN" \
               --header "Content-Type: application/json" \
               --data "$payload"
