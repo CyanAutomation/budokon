@@ -7,13 +7,15 @@ export const DEFAULT_MAX_POLLS = 38;
 const REQUEST_TIMEOUT_MS = 60 * 1000;
 const REQUEST_RETRIES = 3;
 
+class PermanentHttpStatusError extends Error {}
+
 type KasekiStatusResponse = {
   status?: unknown;
   failureClass?: unknown;
 };
 
 export interface WaitForKasekiOptions {
-  baseUrl: string;
+  apiBaseUrl: string;
   token: string;
   runId: string;
   pollIntervalMs?: number;
@@ -26,8 +28,8 @@ export interface WaitForKasekiOptions {
 export type KasekiRunResult = "completed" | "no_changes";
 
 export async function waitForKasekiRun(options: WaitForKasekiOptions): Promise<KasekiRunResult> {
-  const baseUrl = options.baseUrl.replace(/\/+$/u, "");
-  if (!baseUrl) throw new Error("KASEKI_BASE_URL is required");
+  const apiBaseUrl = options.apiBaseUrl.replace(/\/+$/u, "");
+  if (!apiBaseUrl) throw new Error("KASEKI_API_BASE_URL is required");
   if (!options.token) throw new Error("KASEKI_API_TOKEN is required");
   if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/u.test(options.runId)) {
     throw new Error("Kaseki run ID has an invalid format");
@@ -44,7 +46,7 @@ export async function waitForKasekiRun(options: WaitForKasekiOptions): Promise<K
 
   const requestStatus = options.requestStatus ?? requestStatusFromController;
   const sleep = options.sleep ?? delay;
-  const statusUrl = `${baseUrl}/api/v1/runs/${encodeURIComponent(options.runId)}/status`;
+  const statusUrl = `${apiBaseUrl}/runs/${encodeURIComponent(options.runId)}/status`;
 
   for (let attempt = 1; attempt <= maxPolls; attempt += 1) {
     const response = await requestStatus(statusUrl, options.token);
@@ -77,9 +79,15 @@ async function requestStatusFromController(url: string, token: string): Promise<
         },
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (!response.ok) {
+        if (!isRetryableHttpStatus(response.status)) {
+          throw new PermanentHttpStatusError(`Kaseki status request failed with HTTP ${response.status}`);
+        }
+        throw new Error(`HTTP ${response.status}`);
+      }
       return await response.json() as KasekiStatusResponse;
-    } catch {
+    } catch (error) {
+      if (error instanceof PermanentHttpStatusError) throw error;
       if (attempt === REQUEST_RETRIES) throw new Error("Kaseki status request failed after retries");
       await delay(1000 * (attempt + 1));
     }
@@ -88,21 +96,25 @@ async function requestStatusFromController(url: string, token: string): Promise<
   throw new Error("Kaseki status request failed");
 }
 
+function isRetryableHttpStatus(status: number): boolean {
+  return status === 408 || status === 425 || status === 429 || (status >= 500 && status <= 599);
+}
+
 function delay(milliseconds: number): Promise<void> {
   return new Promise(resolveDelay => setTimeout(resolveDelay, milliseconds));
 }
 
 async function main(environment: NodeJS.ProcessEnv = process.env): Promise<void> {
-  const baseUrl = environment.KASEKI_BASE_URL;
+  const apiBaseUrl = environment.KASEKI_API_BASE_URL;
   const token = environment.KASEKI_API_TOKEN;
   const runId = environment.RUN_ID;
   const outputFile = environment.GITHUB_OUTPUT;
-  if (!baseUrl || !token || !runId || !outputFile) {
-    throw new Error("KASEKI_BASE_URL, KASEKI_API_TOKEN, RUN_ID, and GITHUB_OUTPUT are required");
+  if (!apiBaseUrl || !token || !runId || !outputFile) {
+    throw new Error("KASEKI_API_BASE_URL, KASEKI_API_TOKEN, RUN_ID, and GITHUB_OUTPUT are required");
   }
 
   const result = await waitForKasekiRun({
-    baseUrl,
+    apiBaseUrl,
     token,
     runId,
     onPoll: (status, attempt, maxPolls) => {
