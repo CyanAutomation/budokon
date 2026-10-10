@@ -4,9 +4,10 @@ import {
   publicCacheKey,
   readPublicCache,
   writePublicCache,
-  type EdgeCacheStorage,
 } from "../worker/edge-cache.js";
-import { createWorker, type Env } from "../worker/router.js";
+import type { EdgeCacheStorage } from "../worker/edge-cache-types.js";
+import { createWorker } from "../worker/router.js";
+import type { Env } from "../worker/env.js";
 
 class MemoryCache implements EdgeCacheStorage {
   readonly entries = new Map<string, Response>();

@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { parseOpenApiYaml, validateOpenApiDocument } from "../scripts/openapi-validation.js";
 import { createWorker } from "../worker/router.js";
-import type { Env } from "../worker/router.js";
+import type { Env } from "../worker/env.js";
 
 const source = await readFile(new URL("../openapi/v1.yaml", import.meta.url), "utf8");
 const originalDocument = parseOpenApiYaml(source);
