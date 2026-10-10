@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { authorized, credential } from "../worker/auth.js";
+import { authorized, credential, distinctInternalApiKey } from "../worker/auth.js";
 
 function request(headers = {}) {
   return new Request("https://example.test/v1/judoka", { headers });
@@ -44,4 +44,10 @@ test("authorized rejects secrets made only of whitespace", () => {
   for (const secret of ["", " \t\n", "\u00a0"]) {
     assert.equal(authorized(request({ "x-api-key": secret }), secret), false, JSON.stringify(secret));
   }
+});
+
+test("internal API key is elevated only when it differs from the public key", () => {
+  assert.equal(distinctInternalApiKey({ API_KEY: "public", INTERNAL_API_KEY: "internal" }), "internal");
+  assert.equal(distinctInternalApiKey({ API_KEY: "public" }), undefined);
+  assert.equal(distinctInternalApiKey({ API_KEY: "same", INTERNAL_API_KEY: "same" }), undefined);
 });

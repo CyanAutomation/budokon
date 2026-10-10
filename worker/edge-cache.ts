@@ -1,9 +1,5 @@
 import { cachePublicGet, type RepresentationCacheability } from "./representation-cache.js";
-
-export interface EdgeCacheStorage {
-  match(request: Request): Promise<Response | undefined>;
-  put(request: Request, response: Response): Promise<void>;
-}
+import type { EdgeCacheStorage } from "./edge-cache-types.js";
 
 export interface EdgeCacheRevision {
   dataset: string;
