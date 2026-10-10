@@ -13,8 +13,8 @@ export {
   type PlaystyleJudokaRecord,
 } from "./playstyle-classification-contracts.js";
 export { PlaystyleClassificationService } from "./playstyle-classification-service.js";
+export { buildPlaystyleState } from "./playstyle-state.js";
 export {
-  buildPlaystyleState,
   classifyPlaystyleAnswers,
   createPlaystyleClassificationQuestions,
   validatePlaystyleConfidenceThreshold,

@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { Judoka } from "../src/domain/types.js";
-import { EditorialReviewService } from "../src/jev/editorial-review-service.js";
+import { EditorialReviewService } from "../src/jev/editorial-review.js";
 import { JevClientError } from "../src/jev/client-contracts.js";
 import { retryDelayMilliseconds } from "../src/jev/client-retry-policy.js";
-import { OpenRouterJevClient } from "../src/jev/openrouter-client.js";
+import { OpenRouterJevClient } from "../src/jev/client.js";
 import { SemanticJudokaSearchService } from "../src/jev/semantic-search.js";
 import { JevJudokaQueryInterpreter } from "../src/jev/query-interpreter.js";
 import { rankDuplicateCandidates } from "../src/jev/duplicate-shortlist.js";

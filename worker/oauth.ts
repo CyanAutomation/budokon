@@ -12,10 +12,10 @@ import {
   type OAuthTokenVerifier,
 } from "@modelcontextprotocol/server";
 
-export const MCP_READ_SCOPE = "budokon:read";
+const MCP_READ_SCOPE = "budokon:read";
 export const MCP_INTERNAL_SCOPE = "budokon:internal";
 export const MCP_JEV_SCOPE = "budokon:jev";
-export const MCP_SUPPORTED_SCOPES = [MCP_READ_SCOPE, MCP_INTERNAL_SCOPE, MCP_JEV_SCOPE] as const;
+const MCP_SUPPORTED_SCOPES = [MCP_READ_SCOPE, MCP_INTERNAL_SCOPE, MCP_JEV_SCOPE] as const;
 
 export interface McpOAuthConfig {
   issuer: string;
@@ -38,7 +38,7 @@ function httpsUrl(value: string, label: string): URL {
   return parsed;
 }
 
-export function mcpOAuthMetadataOptions(config: McpOAuthConfig): AuthMetadataOptions {
+function mcpOAuthMetadataOptions(config: McpOAuthConfig): AuthMetadataOptions {
   const issuer = httpsUrl(config.issuer, "MCP_OAUTH_ISSUER");
   const resourceServerUrl = httpsUrl(config.resourceUrl, "MCP_RESOURCE_URL");
   const authorizationEndpoint = httpsUrl(config.authorizationEndpoint, "MCP_OAUTH_AUTHORIZATION_ENDPOINT");
@@ -72,7 +72,7 @@ export function oauthDiscoveryResponse(request: Request, config: McpOAuthConfig 
   return oauthMetadataResponse(request, mcpOAuthMetadataOptions(config));
 }
 
-export function createMcpOAuthVerifier(config: McpOAuthConfig): OAuthTokenVerifier {
+function createMcpOAuthVerifier(config: McpOAuthConfig): OAuthTokenVerifier {
   httpsUrl(config.issuer, "MCP_OAUTH_ISSUER");
   const resource = httpsUrl(config.resourceUrl, "MCP_RESOURCE_URL");
   const endpoint = httpsUrl(config.introspectionEndpoint, "MCP_OAUTH_INTROSPECTION_ENDPOINT");
@@ -83,59 +83,107 @@ export function createMcpOAuthVerifier(config: McpOAuthConfig): OAuthTokenVerifi
   let basicBinary = "";
   for (const byte of basicBytes) basicBinary += String.fromCharCode(byte);
   const basicAuthorization = `Basic ${btoa(basicBinary)}`;
-  return {
-    async verifyAccessToken(token: string): Promise<AuthInfo> {
-      const form = new URLSearchParams({ token, token_type_hint: "access_token" });
-      let response: Response;
-      try {
-        response = await fetcher(endpoint, {
-          method: "POST",
-          headers: {
-            authorization: basicAuthorization,
-            "content-type": "application/x-www-form-urlencoded",
-            accept: "application/json",
-            "cache-control": "no-store",
-          },
-          body: form.toString(),
-          signal: AbortSignal.timeout(5_000),
-        });
-      } catch {
-        throw new OAuthError(OAuthErrorCode.ServerError, "authorization server token validation failed");
-      }
-      if (!response.ok) throw new OAuthError(OAuthErrorCode.ServerError, "authorization server token validation failed");
+  return { verifyAccessToken: token => verifyAccessToken(token, { config, resource, endpoint, fetcher, basicAuthorization }) };
+}
 
-      let claims: unknown;
-      try { claims = await response.json(); }
-      catch { throw new OAuthError(OAuthErrorCode.ServerError, "authorization server returned invalid token metadata"); }
-      if (!claims || typeof claims !== "object" || Array.isArray(claims)) {
-        throw new OAuthError(OAuthErrorCode.ServerError, "authorization server returned invalid token metadata");
-      }
-      const value = claims as Record<string, unknown>;
-      if (value.active !== true) throw new OAuthError(OAuthErrorCode.InvalidToken, "access token is inactive");
-      if (typeof value.exp !== "number" || !Number.isFinite(value.exp) || value.exp <= Date.now() / 1_000) {
-        throw new OAuthError(OAuthErrorCode.InvalidToken, "access token is expired or has no expiry");
-      }
-      if (value.iss !== undefined && value.iss !== config.issuer) throw new OAuthError(OAuthErrorCode.InvalidToken, "access token issuer does not match");
-      const audiences = typeof value.aud === "string" ? [value.aud] : Array.isArray(value.aud) ? value.aud : [];
-      if (!audiences.includes(resource.toString()) && !audiences.includes(config.resourceUrl)) {
-        throw new OAuthError(OAuthErrorCode.InvalidToken, "access token is not intended for this resource");
-      }
-      const scopes = typeof value.scope === "string" ? value.scope.split(/\s+/u).filter(Boolean) : [];
-      const clientId = typeof value.sub === "string" && value.sub.length > 0
-        ? value.sub
-        : typeof value.client_id === "string" && value.client_id.length > 0 ? value.client_id : undefined;
-      if (!clientId) throw new OAuthError(OAuthErrorCode.InvalidToken, "access token has no subject");
-      return {
-        token,
-        clientId,
-        scopes,
-        expiresAt: value.exp,
-        resource,
-        extra: {
-          ...(typeof value.client_id === "string" ? { client_id: value.client_id } : {}),
-          ...(typeof value.iss === "string" ? { iss: value.iss } : {}),
-        },
-      };
+function invalidToken(message: string): never {
+  throw new OAuthError(OAuthErrorCode.InvalidToken, message);
+}
+
+function serverError(message: string): never {
+  throw new OAuthError(OAuthErrorCode.ServerError, message);
+}
+
+async function introspectToken(endpoint: URL, fetcher: typeof fetch, basicAuthorization: string, token: string): Promise<Record<string, unknown>> {
+  const form = new URLSearchParams({ token, token_type_hint: "access_token" });
+  let response: Response;
+  try {
+    response = await fetcher(endpoint, {
+      method: "POST",
+      headers: {
+        authorization: basicAuthorization,
+        "content-type": "application/x-www-form-urlencoded",
+        accept: "application/json",
+        "cache-control": "no-store",
+      },
+      body: form.toString(),
+      signal: AbortSignal.timeout(5_000),
+    });
+  } catch {
+    serverError("authorization server token validation failed");
+  }
+  if (!response.ok) serverError("authorization server token validation failed");
+
+  let claims: unknown;
+  try { claims = await response.json(); }
+  catch { serverError("authorization server returned invalid token metadata"); }
+  if (!claims || typeof claims !== "object" || Array.isArray(claims)) {
+    serverError("authorization server returned invalid token metadata");
+  }
+  return claims as Record<string, unknown>;
+}
+
+interface ValidatedTokenClaims {
+  clientId: string;
+  expiresAt: number;
+  scopes: string[];
+}
+
+function tokenExpiry(value: Record<string, unknown>): number {
+  if (typeof value.exp !== "number" || !Number.isFinite(value.exp) || value.exp <= Date.now() / 1_000) {
+    invalidToken("access token is expired or has no expiry");
+  }
+  return value.exp;
+}
+
+function validateTokenIssuer(value: Record<string, unknown>, config: McpOAuthConfig): void {
+  if (value.iss !== undefined && value.iss !== config.issuer) invalidToken("access token issuer does not match");
+}
+
+function validateTokenAudience(value: Record<string, unknown>, config: McpOAuthConfig, resource: URL): void {
+  const audiences = typeof value.aud === "string" ? [value.aud] : Array.isArray(value.aud) ? value.aud : [];
+  if (!audiences.includes(resource.toString()) && !audiences.includes(config.resourceUrl)) {
+    invalidToken("access token is not intended for this resource");
+  }
+}
+
+function tokenClientId(value: Record<string, unknown>): string {
+  if (typeof value.sub === "string" && value.sub.length > 0) return value.sub;
+  if (typeof value.client_id === "string" && value.client_id.length > 0) return value.client_id;
+  return invalidToken("access token has no subject");
+}
+
+function tokenScopes(value: Record<string, unknown>): string[] {
+  return typeof value.scope === "string" ? value.scope.split(/\s+/u).filter(Boolean) : [];
+}
+
+function validateTokenClaims(value: Record<string, unknown>, config: McpOAuthConfig, resource: URL): ValidatedTokenClaims {
+  if (value.active !== true) invalidToken("access token is inactive");
+  validateTokenIssuer(value, config);
+  validateTokenAudience(value, config, resource);
+  return {
+    clientId: tokenClientId(value),
+    expiresAt: tokenExpiry(value),
+    scopes: tokenScopes(value),
+  };
+}
+
+async function verifyAccessToken(
+  token: string,
+  dependencies: { config: McpOAuthConfig; resource: URL; endpoint: URL; fetcher: typeof fetch; basicAuthorization: string },
+): Promise<AuthInfo> {
+  const { config, resource, endpoint, fetcher, basicAuthorization } = dependencies;
+  const claims = await introspectToken(endpoint, fetcher, basicAuthorization, token);
+  const validated = validateTokenClaims(claims, config, resource);
+  return {
+    token,
+    clientId: validated.clientId,
+    scopes: validated.scopes,
+    expiresAt: validated.expiresAt,
+    resource,
+    extra: {
+      ...(typeof claims.client_id === "string" ? { client_id: claims.client_id } : {}),
+      ...(typeof claims.iss === "string" ? { iss: claims.iss } : {}),
     },
   };
 }

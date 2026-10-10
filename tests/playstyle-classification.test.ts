@@ -4,9 +4,8 @@ import test from "node:test";
 import { CatalogService } from "../src/domain/catalog-service.js";
 import { PLAYSTYLE_OPTIONS, type PlaystyleFacet, type PlaystyleOption } from "../src/domain/playstyle.js";
 import type { Judoka, Technique } from "../src/domain/types.js";
-import { PlaystyleClassificationService } from "../src/jev/playstyle-classification-service.js";
 import { PLAYSTYLE_QUESTION_IDS, type PlaystyleClassificationResult, type PlaystyleJudokaRecord } from "../src/jev/playstyle-classification-contracts.js";
-import { buildPlaystyleState, createPlaystyleClassificationQuestions } from "../src/jev/playstyle-classification-policy.js";
+import { buildPlaystyleState, createPlaystyleClassificationQuestions, PlaystyleClassificationService } from "../src/jev/playstyle-classification.js";
 import type { JevAnswer, JevDecisionClient, JevDecisionResult, JevQuestion } from "../src/jev/types.js";
 import { createJevTools } from "../src/mcp/jev-tools.js";
 import { playstyleClassificationInputSchema } from "../src/mcp/server.js";
@@ -134,6 +133,34 @@ test("state construction resolves techniques deterministically and excludes unre
     { id: "seoi-nage", subCategory: "Te-waza" },
   ]);
   assert.deepEqual(receivedState?.evidence, input.evidence);
+});
+
+test("playstyle state requires unique signature IDs and an exact technique resolution", () => {
+  assert.throws(() => buildPlaystyleState({
+    ...input,
+    record: { ...input.record, signatureMoveIds: ["uchi-mata", "uchi-mata"] },
+    techniques: [techniques[0], techniques[0]],
+  }), /unique non-empty IDs/u);
+
+  assert.throws(() => buildPlaystyleState({
+    ...input,
+    techniques: [techniques[0], { ...techniques[1], id: "unrelated-technique" }],
+  }), /signatureMoveId seoi-nage has no resolved technique/u);
+
+  assert.throws(() => buildPlaystyleState({
+    ...input,
+    techniques: [techniques[0], techniques[0]],
+  }), /duplicate resolved technique uchi-mata/u);
+});
+
+test("playstyle state omits absent optional name and ratings", () => {
+  const state = buildPlaystyleState({
+    ...input,
+    record: { ...input.record, firstname: undefined, surname: undefined, stats: undefined },
+  });
+
+  assert.equal("name" in state.judoka, false);
+  assert.equal("editorialRatings" in state.judoka, false);
 });
 
 test("playstyle policy gates each facet independently and never accepts abstention", async () => {

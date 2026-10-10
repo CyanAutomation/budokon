@@ -251,7 +251,14 @@ test("MCP collection and draw bounds reject oversized requests", async () => {
   }
 });
 
-test("OAuth discovery and scoped access are available for MCP clients", async () => {
+interface OAuthMcpTestHarness {
+  env: Env;
+  introspectedTokens: string[];
+  limiterKeys: string[];
+  quotaState: { rejectPrincipalQuota: boolean };
+}
+
+function createOAuthMcpTestHarness(): OAuthMcpTestHarness {
   const env: Env = {
     ...mockEnv,
     MCP_OAUTH_ISSUER: "https://auth.example.test",
@@ -263,112 +270,126 @@ test("OAuth discovery and scoped access are available for MCP clients", async ()
     MCP_RESOURCE_URL: "https://example.test/mcp",
     JEV_OPENROUTER_API_KEY: "unused-model-key",
   };
-  const originalFetch = globalThis.fetch;
-  const introspected: string[] = [];
+  const introspectedTokens: string[] = [];
   const limiterKeys: string[] = [];
-  let rejectPrincipalQuota = false;
+  const quotaState = { rejectPrincipalQuota: false };
   env.MCP_RATE_LIMITER = { async limit({ key }) {
     limiterKeys.push(key);
-    return { success: !(rejectPrincipalQuota && key.endsWith(":mcp:principal")) };
+    return { success: !(quotaState.rejectPrincipalQuota && key.endsWith(":mcp:principal")) };
   } };
+  return { env, introspectedTokens, limiterKeys, quotaState };
+}
+
+function mockOAuthIntrospection(env: Env, introspectedTokens: string[]): () => void {
+  const originalFetch = globalThis.fetch;
+  const tokenClaims: Record<string, Record<string, unknown>> = {
+    "public-token": { active: true, sub: "athlete-public", scope: "budokon:read", aud: env.MCP_RESOURCE_URL, exp: Math.floor(Date.now() / 1_000) + 600 },
+    "internal-token": { active: true, sub: "athlete-internal", scope: "budokon:read budokon:internal", aud: env.MCP_RESOURCE_URL, exp: Math.floor(Date.now() / 1_000) + 600 },
+    "jev-token": { active: true, sub: "athlete-jev", scope: "budokon:read budokon:jev", aud: env.MCP_RESOURCE_URL, exp: Math.floor(Date.now() / 1_000) + 600 },
+    "no-read-token": { active: true, sub: "athlete-other", scope: "budokon:internal", aud: env.MCP_RESOURCE_URL, exp: Math.floor(Date.now() / 1_000) + 600 },
+    "wrong-audience": { active: true, sub: "athlete-other", scope: "budokon:read", aud: "https://other.example.test/mcp", exp: Math.floor(Date.now() / 1_000) + 600 },
+    "expired-token": { active: true, sub: "athlete-other", scope: "budokon:read", aud: env.MCP_RESOURCE_URL, exp: Math.floor(Date.now() / 1_000) - 1 },
+    "missing-expiry": { active: true, sub: "athlete-other", scope: "budokon:read", aud: env.MCP_RESOURCE_URL },
+    "revoked-token": { active: false, sub: "athlete-other", scope: "budokon:read", aud: env.MCP_RESOURCE_URL, exp: Math.floor(Date.now() / 1_000) + 600 },
+  };
   globalThis.fetch = async (input, init) => {
     assert.equal(String(input), env.MCP_OAUTH_INTROSPECTION_ENDPOINT);
-    assert.equal(new Headers(init?.headers).get("authorization"), `Basic ${btoa("budokon-resource:resource-secret")}`);
-    const token = new URLSearchParams(String(init?.body)).get("token") ?? "";
-    introspected.push(token);
-    const scopes = token === "internal-token" ? "budokon:read budokon:internal"
-      : token === "jev-token" ? "budokon:read budokon:jev"
-        : token === "no-read-token" ? "budokon:internal" : "budokon:read";
-    return new Response(JSON.stringify({
-      active: ["public-token", "internal-token", "jev-token", "no-read-token", "wrong-audience", "expired-token", "missing-expiry"].includes(token),
-      client_id: "chatgpt-client",
-      sub: token === "public-token" ? "athlete-public" : token === "internal-token" ? "athlete-internal" : token === "jev-token" ? "athlete-jev" : "athlete-other",
-      scope: scopes,
-      aud: token === "wrong-audience" ? "https://other.example.test/mcp" : env.MCP_RESOURCE_URL,
-      ...(token === "missing-expiry" ? {} : { exp: Math.floor(Date.now() / 1_000) + (token === "expired-token" ? -1 : 600) }),
-    }), { headers: { "content-type": "application/json" } });
+    assert.equal(new Headers(init!.headers).get("authorization"), `Basic ${btoa("budokon-resource:resource-secret")}`);
+    const token = new URLSearchParams(String(init!.body)).get("token")!;
+    introspectedTokens.push(token);
+    return new Response(JSON.stringify(tokenClaims[token]), { headers: { "content-type": "application/json" } });
   };
+  return () => { globalThis.fetch = originalFetch; };
+}
+
+async function postMcpRequest(env: Env, id: number, token?: string): Promise<Response> {
+  const headers = new Headers({
+    host: "example.test",
+    "content-type": "application/json",
+    accept: "application/json, text/event-stream",
+  });
+  if (token) headers.set("authorization", `Bearer ${token}`);
+  return worker.fetch(new Request("https://example.test/mcp", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ jsonrpc: "2.0", id, method: "tools/list" }),
+  }), env);
+}
+
+async function listOAuthMcpTools(env: Env, token: string, id: number) {
+  const response = await postMcpRequest(env, id, token);
+  assert.equal(response.status, 200);
+  return (await mcpJson(response)).result.tools as Array<{ name: string; inputSchema: { properties?: Record<string, unknown> } }>;
+}
+
+async function assertOAuthDiscovery(env: Env): Promise<void> {
+  const protectedResource = await worker.fetch(new Request("https://example.test/.well-known/oauth-protected-resource/mcp"), env);
+  assert.equal(protectedResource.status, 200);
+  const protectedMetadata = await protectedResource.json() as { resource: string; authorization_servers: string[]; scopes_supported: string[] };
+  assert.equal(protectedMetadata.resource, env.MCP_RESOURCE_URL);
+  assert.deepEqual(protectedMetadata.authorization_servers, [env.MCP_OAUTH_ISSUER]);
+  assert.ok(protectedMetadata.scopes_supported.includes("budokon:internal"));
+
+  const authorizationServer = await worker.fetch(new Request("https://example.test/.well-known/oauth-authorization-server"), env);
+  assert.equal(authorizationServer.status, 200);
+  const serverMetadata = await authorizationServer.json() as { authorization_endpoint: string; code_challenge_methods_supported: string[] };
+  assert.equal(serverMetadata.authorization_endpoint, env.MCP_OAUTH_AUTHORIZATION_ENDPOINT);
+  assert.ok(serverMetadata.code_challenge_methods_supported.includes("S256"));
+
+  const challenge = await postMcpRequest(env, 87);
+  assert.equal(challenge.status, 401);
+  assert.match(challenge.headers.get("www-authenticate") ?? "", /resource_metadata=/u);
+}
+
+async function assertOAuthToolScopes(env: Env, introspectedTokens: string[]): Promise<void> {
+  const publicTools = await listOAuthMcpTools(env, "public-token", 82);
+  const internalTools = await listOAuthMcpTools(env, "internal-token", 83);
+  const jevTools = await listOAuthMcpTools(env, "jev-token", 85);
+  assert.equal("includeHidden" in (publicTools.find(tool => tool.name === "get_judoka")?.inputSchema.properties ?? {}), false);
+  assert.equal("includeHidden" in (internalTools.find(tool => tool.name === "get_judoka")?.inputSchema.properties ?? {}), true);
+  assert.ok(!publicTools.some(tool => tool.name === "semantic_search_judoka"));
+  assert.ok(internalTools.some(tool => tool.name === "semantic_search_judoka"));
+  assert.ok(jevTools.some(tool => tool.name === "semantic_search_judoka"));
+  assert.equal("includeHidden" in (jevTools.find(tool => tool.name === "semantic_search_judoka")?.inputSchema.properties ?? {}), false);
+  assert.deepEqual(introspectedTokens, ["public-token", "internal-token", "jev-token"]);
+}
+
+async function assertOAuthRejections(env: Env): Promise<void> {
+  const insufficientScope = await postMcpRequest(env, 86, "no-read-token");
+  assert.equal(insufficientScope.status, 403);
+  assert.match(insufficientScope.headers.get("www-authenticate") ?? "", /insufficient_scope/u);
+
+  for (const token of ["wrong-audience", "expired-token", "missing-expiry"]) {
+    const response = await postMcpRequest(env, 89, token);
+    assert.equal(response.status, 401, `${token} must not authenticate`);
+  }
+  const revoked = await postMcpRequest(env, 84, "revoked-token");
+  assert.equal(revoked.status, 401);
+  assert.match(revoked.headers.get("www-authenticate") ?? "", /resource_metadata=/u);
+}
+
+async function assertOAuthPrincipalRateLimit(harness: OAuthMcpTestHarness): Promise<void> {
+  const principalKeys = harness.limiterKeys.filter(key => key.endsWith(":mcp:principal"));
+  assert.equal(principalKeys.length, 3, "each authenticated OAuth subject is independently rate limited");
+  assert.equal(new Set(principalKeys).size, 3, "different OAuth subjects must receive distinct quotas");
+  assert.ok(principalKeys.every(key => !key.includes("athlete-")), "limiter keys must not contain subject identifiers");
+
+  harness.quotaState.rejectPrincipalQuota = true;
+  const limited = await postMcpRequest(harness.env, 88, "public-token");
+  assert.equal(limited.status, 429);
+  assert.equal(limited.headers.get("retry-after"), "60");
+}
+
+test("OAuth discovery and scoped access are available for MCP clients", async () => {
+  const harness = createOAuthMcpTestHarness();
+  const restoreFetch = mockOAuthIntrospection(harness.env, harness.introspectedTokens);
   try {
-    const protectedResource = await worker.fetch(new Request("https://example.test/.well-known/oauth-protected-resource/mcp"), env);
-    assert.equal(protectedResource.status, 200);
-    const protectedMetadata = await protectedResource.json() as { resource: string; authorization_servers: string[]; scopes_supported: string[] };
-    assert.equal(protectedMetadata.resource, env.MCP_RESOURCE_URL);
-    assert.deepEqual(protectedMetadata.authorization_servers, [env.MCP_OAUTH_ISSUER]);
-    assert.ok(protectedMetadata.scopes_supported.includes("budokon:internal"));
-
-    const authorizationServer = await worker.fetch(new Request("https://example.test/.well-known/oauth-authorization-server"), env);
-    assert.equal(authorizationServer.status, 200);
-    const serverMetadata = await authorizationServer.json() as { authorization_endpoint: string; code_challenge_methods_supported: string[] };
-    assert.equal(serverMetadata.authorization_endpoint, env.MCP_OAUTH_AUTHORIZATION_ENDPOINT);
-    assert.ok(serverMetadata.code_challenge_methods_supported.includes("S256"));
-
-    const challenge = await worker.fetch(new Request("https://example.test/mcp", {
-      method: "POST",
-      headers: { host: "example.test", "content-type": "application/json", accept: "application/json, text/event-stream" },
-      body: JSON.stringify({ jsonrpc: "2.0", id: 87, method: "tools/list" }),
-    }), env);
-    assert.equal(challenge.status, 401);
-    assert.match(challenge.headers.get("www-authenticate") ?? "", /resource_metadata=/u);
-
-    const listTools = async (token: string, id: number) => {
-      const response = await worker.fetch(new Request("https://example.test/mcp", {
-        method: "POST",
-        headers: { host: "example.test", authorization: `Bearer ${token}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
-        body: JSON.stringify({ jsonrpc: "2.0", id, method: "tools/list" }),
-      }), env);
-      assert.equal(response.status, 200);
-      return (await mcpJson(response)).result.tools as Array<{ name: string; inputSchema: { properties?: Record<string, unknown> } }>;
-    };
-    const publicTools = await listTools("public-token", 82);
-    const internalTools = await listTools("internal-token", 83);
-    const jevTools = await listTools("jev-token", 85);
-    assert.equal("includeHidden" in (publicTools.find(tool => tool.name === "get_judoka")?.inputSchema.properties ?? {}), false);
-    assert.equal("includeHidden" in (internalTools.find(tool => tool.name === "get_judoka")?.inputSchema.properties ?? {}), true);
-    assert.ok(!publicTools.some(tool => tool.name === "semantic_search_judoka"));
-    assert.ok(internalTools.some(tool => tool.name === "semantic_search_judoka"));
-    assert.ok(jevTools.some(tool => tool.name === "semantic_search_judoka"));
-    assert.equal("includeHidden" in (jevTools.find(tool => tool.name === "semantic_search_judoka")?.inputSchema.properties ?? {}), false);
-    assert.deepEqual(introspected, ["public-token", "internal-token", "jev-token"]);
-
-    const insufficientScope = await worker.fetch(new Request("https://example.test/mcp", {
-      method: "POST",
-      headers: { host: "example.test", authorization: "Bearer no-read-token", "content-type": "application/json", accept: "application/json, text/event-stream" },
-      body: JSON.stringify({ jsonrpc: "2.0", id: 86, method: "tools/list" }),
-    }), env);
-    assert.equal(insufficientScope.status, 403);
-    assert.match(insufficientScope.headers.get("www-authenticate") ?? "", /insufficient_scope/u);
-
-    for (const token of ["wrong-audience", "expired-token", "missing-expiry"]) {
-      const invalid = await worker.fetch(new Request("https://example.test/mcp", {
-        method: "POST",
-        headers: { host: "example.test", authorization: `Bearer ${token}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
-        body: JSON.stringify({ jsonrpc: "2.0", id: 89, method: "tools/list" }),
-      }), env);
-      assert.equal(invalid.status, 401, `${token} must not authenticate`);
-    }
-
-    const denied = await worker.fetch(new Request("https://example.test/mcp", {
-      method: "POST",
-      headers: { host: "example.test", authorization: "Bearer revoked-token", "content-type": "application/json", accept: "application/json, text/event-stream" },
-      body: JSON.stringify({ jsonrpc: "2.0", id: 84, method: "tools/list" }),
-    }), env);
-    assert.equal(denied.status, 401);
-    assert.match(denied.headers.get("www-authenticate") ?? "", /resource_metadata=/u);
-    const principalKeys = limiterKeys.filter(key => key.endsWith(":mcp:principal"));
-    assert.equal(principalKeys.length, 3, "each authenticated OAuth subject is independently rate limited");
-    assert.equal(new Set(principalKeys).size, 3, "different OAuth subjects must receive distinct quotas");
-    assert.ok(principalKeys.every(key => !key.includes("athlete-")), "limiter keys must not contain subject identifiers");
-
-    rejectPrincipalQuota = true;
-    const limited = await worker.fetch(new Request("https://example.test/mcp", {
-      method: "POST",
-      headers: { host: "example.test", authorization: "Bearer public-token", "content-type": "application/json", accept: "application/json, text/event-stream" },
-      body: JSON.stringify({ jsonrpc: "2.0", id: 88, method: "tools/list" }),
-    }), env);
-    assert.equal(limited.status, 429);
-    assert.equal(limited.headers.get("retry-after"), "60");
+    await assertOAuthDiscovery(harness.env);
+    await assertOAuthToolScopes(harness.env, harness.introspectedTokens);
+    await assertOAuthRejections(harness.env);
+    await assertOAuthPrincipalRateLimit(harness);
   } finally {
-    globalThis.fetch = originalFetch;
+    restoreFetch();
   }
 });
 

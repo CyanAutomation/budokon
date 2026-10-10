@@ -3,8 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Technique } from "../src/domain/types.js";
 import { PLAYSTYLE_OPTIONS, type PlaystyleFacet, type PlaystyleOption } from "../src/domain/playstyle.js";
-import { DEFAULT_JEV_MODEL } from "../src/jev/client-contracts.js";
-import { OpenRouterJevClient } from "../src/jev/openrouter-client.js";
+import { DEFAULT_JEV_MODEL, OpenRouterJevClient } from "../src/jev/client.js";
 import {
   DEFAULT_PLAYSTYLE_CONFIDENCE_THRESHOLD,
   type PlaystyleClassificationInput,
@@ -12,8 +11,7 @@ import {
   type PlaystyleClassifier,
   type PlaystyleJudokaRecord,
 } from "../src/jev/playstyle-classification-contracts.js";
-import { PlaystyleClassificationService } from "../src/jev/playstyle-classification-service.js";
-import { validatePlaystyleConfidenceThreshold } from "../src/jev/playstyle-classification-policy.js";
+import { PlaystyleClassificationService, validatePlaystyleConfidenceThreshold } from "../src/jev/playstyle-classification.js";
 import { validateCanonical } from "../src/validation/validate-canonical.js";
 
 export interface PlaystyleEvaluationFixture {
