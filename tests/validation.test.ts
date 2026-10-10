@@ -93,6 +93,24 @@ test('validateCanonical loads a minimal canonical fixture with stable identifier
   assert.deepEqual(result.dataset, { datasetVersion: '2025.01.1' });
 });
 
+test('judoka schema accepts UUID versions and rejects malformed identifiers', () => {
+  const cases = [
+    { name: 'lowercase UUID', id: '84d3b821-0ca8-42de-b42c-2eb8d42c9c3b', valid: true },
+    { name: 'uppercase UUID', id: '84D3B821-0CA8-42DE-B42C-2EB8D42C9C3B', valid: true },
+    { name: 'unsupported version', id: '84d3b821-0ca8-62de-b42c-2eb8d42c9c3b', valid: false },
+    { name: 'unsupported variant', id: '84d3b821-0ca8-42de-742c-2eb8d42c9c3b', valid: false },
+    { name: 'missing separators', id: '84d3b8210ca842deb42c2eb8d42c9c3b', valid: false },
+    { name: 'incorrect length', id: '84d3b821-0ca8-42de-b42c-2eb8d42c9c3', valid: false },
+    { name: 'non-hexadecimal character', id: '84d3b821-0ca8-42de-b42c-2eb8d42c9c3g', valid: false },
+  ];
+
+  for (const { name, id, valid } of cases) {
+    const record = { ...publicProfileFixture, id };
+    if (valid) assert.doesNotThrow(() => validateSchema(record, judokaSchema, 'data/judoka/fixture-judoka.json'), name);
+    else assert.throws(() => validateSchema(record, judokaSchema, 'data/judoka/fixture-judoka.json'), /must match|must be a UUID/u, name);
+  }
+});
+
 test('filenames match canonical slugs', async () => {
   const root = await fixtureSandbox();
   await change(path.join(root, 'data/judoka/fixture-judoka.json'), (record) => { record.slug = 'different-slug'; });
