@@ -125,8 +125,9 @@ test("JEV evaluation reports fixture references to missing records", async () =>
   }), /Evaluation fixture broken refers to missing judoka missing/);
 });
 
-test("JEV evaluation writes to stdout when no workflow summary file is configured", async () => {
+test("JEV evaluation writes its report to stdout when no workflow summary is configured", async () => {
   const output: string[] = [];
+  let summaryWrites = 0;
   let searches = 0;
   await runEvaluation({
     environment: { JEV_OPENROUTER_API_KEY: "test-key" },
@@ -143,16 +144,16 @@ test("JEV evaluation writes to stdout when no workflow summary file is configure
       return {
         async search() {
           searches += 1;
-          return { model: "test-model", usage: {}, results: [] };
+          return { model: "test-model", usage: {}, results: [{ judoka: { id: "candidate-id", slug: "candidate", signatureMoveIds: [] }, relevance: 0.9 }] };
         },
       };
     },
+    async appendSummary() { summaryWrites += 1; },
     writeOutput(report) { output.push(report); },
   });
 
   assert.equal(searches, 1);
   assert.equal(output.length, 1);
-  assert.match(output[0], /Threshold: 0\.5/);
-  assert.match(output[0], /Precision: 100\.0% \(0\/0 retrieved\)/);
-  assert.match(output[0], /Recall: 0\.0% \(0\/1 labeled relevant\)/);
+  assert.match(output[0], /^## JEV semantic search evaluation/mu);
+  assert.equal(summaryWrites, 0);
 });

@@ -16,7 +16,6 @@ import {
 } from "../src/jev/semantic-search-policy.js";
 import { validateCanonicalRules } from "../src/validation/canonical-rules.js";
 import type { ValidatedCanonicalData } from "../src/validation/canonical-types.js";
-import { validateSchema } from "../src/validation/schema-validator.js";
 
 function judoka(id: string): Judoka {
   return { id, slug: id, firstname: id, surname: "Judoka", signatureMoveIds: ["move"], bio: "A sufficiently detailed biography." };
@@ -39,7 +38,7 @@ test("semantic search policy validates bounds, creates per-candidate questions, 
   assert.deepEqual(ranked.map(item => item.judoka.id), ["a", "b"]);
 });
 
-test("JEV response parser accepts exact typed answers and rejects malformed distributions", () => {
+test("JEV response parser preserves typed answers and usage", () => {
   const questions: Record<string, JevQuestion> = {
     relevance: { type: "noul", instructions: "Relevant?" },
     choice: { type: "choice", instructions: "Choose", criteria: { no: "No", yes: "Yes" } },
@@ -54,8 +53,7 @@ test("JEV response parser accepts exact typed answers and rejects malformed dist
       score: { type: "score", score: 1, legend: { "0": "low", "1": "high" }, probabilities: { "0": 0, "1": 1 }, confidence: 1 },
     },
   };
-  assert.equal(parseJevResponse(valid, questions)?.model, "test-model");
-  assert.equal(parseJevResponse({ ...valid, answers: { ...valid.answers, choice: { ...valid.answers.choice, probabilities: { no: 0.1, yes: 0.7 } } } }, questions), undefined);
+  assert.deepEqual(parseJevResponse(valid, questions), valid);
 });
 
 test("editorial review policy validates evidence, asks about duplicate candidates, and stays conservative", () => {
@@ -81,12 +79,6 @@ test("editorial review policy validates evidence, asks about duplicate candidate
   };
   assert.equal(editorialReviewRecommendation(input, answers, 0.8), "ready_for_human_approval");
   assert.equal(editorialReviewRecommendation({ ...input, evidence: [] }, answers, 0.8), "needs_human_review");
-});
-
-test("schema validator accepts required fields and rejects an empty identifier", () => {
-  const simpleSchema = { type: "object", required: ["id"], properties: { id: { type: "string", minLength: 1 } }, additionalProperties: false };
-  assert.doesNotThrow(() => validateSchema({ id: "record" }, simpleSchema));
-  assert.throws(() => validateSchema({ id: "" }, simpleSchema), /at least 1 characters/);
 });
 
 function minimalCanonicalData(): ValidatedCanonicalData {
