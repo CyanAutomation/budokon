@@ -33,7 +33,10 @@ function parseDataset(value: CompiledDataset | JsonValue | string): unknown {
   try {
     return JSON.parse(value);
   } catch (error) {
-    throw new TypeError(`Failed to parse JSON: ${error instanceof Error ? error.message : String(error)}`);
+    throw new TypeError(
+      `Failed to parse JSON: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error },
+    );
   }
 }
 

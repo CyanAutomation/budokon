@@ -13,6 +13,7 @@ import { createJevTools } from "../src/mcp/jev-tools.js";
 import { JsonReadModelRepository } from "../src/repository/json-read-model-repository.js";
 import { editorialReviewBatchInputSchema, editorialReviewInputSchema, semanticSearchInputSchema } from "../src/mcp/server.js";
 import { validateCanonical } from "../src/validation/validate-canonical.js";
+import { MAX_SEMANTIC_SEARCH_CANDIDATES } from "../src/jev/semantic-search-contracts.js";
 
 const candidate = (id: string, bio = "A complete editorial biography for testing purposes."): Judoka => ({
   id, slug: id, firstname: id, surname: "Judoka", signatureMoveIds: ["uchi-mata"], bio,
@@ -322,8 +323,8 @@ test("semantic search sends bounded candidate questions and ranks by relevance d
   );
 });
 
-test("semantic search supports the current full catalogue in one JEV request", async () => {
-  const candidates = Array.from({ length: 74 }, (_, index) => candidate(`person-${String(index).padStart(3, "0")}`));
+test("semantic search accepts its maximum candidate pool in one JEV request", async () => {
+  const candidates = Array.from({ length: MAX_SEMANTIC_SEARCH_CANDIDATES }, (_, index) => candidate(`person-${String(index).padStart(3, "0")}`));
   let questionCount = 0;
   const service = new SemanticJudokaSearchService({
     async decide(_state, questions) {
@@ -335,8 +336,8 @@ test("semantic search supports the current full catalogue in one JEV request", a
     },
   });
   const result = await service.search("grappling specialist", candidates);
-  assert.equal(questionCount, 74);
-  assert.equal(result.results.length, 74);
+  assert.equal(questionCount, MAX_SEMANTIC_SEARCH_CANDIDATES);
+  assert.equal(result.results.length, MAX_SEMANTIC_SEARCH_CANDIDATES);
 });
 
 test("the complete current public catalogue fits the bounded semantic request", async () => {

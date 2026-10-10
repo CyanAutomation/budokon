@@ -1,11 +1,26 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { DEFAULT_MAX_POLLS, DEFAULT_POLL_INTERVAL_MS, waitForKasekiRun } from "./wait-for-kaseki.js";
+import { waitForKasekiRun } from "./wait-for-kaseki.js";
 
-test("Kaseki status polling uses five-minute intervals for a 185-minute window", () => {
-  assert.equal(DEFAULT_POLL_INTERVAL_MS, 5 * 60 * 1000);
-  assert.equal(DEFAULT_MAX_POLLS, 38);
-  assert.equal((DEFAULT_MAX_POLLS - 1) * DEFAULT_POLL_INTERVAL_MS, 185 * 60 * 1000);
+test("default Kaseki polling stops after the 185-minute window", async () => {
+  const polls: Array<{ attempt: number; maxPolls: number }> = [];
+  const sleepIntervals: number[] = [];
+
+  await assert.rejects(waitForKasekiRun({
+    apiBaseUrl: "https://kaseki.example/api/v1",
+    token: "test-token",
+    runId: "run_123",
+    requestStatus: async () => ({ status: "running" }),
+    sleep: async milliseconds => { sleepIntervals.push(milliseconds); },
+    onPoll: (_status, attempt, maxPolls) => { polls.push({ attempt, maxPolls }); },
+  }), /No terminal status after 38 polls/u);
+
+  assert.equal(polls.length, 38);
+  assert.deepEqual(polls[0], { attempt: 1, maxPolls: 38 });
+  assert.deepEqual(polls.at(-1), { attempt: 38, maxPolls: 38 });
+  assert.equal(sleepIntervals.length, 37);
+  assert.ok(sleepIntervals.every(milliseconds => milliseconds === 5 * 60 * 1000));
+  assert.equal(sleepIntervals.reduce((total, milliseconds) => total + milliseconds, 0), 185 * 60 * 1000);
 });
 
 test("polls queued and running runs until completion", async () => {
@@ -21,6 +36,7 @@ test("polls queued and running runs until completion", async () => {
     apiBaseUrl: "https://kaseki.example/api/v1/",
     token: "test-token",
     runId: "run_123",
+    pollIntervalMs: 17,
     requestStatus: async (url, token) => {
       requested.push({ url, token });
       return responses.shift();
@@ -29,7 +45,7 @@ test("polls queued and running runs until completion", async () => {
   });
 
   assert.equal(result, "completed");
-  assert.deepEqual(slept, [DEFAULT_POLL_INTERVAL_MS, DEFAULT_POLL_INTERVAL_MS]);
+  assert.deepEqual(slept, [17, 17]);
   assert.deepEqual(requested[0], {
     url: "https://kaseki.example/api/v1/runs/run_123/status",
     token: "test-token",

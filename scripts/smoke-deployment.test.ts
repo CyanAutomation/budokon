@@ -19,11 +19,23 @@ test("smoke request reports unexpected HTTP statuses", async () => {
     async () => new Response(null, { status: 200 })), /\/catalog returned 200, expected 304/);
 });
 
-test("smoke request wraps fetch TypeErrors and preserves other failures", async () => {
-  await assert.rejects(request("https://example.test", "/status", undefined, undefined,
-    async () => { throw new TypeError("fetch failed"); }), /Network error accessing \/status: fetch failed/);
-  await assert.rejects(request("https://example.test", "/status", undefined, undefined,
-    async () => { throw new Error("unexpected transport failure"); }), /unexpected transport failure/);
+test("smoke request adds endpoint context to network failures and preserves unexpected errors", async () => {
+  const networkFailure = new TypeError("fetch failed");
+  await assert.rejects(
+    request("https://example.test", "/status", undefined, undefined, async () => { throw networkFailure; }),
+    error => {
+      assert.ok(error instanceof Error);
+      assert.equal(error.message, "Network error accessing /status: fetch failed");
+      assert.equal(error.cause, networkFailure);
+      return true;
+    },
+  );
+
+  const unexpectedFailure = new Error("unexpected transport failure");
+  await assert.rejects(
+    request("https://example.test", "/status", undefined, undefined, async () => { throw unexpectedFailure; }),
+    error => error === unexpectedFailure,
+  );
 });
 
 test("smoke deployment validates release identity, cache behavior, pagination, and deterministic draws", async () => {
