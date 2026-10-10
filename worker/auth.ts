@@ -32,3 +32,9 @@ export function authorized(request: Request, expected: string | undefined): bool
   }
   return matches === 0;
 }
+
+/** Return the elevated key only when it is configured independently. */
+export function distinctInternalApiKey(env: { API_KEY: string; INTERNAL_API_KEY?: string }): string | undefined {
+  if (!env.INTERNAL_API_KEY || env.INTERNAL_API_KEY === env.API_KEY) return undefined;
+  return env.INTERNAL_API_KEY;
+}
