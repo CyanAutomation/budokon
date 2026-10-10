@@ -1,6 +1,8 @@
 import type { EventDrawRequest, RequestContext } from "../domain/types.js";
 import { versioned, type CatalogToolDependencies, type SearchToolRequest, type TechniqueSearchToolRequest } from "./tool-types.js";
 
+// Part of the emitted type for the exported createCatalogTools factory.
+// fallow-ignore-next-line unused-type
 export interface PageOptions { limit?: number; cursor?: string; }
 
 function pageRecords<T extends { id: string }>(records: T[], { limit, cursor }: PageOptions = {}) {

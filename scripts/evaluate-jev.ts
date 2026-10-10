@@ -2,7 +2,7 @@ import { appendFile, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Judoka } from "../src/domain/types.js";
-import { OpenRouterJevClient } from "../src/jev/openrouter-client.js";
+import { OpenRouterJevClient } from "../src/jev/client.js";
 import { SemanticJudokaSearchService, type SemanticJudokaSearcher } from "../src/jev/semantic-search.js";
 
 export interface JevEvaluationCase { id: string; query: string; candidateSlugs: string[]; relevantSlugs: string[]; }
