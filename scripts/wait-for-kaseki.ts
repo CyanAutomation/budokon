@@ -27,7 +27,16 @@ export interface WaitForKasekiOptions {
 
 export type KasekiRunResult = "completed" | "no_changes";
 
-export async function waitForKasekiRun(options: WaitForKasekiOptions): Promise<KasekiRunResult> {
+interface PollingConfig {
+  statusUrl: string;
+  token: string;
+  pollIntervalMs: number;
+  maxPolls: number;
+  requestStatus: NonNullable<WaitForKasekiOptions["requestStatus"]>;
+  sleep: NonNullable<WaitForKasekiOptions["sleep"]>;
+}
+
+function validatePollingOptions(options: WaitForKasekiOptions): PollingConfig {
   const apiBaseUrl = options.apiBaseUrl.replace(/\/+$/u, "");
   if (!apiBaseUrl) throw new Error("KASEKI_API_BASE_URL is required");
   if (!options.token) throw new Error("KASEKI_API_TOKEN is required");
@@ -44,29 +53,50 @@ export async function waitForKasekiRun(options: WaitForKasekiOptions): Promise<K
     throw new Error("maxPolls must be a positive integer");
   }
 
-  const requestStatus = options.requestStatus ?? requestStatusFromController;
-  const sleep = options.sleep ?? delay;
-  const statusUrl = `${apiBaseUrl}/runs/${encodeURIComponent(options.runId)}/status`;
+  return {
+    statusUrl: `${apiBaseUrl}/runs/${encodeURIComponent(options.runId)}/status`,
+    token: options.token,
+    pollIntervalMs,
+    maxPolls,
+    requestStatus: options.requestStatus ?? requestStatusFromController,
+    sleep: options.sleep ?? delay,
+  };
+}
 
-  for (let attempt = 1; attempt <= maxPolls; attempt += 1) {
-    const response = await requestStatus(statusUrl, options.token);
-    const status = response.status;
-    if (typeof status !== "string") throw new Error("Kaseki returned an invalid status response");
-    options.onPoll?.(status, attempt, maxPolls);
+function readStatus(response: KasekiStatusResponse): string {
+  const status = response.status;
+  if (typeof status !== "string") throw new Error("Kaseki returned an invalid status response");
+  return status;
+}
 
-    if (status === "completed") return "completed";
-    if (status === "failed") {
+function decidePoll(status: string, response: KasekiStatusResponse): KasekiRunResult | undefined {
+  switch (status) {
+    case "completed":
+      return "completed";
+    case "failed":
       if (response.failureClass === "empty-diff") return "no_changes";
       throw new Error("Kaseki run failed");
-    }
-    if (status !== "queued" && status !== "running") {
+    case "queued":
+    case "running":
+      return undefined;
+    default:
       throw new Error("Kaseki returned an unsupported status");
-    }
-    if (attempt === maxPolls) break;
-    await sleep(pollIntervalMs);
+  }
+}
+
+export async function waitForKasekiRun(options: WaitForKasekiOptions): Promise<KasekiRunResult> {
+  const config = validatePollingOptions(options);
+
+  for (let attempt = 1; attempt <= config.maxPolls; attempt += 1) {
+    const response = await config.requestStatus(config.statusUrl, config.token);
+    const status = readStatus(response);
+    options.onPoll?.(status, attempt, config.maxPolls);
+    const result = decidePoll(status, response);
+    if (result) return result;
+    if (attempt < config.maxPolls) await config.sleep(config.pollIntervalMs);
   }
 
-  throw new Error(`No terminal status after ${maxPolls} polls`);
+  throw new Error(`No terminal status after ${config.maxPolls} polls`);
 }
 
 async function requestStatusFromController(url: string, token: string): Promise<KasekiStatusResponse> {
@@ -104,7 +134,12 @@ function delay(milliseconds: number): Promise<void> {
   return new Promise(resolveDelay => setTimeout(resolveDelay, milliseconds));
 }
 
-async function main(environment: NodeJS.ProcessEnv = process.env): Promise<void> {
+interface KasekiMainDependencies extends Pick<WaitForKasekiOptions, "pollIntervalMs" | "maxPolls" | "requestStatus" | "sleep"> {
+  appendOutput?: (filePath: string, contents: string) => Promise<void>;
+  log?: (message: string) => void;
+}
+
+function requiredMainEnvironment(environment: NodeJS.ProcessEnv) {
   const apiBaseUrl = environment.KASEKI_API_BASE_URL;
   const token = environment.KASEKI_API_TOKEN;
   const runId = environment.RUN_ID;
@@ -112,20 +147,33 @@ async function main(environment: NodeJS.ProcessEnv = process.env): Promise<void>
   if (!apiBaseUrl || !token || !runId || !outputFile) {
     throw new Error("KASEKI_API_BASE_URL, KASEKI_API_TOKEN, RUN_ID, and GITHUB_OUTPUT are required");
   }
+  return { apiBaseUrl, token, runId, outputFile };
+}
 
+export async function main(
+  environment: NodeJS.ProcessEnv = process.env,
+  dependencies: KasekiMainDependencies = {},
+): Promise<void> {
+  const { apiBaseUrl, token, runId, outputFile } = requiredMainEnvironment(environment);
+  const log = dependencies.log ?? (message => console.log(message));
   const result = await waitForKasekiRun({
     apiBaseUrl,
     token,
     runId,
+    pollIntervalMs: dependencies.pollIntervalMs,
+    maxPolls: dependencies.maxPolls,
+    requestStatus: dependencies.requestStatus,
+    sleep: dependencies.sleep,
     onPoll: (status, attempt, maxPolls) => {
-      console.log(`Kaseki status: ${status} (poll ${attempt}/${maxPolls})`);
+      log(`Kaseki status: ${status} (poll ${attempt}/${maxPolls})`);
     },
   });
 
   if (result === "no_changes") {
-    console.log("Kaseki completed without changes; treating the expected empty diff as a successful no-op.");
+    log("Kaseki completed without changes; treating the expected empty diff as a successful no-op.");
   }
-  await appendFile(outputFile, `status=${result}\n`, "utf8");
+  const appendOutput = dependencies.appendOutput ?? ((filePath, contents) => appendFile(filePath, contents, "utf8"));
+  await appendOutput(outputFile, `status=${result}\n`);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {

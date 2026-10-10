@@ -2,18 +2,17 @@ import type { JevDecisionClient } from "./types.js";
 import {
   DEFAULT_PLAYSTYLE_CONFIDENCE_THRESHOLD,
   MAX_PLAYSTYLE_REQUEST_BYTES,
-  PLAYSTYLE_QUESTION_IDS,
   type PlaystyleClassificationInput,
   type PlaystyleClassifier,
   type PlaystyleClassificationResult,
 } from "./playstyle-classification-contracts.js";
 import {
-  buildPlaystyleState,
   classifyPlaystyleAnswers,
   createPlaystyleClassificationQuestions,
   validatePlaystyleConfidenceThreshold,
   validatePlaystyleDecisionResult,
 } from "./playstyle-classification-policy.js";
+import { buildPlaystyleState } from "./playstyle-state.js";
 
 /** Produces confidence-gated advisory playstyle proposals; this service has no write path. */
 export class PlaystyleClassificationService implements PlaystyleClassifier {
@@ -43,6 +42,3 @@ export class PlaystyleClassificationService implements PlaystyleClassifier {
     };
   }
 }
-
-export { DEFAULT_PLAYSTYLE_CONFIDENCE_THRESHOLD } from "./playstyle-classification-contracts.js";
-export { PLAYSTYLE_QUESTION_IDS };

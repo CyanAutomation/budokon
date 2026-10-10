@@ -267,8 +267,75 @@ function compactTechniquePage(value: { datasetVersion: string; techniques: Recor
 const localReadAnnotations = { readOnlyHint: true, destructiveHint: false, openWorldHint: false };
 const externalReadAnnotations = { readOnlyHint: true, destructiveHint: false, openWorldHint: true };
 
+interface McpRequestContext {
+  authorizedInternal: boolean;
+  authorizedJev: boolean;
+}
+
+interface BudokonMcpDependencies {
+  catalog: CatalogService;
+  draw: DrawService;
+  eventDraw: EventDrawService;
+  authorizeInternal(request: Request): boolean;
+  authorizeJev?(request: Request): boolean;
+  semanticSearch?: SemanticJudokaSearcher;
+  editorialReview?: EditorialReviewer;
+  playstyleClassification?: PlaystyleClassifier;
+  queryInterpreter?: JudokaQueryInterpreter;
+}
+
+type McpTools = ReturnType<typeof createMcpTools>;
+
+function createToolRegistrar(server: McpServer) {
+  return (name: string, title: string, description: string, inputSchema: z.ZodType, outputSchema: z.ZodType, call: (input: never) => unknown, annotations = localReadAnnotations) => {
+    server.registerTool(name, { title, description, inputSchema, outputSchema, annotations }, async input => {
+      try { return textResult(await call(input as never)); }
+      catch (error) { return { content: [{ type: "text" as const, text: error instanceof Error ? error.message : "Tool execution failed" }], isError: true }; }
+    });
+  };
+}
+
+type ToolRegistrar = ReturnType<typeof createToolRegistrar>;
+
+function registerCatalogTools(register: ToolRegistrar, tools: McpTools, context: McpRequestContext): void {
+  register("get_judoka", "Get judoka", "Get one public judoka by immutable ID, slug, legacy slug, or name alias.", context.authorizedInternal ? internalIdInput : idInput, getJudokaOutputSchema, input => tools.get_judoka(input as Parameters<typeof tools.get_judoka>[0], context));
+  register("search_judoka", "Search judoka", "Search public judoka by name, slug, or alias and combine exact catalogue filters. Use query or its q alias, never both. Results are compact summaries, ordered deterministically, and limited to 50 per page; use get_judoka for a full record.", context.authorizedInternal ? internalSearchInput : searchInput, judokaListOutputSchema, input => compactJudokaPage(tools.search_judoka(input as Parameters<typeof tools.search_judoka>[0], context)));
+  register("draw_judoka", "Draw judoka", "Draw up to 10 public judoka with optional filters and exclusions. A seed plus datasetVersion and algorithm makes the draw reproducible.", context.authorizedInternal ? internalDrawInput : drawInput, judokaDrawOutputSchema, input => tools.draw_judoka(input as Parameters<typeof tools.draw_judoka>[0], context));
+  register("list_techniques", "List techniques", "List compact technique summaries in stable order, at most 50 per page. Continue with nextCursor; use get_technique for a full record.", listTechniquesInput, techniqueListOutputSchema, input => compactTechniquePage(tools.list_techniques(input as Parameters<typeof tools.list_techniques>[0])));
+  register("search_techniques", "Search techniques", "Find techniques by name, Japanese name, ID, or description; category and subCategory filters use exact normalized matches. Returns compact summaries, at most 50 per page; use get_technique for full details.", searchTechniquesInput, techniqueListOutputSchema, input => compactTechniquePage(tools.search_techniques(input as Parameters<typeof tools.search_techniques>[0])));
+  register("get_technique", "Get technique", "Get one technique by ID, including its Japanese name, classification, description, and reference link.", idInput, getTechniqueOutputSchema, input => tools.get_technique(input as Parameters<typeof tools.get_technique>[0]));
+  register("list_events", "List events", "List events, optionally filtered by ruleset and category. The default page contains at most 50 records; continue with nextCursor and repeat the same limit and filters.", listEventsInput, eventListOutputSchema, input => tools.list_events(input as Parameters<typeof tools.list_events>[0]));
+  register("get_event", "Get event", "Get one gameplay event by ID with its typed effects.", idInput, getEventOutputSchema, input => tools.get_event(input as Parameters<typeof tools.get_event>[0]));
+  register("draw_event", "Draw event", "Draw one event for a required ruleset and optional category. A seed and dataset version make the draw reproducible.", drawEventInput, eventDrawOutputSchema, input => tools.draw_event(input as Parameters<typeof tools.draw_event>[0]));
+  register("list_countries", "List countries", "List supported countries and their active status for catalogue filters.", z.object({}).strict(), countryListOutputSchema, () => tools.list_countries());
+  register("list_weight_categories", "List weight categories", "List supported senior weight categories by gender for catalogue filters.", z.object({}).strict(), weightCategoryListOutputSchema, () => tools.list_weight_categories());
+  register("get_public_coverage", "Get public coverage", "Get catalogue coverage for public real judoka; this response contains no hidden-record totals.", z.object({}).strict(), z.object({ datasetVersion: z.string(), ...publicCoverageOutputSchema.shape }).strict(), () => tools.get_public_coverage());
+  register("version", "Get version", "Get dataset, service, and draw-algorithm versions.", z.object({}).strict(), versionOutputSchema, () => tools.version());
+}
+
+function registerJevTools(register: ToolRegistrar, tools: McpTools, dependencies: BudokonMcpDependencies, context: McpRequestContext): void {
+  if (context.authorizedJev && dependencies.semanticSearch) {
+    register("semantic_search_judoka", "Rank judoka semantically", "Rank up to 100 eligible judoka by semantic relevance. Returns compact summaries; use get_judoka for details. This calls an external model and does not replace deterministic search.", context.authorizedInternal ? semanticSearchInputSchema : publicSemanticSearchInputSchema, semanticSearchOutputSchema, async input => {
+      const result = await tools.semantic_search_judoka(input as Parameters<typeof tools.semantic_search_judoka>[0], context);
+      return { ...result, results: result.results.map(item => ({ ...item, judoka: compactJudoka(item.judoka as unknown as Record<string, unknown>) })) };
+    }, externalReadAnnotations);
+  }
+  if (context.authorizedJev && dependencies.editorialReview) {
+    register("review_proposed_judoka", "Review a judoka proposal", "Review a proposed record against supplied evidence and likely duplicates. Calls an external model; advice is non-mutating and requires human approval.", editorialReviewInputSchema, reviewOutputSchema, input => tools.review_proposed_judoka(input as Parameters<typeof tools.review_proposed_judoka>[0], context), externalReadAnnotations);
+  }
+  if (context.authorizedJev && dependencies.editorialReview?.reviewMany) {
+    register("review_proposed_judoka_batch", "Review judoka proposals", "Review up to 10 proposed records in one bounded external-model request. Results are advisory and require human approval.", editorialReviewBatchInputSchema, reviewBatchOutputSchema, input => tools.review_proposed_judoka_batch(input as Parameters<typeof tools.review_proposed_judoka_batch>[0], context), externalReadAnnotations);
+  }
+  if (context.authorizedJev && dependencies.playstyleClassification) {
+    register("review_judoka_playstyle", "Review a judoka playstyle", "Propose confidence-gated playstyle labels from one canonical judoka, resolved signature techniques, and supplied source excerpts. This calls an external model, never changes canonical data, and always requires human approval.", playstyleClassificationInputSchema, playstyleClassificationOutputSchema, input => tools.review_judoka_playstyle(input as Parameters<typeof tools.review_judoka_playstyle>[0], context), externalReadAnnotations);
+  }
+  if (context.authorizedJev && dependencies.queryInterpreter) {
+    register("interpret_judoka_query", "Interpret a judoka query", "Suggest existing catalogue filters from natural language. Calls an external model; low-confidence suggestions are not applied.", interpretJudokaQueryInput, queryInterpretationOutputSchema, input => tools.interpret_judoka_query(input as Parameters<typeof tools.interpret_judoka_query>[0], context), externalReadAnnotations);
+  }
+}
+
 /** Builds a stateless Streamable HTTP MCP endpoint over the shared application services. */
-export function createBudokonMcpHandler(dependencies: { catalog: CatalogService; draw: DrawService; eventDraw: EventDrawService; authorizeInternal(request: Request): boolean; authorizeJev?(request: Request): boolean; semanticSearch?: SemanticJudokaSearcher; editorialReview?: EditorialReviewer; playstyleClassification?: PlaystyleClassifier; queryInterpreter?: JudokaQueryInterpreter }) {
+export function createBudokonMcpHandler(dependencies: BudokonMcpDependencies) {
   return createMcpHandler(({ requestInfo }) => {
     const tools = createMcpTools(dependencies);
     const context = {
@@ -279,45 +346,9 @@ export function createBudokonMcpHandler(dependencies: { catalog: CatalogService;
       { name: "budokon", version: dependencies.catalog.version().serviceVersion },
       { instructions: "Use deterministic catalogue search for exact judoka name, alias, country, gender, weight, rarity, person type, and signature-move filters. Collection tools return at most 50 records by default; continue with the returned nextCursor and repeat the same limit and filters. Draws are read-only; provide a seed and retain datasetVersion and algorithm when reproducibility matters. Public tools never return hidden records. Internal JEV tools, when present, are advisory and call an external model." },
     );
-    const register = (name: string, title: string, description: string, inputSchema: z.ZodType, outputSchema: z.ZodType, call: (input: never) => unknown, annotations = localReadAnnotations) => {
-      server.registerTool(name, { title, description, inputSchema, outputSchema, annotations }, async input => {
-        try { return textResult(await call(input as never)); }
-        catch (error) { return { content: [{ type: "text" as const, text: error instanceof Error ? error.message : "Tool execution failed" }], isError: true }; }
-      });
-    };
-
-    register("get_judoka", "Get judoka", "Get one public judoka by immutable ID, slug, legacy slug, or name alias.", context.authorizedInternal ? internalIdInput : idInput, getJudokaOutputSchema, input => tools.get_judoka(input as Parameters<typeof tools.get_judoka>[0], context));
-    register("search_judoka", "Search judoka", "Search public judoka by name, slug, or alias and combine exact catalogue filters. Use query or its q alias, never both. Results are compact summaries, ordered deterministically, and limited to 50 per page; use get_judoka for a full record.", context.authorizedInternal ? internalSearchInput : searchInput, judokaListOutputSchema, input => compactJudokaPage(tools.search_judoka(input as Parameters<typeof tools.search_judoka>[0], context)));
-    register("draw_judoka", "Draw judoka", "Draw up to 10 public judoka with optional filters and exclusions. A seed plus datasetVersion and algorithm makes the draw reproducible.", context.authorizedInternal ? internalDrawInput : drawInput, judokaDrawOutputSchema, input => tools.draw_judoka(input as Parameters<typeof tools.draw_judoka>[0], context));
-    register("list_techniques", "List techniques", "List compact technique summaries in stable order, at most 50 per page. Continue with nextCursor; use get_technique for a full record.", listTechniquesInput, techniqueListOutputSchema, input => compactTechniquePage(tools.list_techniques(input as Parameters<typeof tools.list_techniques>[0])));
-    register("search_techniques", "Search techniques", "Find techniques by name, Japanese name, ID, or description; category and subCategory filters use exact normalized matches. Returns compact summaries, at most 50 per page; use get_technique for full details.", searchTechniquesInput, techniqueListOutputSchema, input => compactTechniquePage(tools.search_techniques(input as Parameters<typeof tools.search_techniques>[0])));
-    register("get_technique", "Get technique", "Get one technique by ID, including its Japanese name, classification, description, and reference link.", idInput, getTechniqueOutputSchema, input => tools.get_technique(input as Parameters<typeof tools.get_technique>[0]));
-    register("list_events", "List events", "List events, optionally filtered by ruleset and category. The default page contains at most 50 records; continue with nextCursor and repeat the same limit and filters.", listEventsInput, eventListOutputSchema, input => tools.list_events(input as Parameters<typeof tools.list_events>[0]));
-    register("get_event", "Get event", "Get one gameplay event by ID with its typed effects.", idInput, getEventOutputSchema, input => tools.get_event(input as Parameters<typeof tools.get_event>[0]));
-    register("draw_event", "Draw event", "Draw one event for a required ruleset and optional category. A seed and dataset version make the draw reproducible.", drawEventInput, eventDrawOutputSchema, input => tools.draw_event(input as Parameters<typeof tools.draw_event>[0]));
-    register("list_countries", "List countries", "List supported countries and their active status for catalogue filters.", z.object({}).strict(), countryListOutputSchema, () => tools.list_countries());
-    register("list_weight_categories", "List weight categories", "List supported senior weight categories by gender for catalogue filters.", z.object({}).strict(), weightCategoryListOutputSchema, () => tools.list_weight_categories());
-    register("get_public_coverage", "Get public coverage", "Get catalogue coverage for public real judoka; this response contains no hidden-record totals.", z.object({}).strict(), z.object({ datasetVersion: z.string(), ...publicCoverageOutputSchema.shape }).strict(), () => tools.get_public_coverage());
-    register("version", "Get version", "Get dataset, service, and draw-algorithm versions.", z.object({}).strict(), versionOutputSchema, () => tools.version());
-
-    if (context.authorizedJev && dependencies.semanticSearch) {
-      register("semantic_search_judoka", "Rank judoka semantically", "Rank up to 100 eligible judoka by semantic relevance. Returns compact summaries; use get_judoka for details. This calls an external model and does not replace deterministic search.", context.authorizedInternal ? semanticSearchInputSchema : publicSemanticSearchInputSchema, semanticSearchOutputSchema, async input => {
-        const result = await tools.semantic_search_judoka(input as Parameters<typeof tools.semantic_search_judoka>[0], context);
-        return { ...result, results: result.results.map(item => ({ ...item, judoka: compactJudoka(item.judoka as unknown as Record<string, unknown>) })) };
-      }, externalReadAnnotations);
-    }
-    if (context.authorizedJev && dependencies.editorialReview) {
-      register("review_proposed_judoka", "Review a judoka proposal", "Review a proposed record against supplied evidence and likely duplicates. Calls an external model; advice is non-mutating and requires human approval.", editorialReviewInputSchema, reviewOutputSchema, input => tools.review_proposed_judoka(input as Parameters<typeof tools.review_proposed_judoka>[0], context), externalReadAnnotations);
-    }
-    if (context.authorizedJev && dependencies.editorialReview?.reviewMany) {
-      register("review_proposed_judoka_batch", "Review judoka proposals", "Review up to 10 proposed records in one bounded external-model request. Results are advisory and require human approval.", editorialReviewBatchInputSchema, reviewBatchOutputSchema, input => tools.review_proposed_judoka_batch(input as Parameters<typeof tools.review_proposed_judoka_batch>[0], context), externalReadAnnotations);
-    }
-    if (context.authorizedJev && dependencies.playstyleClassification) {
-      register("review_judoka_playstyle", "Review a judoka playstyle", "Propose confidence-gated playstyle labels from one canonical judoka, resolved signature techniques, and supplied source excerpts. This calls an external model, never changes canonical data, and always requires human approval.", playstyleClassificationInputSchema, playstyleClassificationOutputSchema, input => tools.review_judoka_playstyle(input as Parameters<typeof tools.review_judoka_playstyle>[0], context), externalReadAnnotations);
-    }
-    if (context.authorizedJev && dependencies.queryInterpreter) {
-      register("interpret_judoka_query", "Interpret a judoka query", "Suggest existing catalogue filters from natural language. Calls an external model; low-confidence suggestions are not applied.", interpretJudokaQueryInput, queryInterpretationOutputSchema, input => tools.interpret_judoka_query(input as Parameters<typeof tools.interpret_judoka_query>[0], context), externalReadAnnotations);
-    }
+    const register = createToolRegistrar(server);
+    registerCatalogTools(register, tools, context);
+    registerJevTools(register, tools, dependencies, context);
     return server;
   }, { legacy: "stateless" });
 }
