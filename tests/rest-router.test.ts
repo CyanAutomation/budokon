@@ -4,7 +4,8 @@ import {
   CatalogService, DrawService, JsonReadModelRepository, createRestRouter, summarizeCoverage,
   type CoverageResponse, type Judoka, type RestCatalogDependency, type RestDrawDependency
 } from "../src/index.js";
-import { createWorker, type Env } from "../worker/router.js";
+import { createWorker } from "../worker/router.js";
+import type { Env } from "../worker/env.js";
 import compiledModel from "./fixtures/compiled-model.js";
 
 const repository = new JsonReadModelRepository(compiledModel);
