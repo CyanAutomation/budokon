@@ -34,7 +34,7 @@ export async function request(
     return response;
   } catch (error) {
     if (error instanceof TypeError && error.message.includes("fetch")) {
-      throw new Error(`Network error accessing ${path}: ${error.message}`);
+      throw new Error(`Network error accessing ${path}: ${error.message}`, { cause: error });
     }
     throw error;
   }

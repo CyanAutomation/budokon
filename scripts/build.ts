@@ -7,7 +7,6 @@ import { isProhibitedGameStatePropertyName } from '../src/contracts/game-state.j
 import algorithmContract from '../src/draw/algorithm-contract.json' with { type: 'json' };
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-export const uuidPattern = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/;
 export const countryCodePattern = /^[A-Z]{2}$/;
 
 export interface CountryCatalogEntry {

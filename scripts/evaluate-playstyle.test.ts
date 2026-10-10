@@ -4,6 +4,7 @@ import test from "node:test";
 import { PLAYSTYLE_OPTIONS, type PlaystyleFacet } from "../src/domain/playstyle.js";
 import type { PlaystyleClassification, PlaystyleClassificationResult } from "../src/jev/playstyle-classification-contracts.js";
 import {
+  formatPlaystyleEvaluationReport,
   runPlaystyleEvaluation,
   scorePlaystyleEvaluation,
   type PlaystyleEvaluationFixture,
@@ -62,39 +63,53 @@ test("playstyle evaluation reports per-facet accuracy and abstention accuracy", 
   assert.throws(() => scorePlaystyleEvaluation(fixtures, results.slice(1)), /counts must match/u);
 });
 
-test("live playstyle evaluation is injectable for offline tests and reports model usage without gating", async () => {
+test("playstyle report summarizes model, per-facet accuracy, usage, and non-gating status", async () => {
+  const fixtures = JSON.parse(await readFile(new URL("../tests/fixtures/playstyle-evaluation.json", import.meta.url), "utf8")) as PlaystyleEvaluationFixture[];
+  const results = fixtures.map(resultFor);
+  const first = fixtures[0];
+  assert.ok(first);
+  results[0].classification.tacticalStyle.proposed = first.expected.tacticalStyle === "pressure" ? "counter" : "pressure";
+  results[0].classification.tacticalStyle.policyAccepted = results[0].classification.tacticalStyle.proposed;
+
+  const report = formatPlaystyleEvaluationReport(fixtures, results, "typesafe/jev-configured-test");
+
+  assert.match(report, /^## JEV playstyle classification evaluation/mu);
+  assert.match(report, /Requested model: typesafe\/jev-configured-test/u);
+  assert.match(report, /Resolved model\(s\): typesafe\/jev-evaluation-fake/u);
+  assert.match(report, /tacticalStyle \| 3 \| 4 \| 75\.0%/u);
+  assert.match(report, /80 input tokens, 32 output tokens/u);
+  assert.match(report, /non-gating/u);
+});
+
+test("injected playstyle evaluation classifies every fixture and writes one report", async () => {
   const fixtures = JSON.parse(await readFile(new URL("../tests/fixtures/playstyle-evaluation.json", import.meta.url), "utf8")) as PlaystyleEvaluationFixture[];
   const expectedBySlug = new Map(fixtures.map(fixture => [fixture.record.slug, fixture]));
-  let report = "";
+  const reports: string[] = [];
   let calls = 0;
+  let threshold: number | undefined;
   await runPlaystyleEvaluation({
     environment: {
       JEV_OPENROUTER_API_KEY: "test-placeholder",
       JEV_MODEL: "typesafe/jev-configured-test",
       JEV_PLAYSTYLE_THRESHOLD: "0.78",
     },
-    createClassifier: () => ({
-      async classify(input) {
-        calls += 1;
-        const fixture = expectedBySlug.get(input.record.slug);
-        assert.ok(fixture, `fixture exists for ${input.record.slug}`);
-        const result = resultFor(fixture!);
-        if (calls === 1) {
-          const differentOption = fixture!.expected.tacticalStyle === "pressure" ? "counter" : "pressure";
-          result.classification.tacticalStyle.proposed = differentOption;
-          result.classification.tacticalStyle.policyAccepted = differentOption;
-        }
-        return result;
-      },
-    }),
-    writeOutput: value => { report = value; },
+    createClassifier: options => {
+      threshold = options.confidenceThreshold;
+      return {
+        async classify(input) {
+          calls += 1;
+          const fixture = expectedBySlug.get(input.record.slug);
+          assert.ok(fixture, `fixture exists for ${input.record.slug}`);
+          return resultFor(fixture!);
+        },
+      };
+    },
+    writeOutput: value => { reports.push(value); },
   });
   assert.equal(calls, fixtures.length);
-  assert.match(report, /Requested model: typesafe\/jev-configured-test/u);
-  assert.match(report, /Resolved model\(s\): typesafe\/jev-evaluation-fake/u);
-  assert.match(report, /tacticalStyle \| 3 \| 4 \| 75\.0%/u);
-  assert.match(report, /80 input tokens, 32 output tokens/u);
-  assert.match(report, /non-gating/u);
+  assert.equal(threshold, 0.78);
+  assert.equal(reports.length, 1);
+  assert.match(reports[0], /^## JEV playstyle classification evaluation/mu);
 });
 
 test("playstyle evaluation requires credentials before loading fixtures", async () => {
