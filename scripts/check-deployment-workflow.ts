@@ -27,7 +27,8 @@ export type DeploymentWorkflowValidationErrorCode =
   | "missing-artifact-check"
   | "missing-release-upload"
   | "missing-release-artifact"
-  | "missing-workflow-script";
+  | "missing-workflow-script"
+  | "missing-workflow-input";
 
 export class DeploymentWorkflowValidationError extends Error {
   constructor(
@@ -114,6 +115,10 @@ function jobBody(workflow: string, jobName: string): string | undefined {
 function invokesNpmScript(job: string, scriptName: string): boolean {
   const escapedName = scriptName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   return new RegExp(`(?:^|[;&|\\s])npm\\s+run\\s+${escapedName}(?=$|[;&|\\s])`, "m").test(job);
+}
+
+function stepInvokingNpmScript(job: string, scriptName: string): string | undefined {
+  return job.split(/(?=^ {6}-\s)/m).find(step => invokesNpmScript(step, scriptName));
 }
 
 function releaseUploadFiles(job: string): string[] | undefined {
@@ -249,6 +254,16 @@ export async function checkDeploymentWorkflow(
       );
     }
     scripts.push({ name: scriptName, command, entryPoint });
+  }
+
+  const deployJob = jobBody(workflow, "deploy");
+  const smokeStep = deployJob && stepInvokingNpmScript(deployJob, "smoke:deployment");
+  if (!smokeStep || !/^[ \t]+EXPECTED_SOURCE_GIT_COMMIT:\s*\$\{\{\s*github\.sha\s*\}\}\s*$/m.test(smokeStep)) {
+    throw new DeploymentWorkflowValidationError(
+      "missing-workflow-input",
+      "Deployment smoke step must compare the served release identity with github.sha",
+      { workflowPath, scriptName: "smoke:deployment" },
+    );
   }
 
   return { repositoryRoot: path.resolve(repositoryRoot), workflowPath, packagePath, scripts };

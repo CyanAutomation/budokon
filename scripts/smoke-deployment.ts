@@ -15,21 +15,32 @@ interface LandingBody {
 
 export interface SmokeDeploymentOptions {
   deploymentUrl?: string;
+  directDeploymentUrl?: string;
+  expectedSourceGitCommit?: string;
+  deploymentIdentityAttempts?: number;
+  deploymentIdentityRetryIntervalMs?: number;
+  waitImpl?: (milliseconds: number) => Promise<void>;
   fetchImpl?: typeof fetch;
   log?: (message: string) => void;
 }
+
+type ExpectedStatus = number | readonly number[] | "any";
 
 export async function request(
   base: string,
   path: string,
   init?: RequestInit,
-  expectedStatus?: number,
+  expectedStatus?: ExpectedStatus,
   fetchImpl: typeof fetch = fetch,
 ): Promise<Response> {
   try {
     const response = await fetchImpl(`${base}${path}`, init);
-    if (expectedStatus === undefined ? !response.ok : response.status !== expectedStatus) {
-      throw new Error(`${path} returned ${response.status}${expectedStatus === undefined ? "" : `, expected ${expectedStatus}`}`);
+    const acceptedStatuses = typeof expectedStatus === "number"
+      ? [expectedStatus]
+      : expectedStatus === undefined || expectedStatus === "any" ? undefined : expectedStatus;
+    if (expectedStatus === undefined ? !response.ok : expectedStatus !== "any" && !acceptedStatuses?.includes(response.status)) {
+      const expected = acceptedStatuses?.join(" or ") ?? "a successful response";
+      throw new Error(`${path} returned ${response.status}, expected ${expected}`);
     }
     return response;
   } catch (error) {
@@ -40,16 +51,51 @@ export async function request(
   }
 }
 
-type DeploymentRequest = (path: string, init?: RequestInit, expectedStatus?: number) => Promise<Response>;
+type DeploymentRequest = (path: string, init?: RequestInit, expectedStatus?: ExpectedStatus) => Promise<Response>;
 
-async function validateReleaseIdentity(base: string, send: DeploymentRequest): Promise<StatusBody> {
-  const status = await send("/v1/status").then(response => response.json() as Promise<StatusBody>);
+function assertValidReleaseIdentity(status: StatusBody): void {
   const validCommit = /^[0-9a-f]{40}$/.test(status.sourceGitCommit);
   const validChecksum = /^sha256:[0-9a-f]{64}$/.test(status.datasetChecksum);
   if (status.status !== "ok" || !validCommit || !validChecksum) {
     throw new Error("status did not expose a valid immutable release identity");
   }
+}
 
+async function waitForReleaseIdentity(
+  base: string,
+  send: DeploymentRequest,
+  expectedSourceGitCommit: string | undefined,
+  attempts: number,
+  retryIntervalMs: number,
+  waitImpl: (milliseconds: number) => Promise<void>,
+  log: (message: string) => void,
+): Promise<StatusBody> {
+  if (expectedSourceGitCommit !== undefined && !/^[0-9a-f]{40}$/.test(expectedSourceGitCommit)) {
+    throw new Error("EXPECTED_SOURCE_GIT_COMMIT must be a 40-character lowercase Git commit");
+  }
+  if (!Number.isInteger(attempts) || attempts < 1) throw new Error("deploymentIdentityAttempts must be a positive integer");
+  if (!Number.isFinite(retryIntervalMs) || retryIntervalMs < 0) {
+    throw new Error("deploymentIdentityRetryIntervalMs must be a non-negative number");
+  }
+
+  let lastStatus: StatusBody | undefined;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    lastStatus = await send("/v1/status").then(response => response.json() as Promise<StatusBody>);
+    assertValidReleaseIdentity(lastStatus);
+    if (!expectedSourceGitCommit || lastStatus.sourceGitCommit === expectedSourceGitCommit) return lastStatus;
+    if (attempt === 1) {
+      log(`Waiting for ${base} to serve commit ${expectedSourceGitCommit}; currently serving ${lastStatus.sourceGitCommit}`);
+    }
+    if (attempt < attempts) await waitImpl(retryIntervalMs);
+  }
+
+  throw new Error(
+    `${base} still serves commit ${lastStatus?.sourceGitCommit ?? "unknown"}; expected ${expectedSourceGitCommit} after ${attempts} checks`,
+  );
+}
+
+async function validateReleaseIdentity(base: string, send: DeploymentRequest, status: StatusBody): Promise<void> {
+  assertValidReleaseIdentity(status);
   const landing = await send("/").then(response => response.json() as Promise<LandingBody>);
   const hasOpenApiLink = landing.openapi === `${base}/openapi/v1.yaml`;
   const hasStatusLink = landing.status === `${base}/v1/status`;
@@ -57,7 +103,6 @@ async function validateReleaseIdentity(base: string, send: DeploymentRequest): P
 
   const contract = await send("/openapi/v1.yaml");
   if (!(await contract.text()).includes("/v1/status:")) throw new Error("OpenAPI contract does not document status");
-  return status;
 }
 
 async function validatePublicCatalogue(send: DeploymentRequest): Promise<void> {
@@ -67,7 +112,18 @@ async function validatePublicCatalogue(send: DeploymentRequest): Promise<void> {
   if (!first.headers.get("cache-control")?.includes("s-maxage=")) {
     throw new Error("public catalogue response is missing its shared-cache policy");
   }
-  await send("/v1/judoka", { headers: { "if-none-match": etag } }, 304);
+  const revalidation = await send("/v1/judoka", { headers: { "if-none-match": etag } }, "any");
+  if (revalidation.status !== 304) {
+    const diagnosticHeaders = [
+      ["ETag", revalidation.headers.get("etag")],
+      ["CF-Cache-Status", revalidation.headers.get("cf-cache-status")],
+      ["Age", revalidation.headers.get("age")],
+      ["CF-Ray", revalidation.headers.get("cf-ray")],
+    ].map(([name, value]) => `${name}=${value ?? "<missing>"}`).join(", ");
+    throw new Error(
+      `/v1/judoka revalidation with If-None-Match ${etag} returned ${revalidation.status}, expected 304 (${diagnosticHeaders})`,
+    );
+  }
 
   const search = await send("/v1/judoka?q=shozo&limit=1").then(response => response.json() as Promise<{ judoka?: unknown[] }>);
   if (!Array.isArray(search.judoka) || search.judoka.length === 0) {
@@ -125,12 +181,26 @@ async function assertDeterministicResponse(
 export async function runSmokeDeployment(options: SmokeDeploymentOptions = {}): Promise<void> {
   const base = (options.deploymentUrl ?? process.env.DEPLOYMENT_URL ?? "").replace(/\/$/, "");
   if (!/^https:\/\//.test(base)) throw new Error("DEPLOYMENT_URL must be an HTTPS URL");
-  const send = (path: string, init?: RequestInit, expectedStatus?: number) =>
-    request(base, path, init, expectedStatus, options.fetchImpl ?? fetch);
-  const status = await validateReleaseIdentity(base, send);
-  await validatePublicCatalogue(send);
-  await validatePublicDraws(send);
-  (options.log ?? console.log)(`Smoke check passed for ${base} (${status.datasetVersion}, ${status.sourceGitCommit})`);
+  const directBase = (options.directDeploymentUrl ?? process.env.DIRECT_DEPLOYMENT_URL ?? "").replace(/\/$/, "");
+  if (directBase && !/^https:\/\//.test(directBase)) {
+    throw new Error("DIRECT_DEPLOYMENT_URL must be an HTTPS URL");
+  }
+  const expectedSourceGitCommit = options.expectedSourceGitCommit ?? process.env.EXPECTED_SOURCE_GIT_COMMIT;
+  const attempts = options.deploymentIdentityAttempts ?? 13;
+  const retryIntervalMs = options.deploymentIdentityRetryIntervalMs ?? 5_000;
+  const waitImpl = options.waitImpl ?? (milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds)));
+  const log = options.log ?? console.log;
+  const targets = [...new Set([base, directBase].filter(Boolean))];
+
+  for (const target of targets) {
+    const send = (path: string, init?: RequestInit, expectedStatus?: ExpectedStatus) =>
+      request(target, path, init, expectedStatus, options.fetchImpl ?? fetch);
+    const status = await waitForReleaseIdentity(target, send, expectedSourceGitCommit, attempts, retryIntervalMs, waitImpl, log);
+    await validateReleaseIdentity(target, send, status);
+    await validatePublicCatalogue(send);
+    await validatePublicDraws(send);
+    log(`Smoke check passed for ${target} (${status.datasetVersion}, ${status.sourceGitCommit})`);
+  }
 }
 
 const invokedPath = process.argv[1] ? pathToFileURL(path.resolve(process.argv[1])).href : "";

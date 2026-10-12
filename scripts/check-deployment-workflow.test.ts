@@ -16,6 +16,8 @@ const validWorkflow = `jobs:
     steps:
       - run: npm run validate:deployment-target
       - run: npm run smoke:deployment
+        env:
+          EXPECTED_SOURCE_GIT_COMMIT: \${{ github.sha }}
 `;
 
 const validScripts = {
@@ -54,6 +56,11 @@ const fixtures: Fixture[] = [
     name: "workflow scripts do not reference the expected commands",
     workflow: "jobs:\n  deploy:\n    steps:\n      - run: npm run deploy\n",
     expectedError: { code: "missing-workflow-command", scriptName: "validate:deployment-target" },
+  },
+  {
+    name: "deployment smoke step does not pin the expected release commit",
+    workflow: "jobs:\n  deploy:\n    steps:\n      - run: npm run validate:deployment-target\n      - run: npm run smoke:deployment\n",
+    expectedError: { code: "missing-workflow-input", scriptName: "smoke:deployment" },
   },
 ];
 
