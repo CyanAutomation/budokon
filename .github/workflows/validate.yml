@@ -25,6 +25,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - name: Check README links and Markdown
+        run: npm run check:docs
       - name: Compile runtime TypeScript
         run: npm run build:runtime
       - name: Type-check tooling and tests
