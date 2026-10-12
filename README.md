@@ -1,7 +1,7 @@
 # BU-DO-KON
 
-Canonical, version-controlled judo data for games and applications, with a
-public REST API and an MCP interface.
+Canonical, version-controlled judo data for game and application developers,
+with a public REST API and an MCP interface.
 
 [![Deploy Cloudflare Worker](https://github.com/CyanAutomation/budokon/actions/workflows/deploy-cloudflare.yml/badge.svg?branch=main)](https://github.com/CyanAutomation/budokon/actions/workflows/deploy-cloudflare.yml)
 [![Validate](https://github.com/CyanAutomation/budokon/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/CyanAutomation/budokon/actions/workflows/validate.yml)
@@ -9,7 +9,9 @@ public REST API and an MCP interface.
 BU-DO-KON is a curated catalogue, not an exhaustive athlete database. It gives
 compatible games a shared representation of judoka, techniques, and gameplay
 events. Factual profile details are kept distinct from editorial attributes
-such as ratings, rarity, and signature techniques.
+such as ratings, rarity, and signature techniques. Contributors can help
+maintain the catalogue through data updates and code changes reviewed by pull
+request.
 
 ## Contents
 
@@ -53,6 +55,24 @@ if (!response.ok) throw new Error(`BU-DO-KON returned ${response.status}`);
 
 const draw = await response.json();
 ```
+
+A successful draw response includes the dataset and algorithm versions needed
+to reproduce it. The `judoka` entries contain full catalogue records; shown
+here with each record abbreviated to its slug:
+
+```json
+{
+  "datasetVersion": "2026.08.7",
+  "algorithm": "budokon-v1",
+  "seed": "round-42",
+  "poolSize": 72,
+  "judoka": [{ "slug": "francisco-garrigos" }]
+}
+```
+
+These values came from a local run against dataset `2026.08.7`; other deployed
+versions may return different counts or judoka. See the `JudokaDraw` schema in
+the [OpenAPI contract](openapi/v1.yaml) for the complete response shape.
 
 Use `limit` to enable cursor pagination. Send the returned `nextCursor` with
 the same filters and limit to fetch the next page. On `429`, wait for
@@ -147,7 +167,9 @@ and coverage checks. Relevant schemas are in `schema/`; `npm run validate`
 checks canonical data and repository rules.
 
 For code or data issues, use [GitHub Issues][issues]. Changes are reviewed
-through pull requests and the validation workflow.
+through pull requests and the validation workflow. For code changes, run the
+checks listed under [Develop locally](#develop-locally) before opening a pull
+request. For judoka data changes, follow the [contribution guide](data/judoka/CONTRIBUTING.md).
 
 ## Deploy and operate
 
