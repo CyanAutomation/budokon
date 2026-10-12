@@ -86,3 +86,5 @@ jobs:
           done
         env:
           DEPLOYMENT_URL: ${{ vars.CLOUDFLARE_DEPLOYMENT_URL }}
+          DIRECT_DEPLOYMENT_URL: ${{ vars.CLOUDFLARE_DIRECT_DEPLOYMENT_URL }}
+          EXPECTED_SOURCE_GIT_COMMIT: ${{ github.sha }}
