@@ -42,6 +42,10 @@ function runOf(job: WorkflowJob, stepName: string): string {
   return step.run ?? "";
 }
 
+function containsRetryAllErrorsOption(run: string): boolean {
+  return /--retry-all-errors/u.test(run);
+}
+
 test("Node 24 is the supported runtime and every workflow uses it", async () => {
   const packageJson = JSON.parse(await readFile(path.join(repositoryRoot, "package.json"), "utf8")) as {
     engines: { node: string };
@@ -200,6 +204,17 @@ test("Kaseki sweeps use the versioned API base for checks and submissions", asyn
   }
 });
 
+test("retry flag detection finds options embedded in quoted shell arguments", () => {
+  for (const command of [
+    'FLAGS="--retry-all-errors" curl "$URL"',
+    'curl "$URL" "--retry-all-errors"',
+  ]) {
+    assert.equal(containsRetryAllErrorsOption(command), true, command);
+  }
+
+  assert.equal(containsRetryAllErrorsOption('curl --retry 3 "$URL"'), false);
+});
+
 test("Kaseki workflows do not retry permanent HTTP errors", async () => {
   for (const fileName of ["kaseki-docs.yaml", "kaseki-dry.yaml"]) {
     const { document } = await readWorkflow(fileName);
@@ -210,9 +225,8 @@ test("Kaseki workflows do not retry permanent HTTP errors", async () => {
 
     assert.ok(curlSteps.length > 0, `${fileName} must inspect its Kaseki HTTP commands`);
     for (const { jobName, step } of curlSteps) {
-      const arguments_ = (step.run ?? "").split(/\s+/u);
       assert.equal(
-        arguments_.includes("--retry-all-errors"),
+        containsRetryAllErrorsOption(step.run ?? ""),
         false,
         `${fileName}:${jobName} must not retry permanent HTTP errors`,
       );
