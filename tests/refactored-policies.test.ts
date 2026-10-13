@@ -38,6 +38,34 @@ test("semantic search policy validates bounds, creates per-candidate questions, 
   assert.deepEqual(ranked.map(item => item.judoka.id), ["a", "b"]);
 });
 
+test("semantic search policy rejects invalid relevance and request-size bounds", () => {
+  for (const options of [
+    { maxCandidates: 0 },
+    { maxCandidates: 1.5 },
+    { maxCandidates: 101 },
+    { minimumRelevance: -0.01 },
+    { minimumRelevance: 1.01 },
+    { minimumRelevance: Number.NaN },
+  ]) {
+    assert.throws(() => validateSemanticSearchOptions(options), RangeError);
+  }
+
+  assert.throws(() => validateSemanticSearchRequest("x".repeat(1_001), [], 100), /1000 characters/);
+  assert.throws(
+    () => validateSemanticSearchRequest("short query", [{ ...judoka("large"), bio: "x".repeat(64_000) }], 100),
+    /64 KB/,
+  );
+});
+
+test("semantic search ranking treats missing and non-relevance answers as zero", () => {
+  const candidates = [judoka("b"), judoka("a")];
+  const ranked = rankSemanticSearchResults(candidates, {
+    relevance_0: { type: "choice", choice: "yes", probabilities: { yes: 1 }, confidence: 1 },
+  }, 0);
+
+  assert.deepEqual(ranked.map(({ judoka: record, relevance }) => [record.id, relevance]), [["a", 0], ["b", 0]]);
+});
+
 test("JEV response parser preserves typed answers and usage", () => {
   const questions: Record<string, JevQuestion> = {
     relevance: { type: "noul", instructions: "Relevant?" },
@@ -54,6 +82,36 @@ test("JEV response parser preserves typed answers and usage", () => {
     },
   };
   assert.deepEqual(parseJevResponse(valid, questions), valid);
+});
+
+test("JEV response parser rejects malformed envelopes and answer maps", () => {
+  const questions: Record<string, JevQuestion> = {
+    relevance: { type: "noul", instructions: "Relevant?" },
+    choice: { type: "choice", instructions: "Choose", criteria: { no: "No", yes: "Yes" } },
+    score: { type: "score", instructions: "Rate", criteria: ["low", "high"] },
+  };
+  const valid = {
+    model: "test-model",
+    usage: { input_tokens: 1 },
+    answers: {
+      relevance: { type: "noul", noul: 0.9 },
+      choice: { type: "choice", choice: "yes", probabilities: { no: 0.1, yes: 0.9 }, confidence: 0.9 },
+      score: { type: "score", score: 1, legend: { "0": "low", "1": "high" }, probabilities: { "0": 0, "1": 1 }, confidence: 1 },
+    },
+  };
+  const invalidResponses: unknown[] = [
+    null,
+    [],
+    { ...valid, model: "  " },
+    { ...valid, usage: [] },
+    { ...valid, answers: [] },
+    { ...valid, answers: { relevance: valid.answers.relevance, choice: valid.answers.choice } },
+    { ...valid, answers: { ...valid.answers, extra: { type: "noul", noul: 1 } } },
+    { ...valid, answers: { ...valid.answers, choice: { ...valid.answers.choice, confidence: 1.01 } } },
+    { ...valid, answers: { ...valid.answers, score: { ...valid.answers.score, probabilities: { "0": 0.5, "1": 0.6 } } } },
+  ];
+
+  for (const response of invalidResponses) assert.equal(parseJevResponse(response, questions), undefined);
 });
 
 test("editorial review policy validates evidence, asks about duplicate candidates, and stays conservative", () => {
