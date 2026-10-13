@@ -10,10 +10,13 @@ interface WorkflowStep {
   run?: string;
   env?: Record<string, unknown>;
   with?: Record<string, unknown>;
+  "continue-on-error"?: boolean;
 }
 
 interface WorkflowJob {
   if?: string;
+  needs?: string | string[];
+  "continue-on-error"?: boolean;
   permissions?: Record<string, string>;
   environment?: string | { name?: string; url?: string };
   env?: Record<string, unknown>;
@@ -199,8 +202,21 @@ test("Kaseki sweeps use the versioned API base for checks and submissions", asyn
 
 test("Kaseki workflows do not retry permanent HTTP errors", async () => {
   for (const fileName of ["kaseki-docs.yaml", "kaseki-dry.yaml"]) {
-    const { source } = await readWorkflow(fileName);
-    assert.doesNotMatch(source, /--retry-all-errors/u, fileName);
+    const { document } = await readWorkflow(fileName);
+    const curlSteps = Object.entries(document.jobs).flatMap(([jobName, job]) =>
+      job.steps
+        .filter(step => step.run?.split(/\s+/u).includes("curl"))
+        .map(step => ({ jobName, step })));
+
+    assert.ok(curlSteps.length > 0, `${fileName} must inspect its Kaseki HTTP commands`);
+    for (const { jobName, step } of curlSteps) {
+      const arguments_ = (step.run ?? "").split(/\s+/u);
+      assert.equal(
+        arguments_.includes("--retry-all-errors"),
+        false,
+        `${fileName}:${jobName} must not retry permanent HTTP errors`,
+      );
+    }
   }
 });
 
@@ -215,39 +231,37 @@ test("Kaseki Docs API credentials are limited to request steps", async () => {
   assert.equal(dispatch.steps.filter(step => Object.hasOwn(step.env ?? {}, "KASEKI_API_TOKEN")).length, 2);
 });
 
-test("Kaseki sweeps treat an empty diff as a successful no-op", async () => {
+test("Kaseki sweep workflows invoke the shared polling helper with run credentials", async () => {
   const docs = await readWorkflow("kaseki-docs.yaml");
   const dry = await readWorkflow("kaseki-dry.yaml");
 
   const docsWait = docs.document.jobs.dispatch.steps.find(step => step.name === "Wait for Kaseki completion");
   const dryWait = dry.document.jobs.dry_sweep.steps.find(step => step.name === "Wait for Kaseki completion");
-  const helper = await readFile(path.join(repositoryRoot, "scripts", "wait-for-kaseki.ts"), "utf8");
 
-  assert.match(docsWait?.run ?? "", /scripts\/wait-for-kaseki\.ts/u);
-  assert.match(dryWait?.run ?? "", /scripts\/wait-for-kaseki\.ts/u);
-  assert.match(helper, /failureClass/u);
-  assert.match(helper, /empty-diff/u);
-  assert.match(helper, /no_changes/u);
-  assert.match(helper, /environment\.KASEKI_API_BASE_URL/u);
+  for (const [fileName, step, expectedRunId] of [
+    ["kaseki-docs.yaml", docsWait, "${{ steps.submit.outputs.run_id }}"],
+    ["kaseki-dry.yaml", dryWait, "${{ steps.submit.outputs.run_id }}"],
+  ] as const) {
+    assert.ok(step, `${fileName} must wait for Kaseki completion`);
+    assert.equal(step.run, "node scripts/wait-for-kaseki.ts", fileName);
+    assert.equal(step.env?.RUN_ID, expectedRunId, fileName);
+    assert.equal(step.env?.KASEKI_API_TOKEN, "${{ secrets.KASEKI_API_TOKEN }}", fileName);
+  }
 });
 
-test("Kaseki sweeps use the shared Node polling helper", async () => {
+test("Kaseki sweeps do not persist checkout credentials", async () => {
   const docs = await readWorkflow("kaseki-docs.yaml");
   const dry = await readWorkflow("kaseki-dry.yaml");
-
-  const docsWait = docs.document.jobs.dispatch.steps.find(step => step.name === "Wait for Kaseki completion");
-  const dryWait = dry.document.jobs.dry_sweep.steps.find(step => step.name === "Wait for Kaseki completion");
-
-  for (const step of [docsWait, dryWait]) {
-    assert.ok(step?.run);
-    assert.match(step.run, /node scripts\/wait-for-kaseki\.ts/u);
-    assert.doesNotMatch(step.run, /for attempt in/u);
-  }
 
   const docsCheckout = docs.document.jobs.dispatch.steps.find(step => step.uses?.startsWith("actions/checkout@"));
   const dryCheckout = dry.document.jobs.dry_sweep.steps.find(step => step.uses?.startsWith("actions/checkout@"));
   assert.equal(docsCheckout?.with?.["persist-credentials"], false);
   assert.equal(dryCheckout?.with?.["persist-credentials"], false);
+});
+
+test("Kaseki sweep validation checks the supported Node runtime before repository checks", async () => {
+  const docs = await readWorkflow("kaseki-docs.yaml");
+  const dry = await readWorkflow("kaseki-dry.yaml");
   for (const command of [
     String(docs.document.env?.VALIDATION_COMMAND),
     String(dry.document.jobs.dry_sweep.env?.VALIDATION_COMMAND),
@@ -273,5 +287,15 @@ test("JEV API credentials are limited to the evaluation steps", async () => {
 
 test("dataset releases run the repository test suite before publishing artifacts", async () => {
   const { document } = await readWorkflow("dataset-release.yml");
-  assert.ok(document.jobs.build.steps.some(step => step.run === "npm run test"));
+  const build = document.jobs.build;
+  const testStepIndex = build.steps.findIndex(step => step.run === "npm run test");
+  const artifactBuildIndex = build.steps.findIndex(step => step.run === "npm run build");
+  const uploadIndex = build.steps.findIndex(step => step.uses?.startsWith("actions/upload-artifact@"));
+
+  assert.ok(testStepIndex >= 0, "dataset release must run the test suite");
+  assert.ok(artifactBuildIndex > testStepIndex, "release artifacts must be built only after tests pass");
+  assert.ok(uploadIndex > testStepIndex, "release artifacts must be uploaded only after tests pass");
+  assert.notEqual(build.steps[testStepIndex]["continue-on-error"], true, "test failures must fail the build job");
+  assert.notEqual(build["continue-on-error"], true, "build failures must block publication");
+  assert.equal(document.jobs.release.needs, "build", "publishing must depend on the successful build job");
 });
