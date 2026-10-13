@@ -14,6 +14,33 @@ const judokaSchema = JSON.parse(await readFile(new URL('../schema/judoka.schema.
 const publicProfileFixture = JSON.parse(await readFile(new URL('./fixtures/canonical-minimal/data/judoka/fixture-judoka.json', import.meta.url), 'utf8'));
 const canonicalDataset = JSON.parse(await readFile(new URL('../data/dataset.json', import.meta.url), 'utf8'));
 const generatedManifest = JSON.parse(await readFile(new URL('../dist/manifest.json', import.meta.url), 'utf8'));
+
+test('schema validator resolves local references and validates nested constraints', () => {
+  const schema = {
+    $defs: { status: { enum: ['ready', 'done'] } },
+    type: 'object',
+    required: ['status', 'tags', 'count'],
+    properties: {
+      status: { $ref: '#/$defs/status' },
+      tags: { type: 'array', minItems: 1, items: { type: 'string', pattern: '^[a-z]+$' } },
+      count: { type: 'integer', minimum: 1, maximum: 3 },
+    },
+    additionalProperties: false,
+  };
+  const valid = { status: 'ready', tags: ['one'], count: 2 };
+
+  assert.doesNotThrow(() => validateSchema(valid, schema));
+  for (const [value, message] of [
+    [{ ...valid, status: 'pending' }, /must be one of/],
+    [{ ...valid, tags: [] }, /must have at least 1 items/],
+    [{ ...valid, tags: ['1'] }, /must match/],
+    [{ ...valid, count: 4 }, /must be <= 3/],
+    [{ ...valid, extra: true }, /additional property extra/],
+  ] as const) {
+    assert.throws(() => validateSchema(value, schema), message);
+  }
+});
+
 async function fixtureSandbox() {
   const root = await mkdtemp(path.join(os.tmpdir(), 'budokon-validation-fixture-'));
   await cp(path.join(repository, 'schema'), path.join(root, 'schema'), { recursive: true });

@@ -48,6 +48,24 @@ test("public coverage is included in public representation caching", async () =>
   assert.equal("total" in body, false);
 });
 
+test("assembled worker routes REST preflight requests through CORS validation", async () => {
+  const app = createWorker("openapi: 3.0.0");
+  const env: Env = { ...mockEnv, PUBLIC_ALLOWED_ORIGINS: "https://game.example" };
+  const response = await app.fetch(new Request("https://example.test/v1/status", {
+    method: "OPTIONS",
+    headers: {
+      origin: "https://game.example",
+      "access-control-request-method": "GET",
+      "access-control-request-headers": "content-type",
+    },
+  }), env);
+
+  assert.equal(response.status, 204);
+  assert.equal(response.headers.get("access-control-allow-origin"), "https://game.example");
+  assert.equal(response.headers.get("access-control-allow-methods"), "GET, POST, OPTIONS");
+  assert.equal(await response.text(), "");
+});
+
 test("matching cached public revalidation bypasses quota, while sensitive requests do not", async () => {
   const url = "https://example.test/v1/judoka";
   const entries = new Map<string, Response>();
