@@ -97,16 +97,18 @@ test("event REST route reports an omitted JSON body as malformed input", async (
   assert.equal((await response.json()).error.message, "request body contains malformed JSON");
 });
 
-test("dataset versions 2026.08.1-2026.08.6 retain pre-events compiled-model compatibility", () => {
+test("eventless compiled datasets remain compatible through version 2026.08.6", () => {
   const { events: _events, ...currentModelWithoutEvents } = compiledModel;
-  const legacyCompiledModel = { ...currentModelWithoutEvents, datasetVersion: "2026.08.6" };
-  const legacyRepository = new JsonReadModelRepository(legacyCompiledModel);
+  for (const patchVersion of [1, 2, 3, 4, 5, 6]) {
+    const datasetVersion = `2026.08.${patchVersion}`;
+    const legacyRepository = new JsonReadModelRepository({ ...currentModelWithoutEvents, datasetVersion });
 
-  assert.deepEqual(legacyRepository.listEvents(), []);
-  assert.equal(legacyRepository.getEvent("great-warmup"), undefined);
+    assert.deepEqual(legacyRepository.listEvents(), [], datasetVersion);
+    assert.equal(legacyRepository.getEvent("great-warmup"), undefined, datasetVersion);
+  }
 
   assert.throws(
-    () => new JsonReadModelRepository(currentModelWithoutEvents),
+    () => new JsonReadModelRepository({ ...currentModelWithoutEvents, datasetVersion: "2026.08.7" }),
     { name: "TypeError", message: "invalid compiled dataset: events" }
   );
 });
