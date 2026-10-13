@@ -133,6 +133,13 @@ test("state construction resolves techniques deterministically and excludes unre
     { id: "seoi-nage", subCategory: "Te-waza" },
   ]);
   assert.deepEqual(receivedState?.evidence, input.evidence);
+
+  const stateWithoutOptionalDetails = buildPlaystyleState({
+    ...input,
+    record: { ...input.record, firstname: undefined, surname: undefined, stats: undefined },
+  });
+  assert.equal("name" in stateWithoutOptionalDetails.judoka, false);
+  assert.equal("editorialRatings" in stateWithoutOptionalDetails.judoka, false);
 });
 
 test("playstyle state requires unique signature IDs and an exact technique resolution", () => {
@@ -151,16 +158,6 @@ test("playstyle state requires unique signature IDs and an exact technique resol
     ...input,
     techniques: [techniques[0], techniques[0]],
   }), /duplicate resolved technique uchi-mata/u);
-});
-
-test("playstyle state omits absent optional name and ratings", () => {
-  const state = buildPlaystyleState({
-    ...input,
-    record: { ...input.record, firstname: undefined, surname: undefined, stats: undefined },
-  });
-
-  assert.equal("name" in state.judoka, false);
-  assert.equal("editorialRatings" in state.judoka, false);
 });
 
 test("playstyle policy gates each facet independently and never accepts abstention", async () => {

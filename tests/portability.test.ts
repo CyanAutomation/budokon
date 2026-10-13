@@ -24,12 +24,39 @@ function importedSpecifiers(source: string, file: string): string[] {
   const visit = (node: ts.Node) => {
     if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) add(node.moduleSpecifier);
     else if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference)) add(node.moduleReference.expression);
-    else if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) add(node.arguments[0]);
+    else if (ts.isCallExpression(node)) {
+      if (node.expression.kind === ts.SyntaxKind.ImportKeyword) add(node.arguments[0]);
+      else if (ts.isIdentifier(node.expression) && node.expression.text === "require") add(node.arguments[0]);
+      else if (
+        ts.isPropertyAccessExpression(node.expression)
+        && node.expression.name.text === "require"
+        && ts.isIdentifier(node.expression.expression)
+        && node.expression.expression.text === "module"
+      ) add(node.arguments[0]);
+    }
     ts.forEachChild(node, visit);
   };
   visit(sourceFile);
   return specifiers;
 }
+
+test("runtime import scanner detects ESM, dynamic, and CommonJS imports", () => {
+  const source = [
+    'import fs from "node:fs";',
+    'export { readFile } from "node:fs/promises";',
+    'import("node:path");',
+    'require("node:util");',
+    'module.require("node:crypto");',
+  ].join("\n");
+
+  assert.deepEqual(importedSpecifiers(source, "fixture.ts"), [
+    "node:fs",
+    "node:fs/promises",
+    "node:path",
+    "node:util",
+    "node:crypto",
+  ]);
+});
 
 test("runtime-neutral core does not import Node built-ins", async () => {
   const files = [
