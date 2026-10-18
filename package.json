@@ -53,7 +53,7 @@
     "deploy": "wrangler deploy"
   },
   "devDependencies": {
-    "@types/node": "^26.6.4",
+    "@types/node": "^26.6.5",
     "markdownlint-cli2": "0.23.3",
     "tsx": "^4.23.15",
     "typescript": "^5.7.2",
