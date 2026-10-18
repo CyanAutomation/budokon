@@ -336,12 +336,21 @@ test("canonical playstyle metadata is optional, partial, approved-only, and reje
   }
 });
 
-test("playstyle taxonomy uses the existing canonical standing technique subcategories", () => {
+/** @see ../docs/JEV.md#internal-mcp-tools */
+test("standing playstyle choices follow the documented technique taxonomy", () => {
   assert.deepEqual(PLAYSTYLE_OPTIONS.standingPreference, [
     "ashi_waza", "te_waza", "koshi_waza", "ma_sutemi_waza", "yoko_sutemi_waza", "mixed", "insufficient_evidence",
   ]);
   const questions = createPlaystyleClassificationQuestions();
   const standing = questions.standing_preference;
   assert.equal(standing.type, "choice");
-  if (standing.type === "choice") assert.match(standing.criteria.ma_sutemi_waza, /Ma-sutemi-waza/u);
+  if (standing.type === "choice") {
+    for (const option of PLAYSTYLE_OPTIONS.standingPreference) {
+      if (option === "mixed" || option === "insufficient_evidence") continue;
+      const subcategory = option.split("_").map((part, index) => index === 0
+        ? `${part[0]?.toUpperCase()}${part.slice(1)}`
+        : part).join("-");
+      assert.match(standing.criteria[option], new RegExp(subcategory, "u"), `${option} must describe its canonical subcategory`);
+    }
+  }
 });
