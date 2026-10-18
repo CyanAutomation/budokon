@@ -64,6 +64,25 @@ monitoring. Keep `API_KEY` configured as a nonblank secret: when the MCP
 limiter is enabled, OAuth requests receive `503` if it cannot safely derive a
 principal quota key.
 
+## Compiled read-model contract
+
+The runtime repository accepts a compiled dataset object or its JSON text. A
+valid read model has a non-empty `datasetVersion`, `judoka`, `techniques`, and
+`weightCategories` arrays, a `countries` object, and a release manifest with
+non-empty `serviceVersion`, `sourceGitCommit`, and
+`checksums["budokon.json"]` values. The `events` array is required except for
+legacy eventless datasets `2026.08.1` through `2026.08.6`; those load with an
+empty event collection. Invalid or incomplete datasets are rejected before
+they enter the repository.
+
+When serialized dataset text contains invalid JSON, the repository throws a
+`TypeError` with `Failed to parse JSON:` context and retains the original
+parser error as its `cause` for diagnostics.
+
+The repository sorts its loaded collections by ID and returns new arrays from
+list methods. Mutating a returned list does not change the repository's
+canonical collections.
+
 The compiled `dist/manifest.json` identifies the canonical data commit used to
 create that artifact. It need not equal a later application-only commit in the
 repository. The production workflow recompiles artifacts with the deployment

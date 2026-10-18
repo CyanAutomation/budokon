@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { formatCoverageReport, printCoverageReport, summarizeCoverage } from '../scripts/coverage-report.js';
-import { assertCoveragePolicySatisfied, coverageViolations, formatCoverageViolations } from '../scripts/coverage-policy.js';
+import { assertCoveragePolicySatisfied, coveragePolicyId, coverageViolations, formatCoverageViolations } from '../scripts/coverage-policy.js';
 
 const policyCases = [
   {
@@ -107,14 +107,7 @@ test('coverage report renders editorial balance sections and public rarity share
   assert.match(report, /\nBy rarity \(public real judoka\)\n  Epic: 1 \(100\.0%\)/);
 });
 
-test('coverage violation formatter produces an actionable diagnostic', () => {
-  const formattedViolations = formatCoverageViolations(policyCases.flatMap(({ expected }) => expected));
-  assert.match(formattedViolations, /^Coverage policy violations \(README\.md#editorial-coverage-and-rarity-policy\):/);
-  for (const { expected } of policyCases) {
-    assert.ok(expected.every(violation => formattedViolations.includes(`  - ${violation}`)));
-  }
-});
-
+/** @see ../README.md#editorial-coverage-and-rarity-policy */
 test('coverage policy reports every violation when the catalogue is too small', async (t) => {
   const records = [
     { personType: 'real', isHidden: false, gender: 'male', countryCode: 'JP', weightClass: '-60', rarity: 'Legendary', slug: 'first-judoka' },
@@ -140,6 +133,10 @@ test('coverage policy reports every violation when the catalogue is too small', 
       'public real catalogue has 1; need at least 2',
       'weight class -66 has no public real judoka',
     ].sort());
+    assert.equal(formatCoverageViolations(violations), [
+      `Coverage policy violations (${coveragePolicyId}):`,
+      ...violations.map(violation => `  - ${violation}`),
+    ].join('\n'));
 
     assert.throws(
       () => assertCoveragePolicySatisfied(summarizeCoverage([records[0]]), [{
@@ -161,6 +158,10 @@ test('coverage policy reports every violation when the catalogue is too small', 
     await t.test(name, () => {
       const violations = coverageViolations(summarizeCoverage(records), weightCategories, policy);
       assert.deepEqual([...violations].sort(), [...expected].sort());
+      assert.equal(formatCoverageViolations(violations), [
+        `Coverage policy violations (${coveragePolicyId}):`,
+        ...expected.map(violation => `  - ${violation}`),
+      ].join('\n'));
     });
   }
 });

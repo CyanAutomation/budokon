@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { cp, mkdtemp, readFile, rename, writeFile } from 'node:fs/promises';
+import { cp, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, test } from 'node:test';
@@ -50,13 +50,26 @@ async function fixtureSandbox() {
 async function change(file, mutate) {
   const value = JSON.parse(await readFile(file, 'utf8')); mutate(value); await writeFile(file, `${JSON.stringify(value, null, 2)}\n`);
 }
+async function withTemporaryChange(root, relativeFile, mutate, run) {
+  const file = path.join(root, relativeFile);
+  const original = await readFile(file, 'utf8');
+  const value = JSON.parse(original);
+  mutate(value);
+  await writeFile(file, `${JSON.stringify(value, null, 2)}\n`);
+  try {
+    await run();
+  } finally {
+    await writeFile(file, original);
+  }
+}
 
 test('validateCanonical reports stable categories and affected paths for unsupported or missing schema references', async (t) => {
   for (const fixture of [
     { name: 'unsupported external reference', ref: 'other.json#/$defs/text', category: /unsupported \$ref/ },
     { name: 'missing local $defs target', ref: '#/$defs/missing', category: /invalid \$ref path/ },
-  ]) await t.test(fixture.name, async () => {
+  ]) await t.test(fixture.name, async t => {
     const root = await fixtureSandbox();
+    t.after(() => rm(root, { recursive: true, force: true }));
     await change(path.join(root, 'schema/judoka.schema.json'), (schema) => {
       schema.properties.firstname = { $ref: fixture.ref };
     });
@@ -150,23 +163,32 @@ test('technique filenames match canonical IDs', async () => {
   await assert.rejects(validateCanonical(root), /filename must match canonical ID fixture-throw/);
 });
 
-test('fixture-based semantic text rules cover every canonical dataset and nested text', async () => {
+/** @see ../data/judoka/CONTRIBUTING.md#adding-a-real-judoka */
+test('canonical text validation rejects placeholders across fixture record types', async t => {
+  const root = await fixtureSandbox();
+  t.after(() => rm(root, { recursive: true, force: true }));
   for (const fixture of textCases) {
-    const root = await fixtureSandbox();
-    await change(path.join(root, fixture.file), (record) => {
+    await withTemporaryChange(root, fixture.file, record => {
       let target = record;
       for (const segment of fixture.path.slice(0, -1)) target = target[segment];
       target[fixture.path.at(-1)] = fixture.value;
+    }, async () => {
+      await assert.rejects(validateCanonical(root), new RegExp(fixture.message), fixture.name);
     });
-    await assert.rejects(validateCanonical(root), new RegExp(fixture.message), fixture.name);
   }
 });
 
-test('semantic text validation rejects non-string values without crashing', async () => {
+/** @see ../data/judoka/CONTRIBUTING.md#adding-a-real-judoka */
+test('schema-bypassed non-string text fails with its canonical field path', async t => {
   const root = await fixtureSandbox();
+  t.after(() => rm(root, { recursive: true, force: true }));
   await change(path.join(root, 'schema/judoka.schema.json'), (schema) => { delete schema.$defs.text.type; });
   await change(path.join(root, 'data/judoka/fixture-judoka.json'), (record) => { record.firstname = null; });
-  await assert.rejects(validateCanonical(root), /fixture-judoka\.firstname must contain meaningful text/);
+  await assert.rejects(validateCanonical(root), error => {
+    assert.ok(error instanceof Error);
+    assert.equal(error.message, 'fixture-judoka.firstname must contain meaningful text');
+    return true;
+  });
 });
 
 test('prohibited game-state property names remain rejected if schemas expand', async () => {

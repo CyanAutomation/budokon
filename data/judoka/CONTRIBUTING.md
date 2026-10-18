@@ -37,6 +37,11 @@ These values must be complete and valid. Do not invent a signature move,
 biography, or rating merely to fill a field; make a deliberate editorial choice
 before publishing the record.
 
+Human-readable text must be non-empty and meaningful. The validator rejects
+placeholders such as `TODO`, `TBD`, `unknown`, `N/A`, `none`, and “more info to
+come” in judoka names, aliases, biographies, technique and event descriptions,
+country names, and weight-category descriptions.
+
 Before committing, confirm that the name and basic sporting association are
 credible, add useful aliases where a spelling is common, and run `npm test`,
 `npm run validate`, and `npm run coverage`.

@@ -39,7 +39,8 @@ test("budokon-v1 golden vectors are identical through REST and MCP", async () =>
   }
 });
 
-test("all draws identify their algorithm and unsupported identifiers are rejected", async () => {
+/** @see ../docs/API.md#everyday-use and ../docs/API.md#compatibility-policy */
+test("draw results identify the algorithm and unsupported identifiers fail", async () => {
   assert.equal(draw.draw({ count: 1 }).algorithm, DRAW_ALGORITHM);
   assert.throws(() => draw.draw({ algorithm: "budokon-v2" }), /unsupported draw algorithm: budokon-v2/);
   const response = await restDraw({ algorithm: "legacy" });

@@ -174,8 +174,10 @@ function minimalCanonicalData(): ValidatedCanonicalData {
   };
 }
 
-test("cross-record validation accepts a minimal canonical dataset", () => {
-  assert.doesNotThrow(() => validateCanonicalRules(minimalCanonicalData()));
+/** @see ../data/judoka/CONTRIBUTING.md#adding-a-real-judoka */
+test("cross-record validation accepts valid canonical references in a minimal dataset", () => {
+  const data = minimalCanonicalData();
+  assert.doesNotThrow(() => validateCanonicalRules(data));
 });
 
 test("cross-record validation rejects a judoka filename that differs from its slug", () => {
