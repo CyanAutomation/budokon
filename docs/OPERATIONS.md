@@ -75,6 +75,10 @@ legacy eventless datasets `2026.08.1` through `2026.08.6`; those load with an
 empty event collection. Invalid or incomplete datasets are rejected before
 they enter the repository.
 
+When serialized dataset text contains invalid JSON, the repository throws a
+`TypeError` with `Failed to parse JSON:` context and retains the original
+parser error as its `cause` for diagnostics.
+
 The repository sorts its loaded collections by ID and returns new arrays from
 list methods. Mutating a returned list does not change the repository's
 canonical collections.

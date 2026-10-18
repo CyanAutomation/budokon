@@ -67,8 +67,9 @@ test('validateCanonical reports stable categories and affected paths for unsuppo
   for (const fixture of [
     { name: 'unsupported external reference', ref: 'other.json#/$defs/text', category: /unsupported \$ref/ },
     { name: 'missing local $defs target', ref: '#/$defs/missing', category: /invalid \$ref path/ },
-  ]) await t.test(fixture.name, async () => {
+  ]) await t.test(fixture.name, async t => {
     const root = await fixtureSandbox();
+    t.after(() => rm(root, { recursive: true, force: true }));
     await change(path.join(root, 'schema/judoka.schema.json'), (schema) => {
       schema.properties.firstname = { $ref: fixture.ref };
     });

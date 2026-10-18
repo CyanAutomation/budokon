@@ -191,11 +191,16 @@ test("repository preserves the compiled dataset contract across object and seria
   const serializedRecordCount = new JsonReadModelRepository(JSON.stringify(compiledModel)).listJudoka().length;
   assert.equal(serializedRecordCount, objectRecordCount, "serialization preserves the record count");
 });
-/** @see ../README.md#how-the-repository-is-organized */
-test("repository adds JSON context when serialized catalogue data is malformed", () => {
+/** @see ../docs/OPERATIONS.md#compiled-read-model-contract */
+test("repository adds JSON context and preserves the parse error as cause", () => {
   assert.throws(
     () => new JsonReadModelRepository('{"judoka":'),
-    { name: "TypeError", message: /^Failed to parse JSON:/u },
+    error => {
+      assert.ok(error instanceof TypeError);
+      assert.match(error.message, /^Failed to parse JSON:/u);
+      assert.ok(error.cause instanceof SyntaxError);
+      return true;
+    },
   );
 });
 
