@@ -20,6 +20,7 @@ request.
 - [How the repository is organized](#how-the-repository-is-organized)
 - [Develop locally](#develop-locally)
 - [Contribute data](#contribute-data)
+- [Editorial coverage and rarity policy](#editorial-coverage-and-rarity-policy)
 - [Deploy and operate](#deploy-and-operate)
 - [Documentation and support](#documentation-and-support)
 
@@ -75,10 +76,28 @@ versions may return different counts or judoka. See the `JudokaDraw` schema in
 the [OpenAPI contract](openapi/v1.yaml) for the complete response shape.
 
 Use `limit` to enable cursor pagination. Send the returned `nextCursor` with
-the same filters and limit to fetch the next page. On `429`, wait for
-`Retry-After` before retrying. See the [API guide](docs/API.md) for response
-shapes, filters, cache behavior, compatibility, and MCP usage; the full REST
-contract is [OpenAPI 3.1](openapi/v1.yaml).
+the same filters and limit to fetch the next page. For example:
+
+```js
+const firstPageUrl = new URL(`${baseUrl}/v1/judoka`);
+firstPageUrl.searchParams.set("limit", "20");
+
+const firstPageResponse = await fetch(firstPageUrl);
+if (!firstPageResponse.ok) throw new Error(`BU-DO-KON returned ${firstPageResponse.status}`);
+const firstPage = await firstPageResponse.json();
+
+if (firstPage.nextCursor) {
+  firstPageUrl.searchParams.set("cursor", firstPage.nextCursor);
+  const nextPageResponse = await fetch(firstPageUrl);
+  if (!nextPageResponse.ok) throw new Error(`BU-DO-KON returned ${nextPageResponse.status}`);
+  const nextPage = await nextPageResponse.json();
+}
+```
+
+Keep any filters and the same `limit` on the URL when requesting later pages.
+On `429`, wait for `Retry-After` before retrying. See the [API guide](docs/API.md)
+for response shapes, filters, cache behavior, compatibility, and MCP usage; the
+full REST contract is [OpenAPI 3.1](openapi/v1.yaml).
 
 ## What is available
 
@@ -152,7 +171,8 @@ npm run check
 `npm test` builds runtime code and runs unit/integration tests.
 `npm run validate` checks canonical data and repository policies.
 `npm run check:docs` checks local Markdown links and lints this README.
-`npm run check` runs the combined type, test, data, and documentation checks.
+`npm run check` runs documentation checks, runtime and tooling type checks, the
+TypeScript-only boundary check, tests, and canonical-data validation.
 These commands are defined in `package.json`. The docs check validates local
 links in this README and the user-facing project docs; it does not request
 external URLs.
@@ -170,6 +190,26 @@ For code or data issues, use [GitHub Issues][issues]. Changes are reviewed
 through pull requests and the validation workflow. For code changes, run the
 checks listed under [Develop locally](#develop-locally) before opening a pull
 request. For judoka data changes, follow the [contribution guide](data/judoka/CONTRIBUTING.md).
+
+## Editorial coverage and rarity policy
+
+Rarity is an editorial game-draw attribute, not a statement of an athlete's
+worth or an official IJF classification. These target shares apply to public,
+visible real judoka; each range is an independent guardrail rather than a fixed
+mix.
+
+| Rarity | Target share | Editorial meaning |
+| --- | ---: | --- |
+| Common | 25–45% | Reliable breadth for ordinary draws. |
+| Rare | 20–40% | Specialists and established international competitors. |
+| Epic | 15–30% | Major champions and consistently elite judoka. |
+| Legendary | 5–20% | Athletes with exceptional, era-defining records. |
+
+The public real-judoka pool must contain at least 20 judoka across at least 10
+countries. No country may represent more than 35% of the pool, and no gender may
+represent more than 60%. Every listed weight category must be represented by at
+least one public real judoka. Run `npm run coverage` to see the current counts
+and whether the catalogue satisfies these guardrails.
 
 ## Deploy and operate
 
