@@ -21,7 +21,7 @@ export interface CoveragePolicy {
 /** Stable reference to the human-readable policy enforced by this module. */
 export const coveragePolicyId = 'README.md#editorial-coverage-and-rarity-policy';
 
-const coveragePolicy: Readonly<CoveragePolicy> = Object.freeze({
+export const coveragePolicy: Readonly<CoveragePolicy> = Object.freeze({
   minimumPublicReal: 20,
   minimumCountries: 10,
   maximumCountryShare: 0.35,

@@ -19,7 +19,7 @@ mirror an external ranking database. Work in small batches and use
 `npm run coverage` before choosing the next one. It is an enforced policy gate:
 the public catalogue must retain country, gender, weight-class, and rarity
 coverage. Rarity is a game-distribution label, not an official assessment of
-an athlete; follow the tier definitions and target ranges in the root README.
+an athlete; follow the [editorial coverage and rarity policy](../../README.md#editorial-coverage-and-rarity-policy).
 
 Every record needs the stable identity and gameplay-routing fields required by
 the schema: UUID, slug, name, real/fictional type, country, gender, primary
