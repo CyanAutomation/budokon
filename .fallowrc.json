@@ -5,6 +5,14 @@
     "boundary-violation": "error",
     "policy-violation": "error"
   },
+  "framework": [
+    {
+      "name": "node-test",
+      "detection": { "type": "fileExists", "pattern": "tests/**/*.test.ts" },
+      "entryPoints": ["tests/**/*.test.ts", "scripts/**/*.test.ts"],
+      "entryPointRole": "test"
+    }
+  ],
   "boundaries": {
     "zones": [
       {
