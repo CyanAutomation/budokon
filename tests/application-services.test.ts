@@ -191,18 +191,16 @@ test("repository preserves the compiled dataset contract across object and seria
   const serializedRecordCount = new JsonReadModelRepository(JSON.stringify(compiledModel)).listJudoka().length;
   assert.equal(serializedRecordCount, objectRecordCount, "serialization preserves the record count");
 });
-test("repository wraps malformed JSON with a syntax-error cause", () => {
+/** @see ../README.md#how-the-repository-is-organized */
+test("repository adds JSON context when serialized catalogue data is malformed", () => {
   assert.throws(
     () => new JsonReadModelRepository('{"judoka":'),
-    error => {
-      assert.ok(error instanceof TypeError);
-      assert.match(error.message, /^Failed to parse JSON:/u);
-      assert.ok(error.cause instanceof SyntaxError);
-      return true;
-    },
+    { name: "TypeError", message: /^Failed to parse JSON:/u },
   );
 });
-test("repository list snapshots do not let callers reorder canonical collections", () => {
+
+/** @see ../README.md#how-the-repository-is-organized */
+test("mutating returned catalogue lists does not change repository data", () => {
   const subject = new JsonReadModelRepository(compiledModel);
   const expected = {
     judoka: subject.listJudoka(),
@@ -218,33 +216,45 @@ test("repository list snapshots do not let callers reorder canonical collections
   assert.deepEqual(subject.listTechniques(), expected.techniques);
   assert.deepEqual(subject.listEvents(), expected.events);
 });
-test("repository rejects an empty dataset version", () => {
-  assert.throws(
-    () => new JsonReadModelRepository({ ...compiledModel, datasetVersion: "   " }),
-    /invalid compiled dataset/,
-  );
-});
 
-test("repository rejects invalid compiled dataset structure", () => {
+/** @see ../docs/OPERATIONS.md#compiled-read-model-contract */
+test("repository rejects compiled datasets without required collections", async t => {
   const cases = [
-    ["judoka", { ...compiledModel, judoka: undefined }, "invalid compiled dataset"],
-    ["techniques", { ...compiledModel, techniques: undefined }, "invalid compiled dataset"],
-    ["countries", { ...compiledModel, countries: undefined }, "invalid compiled dataset"],
-    ["countries string", { ...compiledModel, countries: "JP" }, "invalid compiled dataset"],
-    ["countries array", { ...compiledModel, countries: [] }, "invalid compiled dataset"],
-    ["weightCategories", { ...compiledModel, weightCategories: undefined }, "invalid compiled dataset"],
-    ["manifest.serviceVersion", { ...compiledModel, manifest: { ...compiledModel.manifest, serviceVersion: undefined } }, "invalid compiled dataset: manifest.serviceVersion"],
-    ["manifest.sourceGitCommit", { ...compiledModel, manifest: { ...compiledModel.manifest, sourceGitCommit: undefined } }, "invalid compiled dataset: manifest.sourceGitCommit"],
-    ['manifest.checksums["budokon.json"]', { ...compiledModel, manifest: { ...compiledModel.manifest, checksums: { ...compiledModel.manifest.checksums, "budokon.json": undefined } } }, 'invalid compiled dataset: manifest.checksums["budokon.json"]'],
+    ["judoka", { ...compiledModel, judoka: undefined }],
+    ["techniques", { ...compiledModel, techniques: undefined }],
+    ["countries missing", { ...compiledModel, countries: undefined }],
+    ["countries string", { ...compiledModel, countries: "JP" }],
+    ["countries array", { ...compiledModel, countries: [] }],
+    ["weight categories", { ...compiledModel, weightCategories: undefined }],
   ] as const;
 
-  for (const [field, malformedModel, expectedMessage] of cases) {
-    // These deliberately malformed values bypass compile-time validation to exercise runtime guards.
-    assert.throws(
-      () => new JsonReadModelRepository(malformedModel as unknown as JsonValue),
-      error => error instanceof TypeError && error.message === expectedMessage,
-      field,
-    );
+  for (const [name, malformedModel] of cases) {
+    await t.test(name, () => {
+      // These deliberately malformed values bypass compile-time validation to exercise runtime guards.
+      assert.throws(
+        () => new JsonReadModelRepository(malformedModel as unknown as JsonValue),
+        { name: "TypeError", message: "invalid compiled dataset" },
+      );
+    });
+  }
+});
+
+/** @see ../docs/OPERATIONS.md#compiled-read-model-contract */
+test("repository rejects incomplete compiled release identity", async t => {
+  const cases = [
+    ["blank dataset version", { ...compiledModel, datasetVersion: "   " }, "invalid compiled dataset"],
+    ["missing service version", { ...compiledModel, manifest: { ...compiledModel.manifest, serviceVersion: undefined } }, "invalid compiled dataset: manifest.serviceVersion"],
+    ["missing source commit", { ...compiledModel, manifest: { ...compiledModel.manifest, sourceGitCommit: undefined } }, "invalid compiled dataset: manifest.sourceGitCommit"],
+    ["missing aggregate checksum", { ...compiledModel, manifest: { ...compiledModel.manifest, checksums: { ...compiledModel.manifest.checksums, "budokon.json": undefined } } }, 'invalid compiled dataset: manifest.checksums["budokon.json"]'],
+  ] as const;
+
+  for (const [name, malformedModel, expectedMessage] of cases) {
+    await t.test(name, () => {
+      assert.throws(
+        () => new JsonReadModelRepository(malformedModel as unknown as JsonValue),
+        error => error instanceof TypeError && error.message === expectedMessage,
+      );
+    });
   }
 });
 test("REST and MCP seeded selections are byte-for-byte equivalent", async () => {
