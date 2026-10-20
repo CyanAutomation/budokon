@@ -73,18 +73,18 @@ test("Kaseki DRY dispatch is default-branch-only and pins the token destination"
   const { document, source } = await readWorkflow("kaseki-dry.yaml");
   const job = document.jobs.dry_sweep;
 
-  assert.equal(job.if, "github.ref == 'refs/heads/main'");
+  assert.equal(job.if, "github.ref == 'refs/heads/main' && github.ref_protected");
   assert.match(source, /KASEKI_BASE_URL" != "https:\/\/kaseki-tunnel\.scheimann\.xyz"/u);
   assert.equal(job.env?.KASEKI_API_TOKEN, undefined);
   const tokenSteps = job.steps.filter(step => Object.hasOwn(step.env ?? {}, "KASEKI_API_TOKEN"));
-  assert.equal(tokenSteps.length, 5);
+  assert.equal(tokenSteps.length, 3);
 });
 
 test("every Kaseki Docs job is restricted to main", async () => {
   const { document } = await readWorkflow("kaseki-docs.yaml");
   assert.ok(Object.keys(document.jobs).length > 0);
   for (const [jobName, job] of Object.entries(document.jobs)) {
-    assert.equal(job.if, "github.ref == 'refs/heads/main'", jobName);
+    assert.equal(job.if, "github.ref == 'refs/heads/main' && github.ref_protected", jobName);
   }
 });
 
@@ -120,6 +120,44 @@ test("production deployment requires the protected default branch", async () => 
   assert.match(deploy.if ?? "", /github\.event\.repository\.default_branch/u);
   assert.match(deploy.if ?? "", /github\.ref_protected/u);
   assert.equal(typeof deploy.environment === "object" ? deploy.environment.name : deploy.environment, "production");
+});
+
+test("production deployment validates and uploads artifacts before entering the production environment", async () => {
+  const { document } = await readWorkflow("deploy-cloudflare.yml");
+  const build = document.jobs.build;
+  const deploy = document.jobs.deploy;
+
+  assert.equal(build.environment, undefined);
+  assert.equal(deploy.needs, "build");
+  assert.equal(typeof deploy.environment === "object" ? deploy.environment.name : deploy.environment, "production");
+  assert.ok(build.steps.some(step => step.run === "npm run test"));
+  assert.ok(build.steps.some(step => step.run === "npm run build:data"));
+  assert.ok(build.steps.some(step => step.run === "npm run check-artifacts"));
+  const upload = build.steps.find(step => step.uses?.startsWith("actions/upload-artifact@"));
+  const download = deploy.steps.find(step => step.uses?.startsWith("actions/download-artifact@"));
+  assert.equal(upload?.with?.name, "cloudflare-deployment-dataset");
+  assert.equal(upload?.with?.path, "dist/*.json");
+  assert.equal(download?.with?.name, upload?.with?.name);
+  assert.ok(deploy.steps.some(step => step.run === "npm run check-artifacts"));
+  assert.equal(deploy.steps.some(step => step.run === "npm run test"), false);
+});
+
+test("credential-bearing manual workflows require the protected default branch", async () => {
+  const jev = await readWorkflow("jev-advisory.yaml");
+  const release = await readWorkflow("release.yaml");
+
+  assert.match(jev.document.jobs["evaluate-search"].if ?? "", /github\.ref_protected/u);
+  assert.match(release.document.jobs.prepare.if ?? "", /github\.ref_protected/u);
+});
+
+test("dataset release passes the default branch through the environment", async () => {
+  const { document } = await readWorkflow("dataset-release.yml");
+  const step = document.jobs.build.steps.find(candidate => candidate.name === "Associate dataset version, tag, and commit");
+
+  assert.ok(step);
+  assert.equal(step.env?.DEFAULT_BRANCH, "${{ github.event.repository.default_branch }}");
+  assert.match(step.run ?? "", /"origin\/\$DEFAULT_BRANCH"/u);
+  assert.doesNotMatch(step.run ?? "", /github\.event\.repository\.default_branch/u);
 });
 
 test("Dependabot checks npm and GitHub Actions weekly", async () => {
@@ -179,29 +217,27 @@ test("Kaseki sweeps use the versioned API base for checks and submissions", asyn
   const workflows = [
     {
       name: "Kaseki Docs",
-      gateway: runOf(docs.document.jobs.api_connection, "Verify gateway connectivity and authentication"),
-      capabilities: runOf(docs.document.jobs.api_connection, "Verify Kaseki API capabilities"),
-      preflight: runOf(docs.document.jobs.api_connection, "Verify Kaseki runner preflight"),
+      readiness: runOf(docs.document.jobs.readiness, "Verify controller readiness"),
+      api: runOf(docs.document.jobs.api_connection, "Verify Kaseki API readiness"),
       submit: runOf(docs.document.jobs.dispatch, "Submit documentation sweep"),
     },
     {
       name: "Kaseki DRY",
-      gateway: runOf(dry.document.jobs.dry_sweep, "Verify gateway connectivity and authentication"),
-      capabilities: runOf(dry.document.jobs.dry_sweep, "Verify Kaseki API capabilities"),
-      preflight: runOf(dry.document.jobs.dry_sweep, "Verify Kaseki runner preflight"),
+      readiness: runOf(dry.document.jobs.dry_sweep, "Verify controller readiness"),
+      api: runOf(dry.document.jobs.dry_sweep, "Verify Kaseki API readiness"),
       submit: runOf(dry.document.jobs.dry_sweep, "Submit DRY sweep"),
     },
   ];
 
   for (const workflow of workflows) {
-    assert.match(workflow.gateway, /\$KASEKI_API_BASE_URL\/gateway-test\?stage=1/u, workflow.name);
-    assert.match(workflow.capabilities, /\$KASEKI_API_BASE_URL\/capabilities/u, workflow.name);
-    assert.match(workflow.preflight, /\$KASEKI_API_BASE_URL\/preflight/u, workflow.name);
+    assert.equal(workflow.readiness, "node scripts/check-kaseki.ts readiness", workflow.name);
+    assert.equal(workflow.api, "node scripts/check-kaseki.ts api", workflow.name);
     assert.match(workflow.submit, /--request POST "\$KASEKI_API_BASE_URL\/runs"/u, workflow.name);
-    assert.doesNotMatch(workflow.capabilities, /--retry-all-errors/u, workflow.name);
-    assert.doesNotMatch(workflow.preflight, /--retry-all-errors/u, workflow.name);
-    assert.match(workflow.capabilities, /publishModes[\s\S]{0,120}pr/u, workflow.name);
+    assert.doesNotMatch(workflow.api, /curl/u, workflow.name);
   }
+
+  assert.equal(docs.document.jobs.api_connection.steps.filter(step => Object.hasOwn(step.env ?? {}, "KASEKI_API_TOKEN")).length, 1);
+  assert.equal(dry.document.jobs.dry_sweep.steps.filter(step => Object.hasOwn(step.env ?? {}, "KASEKI_API_TOKEN")).length, 3);
 });
 
 test("retry flag detection finds options embedded in quoted shell arguments", () => {
@@ -240,7 +276,7 @@ test("Kaseki Docs API credentials are limited to request steps", async () => {
   const dispatch = document.jobs.dispatch;
 
   assert.equal(apiConnection.env?.KASEKI_API_TOKEN, undefined);
-  assert.equal(apiConnection.steps.filter(step => Object.hasOwn(step.env ?? {}, "KASEKI_API_TOKEN")).length, 3);
+  assert.equal(apiConnection.steps.filter(step => Object.hasOwn(step.env ?? {}, "KASEKI_API_TOKEN")).length, 1);
   assert.equal(dispatch.env?.KASEKI_API_TOKEN, undefined);
   assert.equal(dispatch.steps.filter(step => Object.hasOwn(step.env ?? {}, "KASEKI_API_TOKEN")).length, 2);
 });
@@ -267,10 +303,23 @@ test("Kaseki sweeps do not persist checkout credentials", async () => {
   const docs = await readWorkflow("kaseki-docs.yaml");
   const dry = await readWorkflow("kaseki-dry.yaml");
 
-  const docsCheckout = docs.document.jobs.dispatch.steps.find(step => step.uses?.startsWith("actions/checkout@"));
-  const dryCheckout = dry.document.jobs.dry_sweep.steps.find(step => step.uses?.startsWith("actions/checkout@"));
-  assert.equal(docsCheckout?.with?.["persist-credentials"], false);
-  assert.equal(dryCheckout?.with?.["persist-credentials"], false);
+  for (const [fileName, jobs] of [
+    ["kaseki-docs.yaml", docs.document.jobs],
+    ["kaseki-dry.yaml", dry.document.jobs],
+  ] as const) {
+    for (const [jobName, job] of Object.entries(jobs)) {
+      const checkout = job.steps.find(step => step.uses?.startsWith("actions/checkout@"));
+      if (checkout) assert.equal(checkout.with?.["persist-credentials"], false, `${fileName}:${jobName}`);
+    }
+  }
+
+  for (const [jobName, job] of [
+    ["readiness", docs.document.jobs.readiness],
+    ["api_connection", docs.document.jobs.api_connection],
+  ] as const) {
+    assert.ok(job.steps.some(step => step.uses?.startsWith("actions/checkout@")), `kaseki-docs:${jobName}`);
+    assert.ok(job.steps.some(step => step.uses?.startsWith("actions/setup-node@")), `kaseki-docs:${jobName}`);
+  }
 });
 
 test("Kaseki sweep validation checks the supported Node runtime before repository checks", async () => {
