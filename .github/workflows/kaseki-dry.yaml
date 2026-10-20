@@ -19,7 +19,7 @@ concurrency:
 jobs:
   dry_sweep:
     name: Run Kaseki DRY sweep
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && github.ref_protected
     runs-on: ubuntu-latest
 
     # Kaseki allows a run to last three hours; leave time for
@@ -83,99 +83,12 @@ jobs:
           base-url: ${{ vars.KASEKI_BASE_URL }}
 
       - name: Verify controller readiness
-        shell: bash
-        run: |
-          set -euo pipefail
+        run: node scripts/check-kaseki.ts readiness
 
-          response_file="$(mktemp)"
-          trap 'rm -f "$response_file"' EXIT
-
-          curl --fail-with-body --silent --show-error \
-            --retry 3 \
-            --connect-timeout 10 --max-time 20 \
-            --output "$response_file" \
-            "$KASEKI_BASE_URL/ready"
-
-          jq -e '.status == "ready"' "$response_file" >/dev/null
-
-          echo "Kaseki readiness check succeeded."
-
-      - name: Verify gateway connectivity and authentication
-        shell: bash
+      - name: Verify Kaseki API readiness
         env:
           KASEKI_API_TOKEN: ${{ secrets.KASEKI_API_TOKEN }}
-        run: |
-          set -euo pipefail
-
-          : "${KASEKI_API_TOKEN:?Configure KASEKI_API_TOKEN as an environment secret}"
-
-          response_file="$(mktemp)"
-          trap 'rm -f "$response_file"' EXIT
-
-          curl --fail-with-body --silent --show-error \
-            --retry 3 \
-            --connect-timeout 10 --max-time 60 \
-            --output "$response_file" \
-            --header "Authorization: Bearer $KASEKI_API_TOKEN" \
-            "$KASEKI_API_BASE_URL/gateway-test?stage=1"
-
-          jq -e '.status == "ok"' "$response_file" >/dev/null
-
-          echo "Kaseki gateway authentication succeeded."
-
-      - name: Verify Kaseki API capabilities
-        shell: bash
-        env:
-          KASEKI_API_TOKEN: ${{ secrets.KASEKI_API_TOKEN }}
-        run: |
-          set -euo pipefail
-
-          : "${KASEKI_API_TOKEN:?Configure KASEKI_API_TOKEN as an environment secret}"
-          response_file="$(mktemp)"
-          trap 'rm -f "$response_file"' EXIT
-
-          curl --fail-with-body --silent --show-error \
-            --retry 3 \
-            --connect-timeout 10 --max-time 30 \
-            --output "$response_file" \
-            --header "Authorization: Bearer $KASEKI_API_TOKEN" \
-            "$KASEKI_API_BASE_URL/capabilities"
-
-          if ! jq -e '(.taskModes | index("patch")) != null and (.publishModes | index("pr")) != null' \
-            "$response_file" >/dev/null; then
-            echo "::error title=Unsupported Kaseki API capabilities::The controller must support patch tasks and regular pull requests."
-            exit 1
-          fi
-
-      - name: Verify Kaseki runner preflight
-        shell: bash
-        env:
-          KASEKI_API_TOKEN: ${{ secrets.KASEKI_API_TOKEN }}
-        run: |
-          set -euo pipefail
-
-          : "${KASEKI_API_TOKEN:?Configure KASEKI_API_TOKEN as an environment secret}"
-          response_file="$(mktemp)"
-          trap 'rm -f "$response_file"' EXIT
-
-          http_status="$(
-            curl --silent --show-error \
-              --retry 3 \
-              --connect-timeout 10 --max-time 60 \
-              --output "$response_file" \
-              --write-out '%{http_code}' \
-              --header "Authorization: Bearer $KASEKI_API_TOKEN" \
-              "$KASEKI_API_BASE_URL/preflight"
-          )"
-
-          if [[ "$http_status" != "200" ]] || \
-            ! jq -e '(.status == "ok" or .status == "degraded") and ((.failedChecks // []) | length == 0) and ((.errors // []) | length == 0)' \
-              "$response_file" >/dev/null 2>&1; then
-            echo "::error title=Kaseki runner preflight failed::The runner did not pass preflight; submission was skipped."
-            exit 1
-          fi
-
-          echo "Kaseki runner preflight passed."
+        run: node scripts/check-kaseki.ts api
 
       - name: Submit DRY sweep
         id: submit
