@@ -19,32 +19,43 @@ const candidate = (id: string, bio = "A complete editorial biography for testing
   id, slug: id, firstname: id, surname: "Judoka", signatureMoveIds: ["uchi-mata"], bio,
 });
 
-test("OpenRouterJevClient posts typed requests and rejects incomplete answers", async () => {
+test("OpenRouterJevClient posts typed questions and preserves all answer types and usage", async () => {
   let requestUrl = "";
   let requestInit: RequestInit | undefined;
   const fetchImpl = async (url: URL | RequestInfo, init?: RequestInit) => {
     requestUrl = String(url);
     requestInit = init;
     return new Response(JSON.stringify({
-    model: "typesafe/jev-test",
-    answers: { relevant: { type: "noul", noul: 0.91 } },
-    usage: { input_tokens: 12 },
+      model: "typesafe/jev-test",
+      answers: {
+        relevance: { type: "noul", noul: 0.91 },
+        choice: { type: "choice", choice: "yes", probabilities: { no: 0.1, yes: 0.9 }, confidence: 0.9 },
+        score: { type: "score", score: 1, legend: { "0": "low", "1": "high" }, probabilities: { "0": 0, "1": 1 }, confidence: 1 },
+      },
+      usage: { input_tokens: 12, output_tokens: 3 },
     }), { status: 200 });
   };
   const client = new OpenRouterJevClient({ apiKey: "test-key", model: "typesafe/jev-test", fetchImpl, maxRetries: 0 });
-  const result = await client.decide({ query: "throw specialist" }, {
-    relevant: { type: "noul", instructions: "Is this relevant?" },
-  });
+  const questions = {
+    relevance: { type: "noul" as const, instructions: "Is this relevant?" },
+    choice: { type: "choice" as const, instructions: "Choose", criteria: { no: "No", yes: "Yes" } },
+    score: { type: "score" as const, instructions: "Rate it", criteria: ["low", "high"] },
+  };
+  const result = await client.decide({ query: "throw specialist" }, questions);
   assert.equal(result.model, "typesafe/jev-test");
-  assert.equal(result.answers.relevant.type, "noul");
-  if (result.answers.relevant.type === "noul") assert.equal(result.answers.relevant.noul, 0.91);
+  assert.deepEqual(result.answers, {
+    relevance: { type: "noul", noul: 0.91 },
+    choice: { type: "choice", choice: "yes", probabilities: { no: 0.1, yes: 0.9 }, confidence: 0.9 },
+    score: { type: "score", score: 1, legend: { "0": "low", "1": "high" }, probabilities: { "0": 0, "1": 1 }, confidence: 1 },
+  });
+  assert.deepEqual(result.usage, { input_tokens: 12, output_tokens: 3 });
   assert.equal(requestUrl, "https://openrouter.ai/api/alpha/decisions");
   assert.equal(requestInit?.method, "POST");
   assert.equal(new Headers(requestInit?.headers).get("authorization"), "Bearer test-key");
   assert.deepEqual(JSON.parse(String(requestInit?.body)), {
     model: "typesafe/jev-test",
     state: { query: "throw specialist" },
-    questions: { relevant: { type: "noul", instructions: "Is this relevant?" } },
+    questions,
   });
 
   const malformed = new OpenRouterJevClient({
@@ -56,44 +67,86 @@ test("OpenRouterJevClient posts typed requests and rejects incomplete answers", 
   );
 });
 
-test("OpenRouterJevClient rejects malformed choice and score probability distributions", async () => {
+test("OpenRouterJevClient rejects malformed choice and score probability distributions", async t => {
   const invalidResponses = [
     {
+      name: "empty choice distribution",
       question: { type: "choice", instructions: "Pick one", criteria: { none: "No", match: "Yes" } },
       answer: { type: "choice", choice: "none", probabilities: {}, confidence: 0 },
     },
     {
+      name: "choice probabilities do not sum to one",
       question: { type: "choice", instructions: "Pick one", criteria: { none: "No", match: "Yes" } },
       answer: { type: "choice", choice: "none", probabilities: { none: 0.4, match: 0.4 }, confidence: 0.5 },
     },
     {
+      name: "unexpected choice probability",
       question: { type: "choice", instructions: "Pick one", criteria: { none: "No", match: "Yes" } },
       answer: { type: "choice", choice: "none", probabilities: { none: 0.6, match: 0.4, extra: 0 }, confidence: 0.5 },
     },
     {
+      name: "score outside the question range",
       question: { type: "score", instructions: "Rate it", criteria: ["low", "high"] },
       answer: { type: "score", score: 2, legend: { "0": "low", "1": "high" }, probabilities: { "0": 0, "1": 1 }, confidence: 1 },
     },
     {
+      name: "score legend does not match the question",
       question: { type: "score", instructions: "Rate it", criteria: ["low", "high"] },
       answer: { type: "score", score: 0.5, legend: { "0": "wrong", "1": "high" }, probabilities: { "0": 0.5, "1": 0.5 }, confidence: 0.5 },
     },
   ];
 
-  for (const { question, answer } of invalidResponses) {
-    const client = new OpenRouterJevClient({
-      apiKey: "test-key",
-      maxRetries: 0,
-      fetchImpl: async () => new Response(JSON.stringify({
-        model: "typesafe/jev-test",
-        answers: { decision: answer },
-        usage: {},
-      }), { status: 200 }),
+  for (const { name, question, answer } of invalidResponses) {
+    await t.test(name, async () => {
+      const client = new OpenRouterJevClient({
+        apiKey: "test-key",
+        maxRetries: 0,
+        fetchImpl: async () => new Response(JSON.stringify({
+          model: "typesafe/jev-test",
+          answers: { decision: answer },
+          usage: {},
+        }), { status: 200 }),
+      });
+      await assert.rejects(
+        client.decide({}, { decision: question as never }),
+        (error: unknown) => error instanceof JevClientError && error.code === "invalid_response",
+      );
     });
-    await assert.rejects(
-      client.decide({}, { decision: question as never }),
-      (error: unknown) => error instanceof JevClientError && error.code === "invalid_response",
-    );
+  }
+});
+
+test("OpenRouterJevClient rejects malformed response envelopes and answer maps", async t => {
+  const question = { decision: { type: "noul" as const, instructions: "Is this valid?" } };
+  const validAnswer = { type: "noul", noul: 0.8 };
+  const valid = {
+    model: "typesafe/jev-test",
+    answers: { decision: validAnswer },
+    usage: { input_tokens: 1 },
+  };
+  const cases: Array<[string, unknown]> = [
+    ["null envelope", null],
+    ["array envelope", []],
+    ["blank model", { ...valid, model: "  " }],
+    ["array usage", { ...valid, usage: [] }],
+    ["array answer map", { ...valid, answers: [] }],
+    ["missing answer", { ...valid, answers: {} }],
+    ["unexpected answer", { ...valid, answers: { ...valid.answers, extra: validAnswer } }],
+    ["answer type does not match its question", { ...valid, answers: { decision: { type: "choice", choice: "yes" } } }],
+    ["invalid confidence", { ...valid, answers: { decision: { ...validAnswer, noul: 1.01 } } }],
+  ];
+
+  for (const [name, responseBody] of cases) {
+    await t.test(name, async () => {
+      const client = new OpenRouterJevClient({
+        apiKey: "test-key",
+        maxRetries: 0,
+        fetchImpl: async () => new Response(JSON.stringify(responseBody), { status: 200 }),
+      });
+      await assert.rejects(
+        client.decide({}, question),
+        (error: unknown) => error instanceof JevClientError && error.code === "invalid_response",
+      );
+    });
   }
 });
 
@@ -195,6 +248,22 @@ test("editorial review validates record identity, biography bounds, and signatur
     );
   }
   assert.equal(called, false, "invalid records should be rejected before the JEV client runs");
+});
+
+test("editorial review rejects non-HTTPS evidence before calling JEV", async () => {
+  let called = false;
+  const service = new EditorialReviewService({
+    async decide() {
+      called = true;
+      return { model: "test", usage: {}, answers: {} };
+    },
+  });
+
+  await assert.rejects(service.review({
+    record: candidate("proposal"),
+    evidence: [{ url: "http://example.test/source", excerpt: "An insecure source must be rejected." }],
+  }), /HTTPS source excerpts/);
+  assert.equal(called, false);
 });
 
 test("editorial review uses every editorial answer and escalates when source excerpts are missing", async () => {
@@ -307,11 +376,14 @@ test("editorial reviewer enforces a total request size cap before calling JEV", 
 test("semantic search sends bounded candidate questions and ranks by relevance deterministically", async () => {
   const service = new SemanticJudokaSearchService({
     async decide(_state, questions) {
-      assert.deepEqual(Object.keys(questions), ["relevance_0", "relevance_1"]);
-      return { model: "typesafe/jev-test", usage: {}, answers: {
-        relevance_0: { type: "noul", noul: 0.6 },
-        relevance_1: { type: "noul", noul: 0.9 },
-      }};
+      const questionIds = Object.keys(questions);
+      assert.equal(questionIds.length, 2, "the service must ask one question per candidate");
+      assert.ok(questionIds.every(id => questions[id]?.type === "noul"), "each candidate must get a relevance question");
+      return {
+        model: "typesafe/jev-test",
+        usage: {},
+        answers: Object.fromEntries(questionIds.map((id, index) => [id, { type: "noul", noul: index === 0 ? 0.6 : 0.9 }])),
+      };
     },
   }, { maxCandidates: 2 });
   const result = await service.search("dynamic specialist", [candidate("a"), candidate("b")]);
@@ -359,9 +431,12 @@ test("the complete current public catalogue fits the bounded semantic request", 
   assert.equal(result.results.length, candidates.length);
 });
 
-test("semantic search keeps a hard maximum even when a caller configures its own limit", () => {
+test("semantic search rejects unsafe candidate limits and relevance thresholds", () => {
   const client = { async decide() { return { model: "test", usage: {}, answers: {} }; } };
   assert.throws(() => new SemanticJudokaSearchService(client, { maxCandidates: 101 }), /between 1 and 100/);
+  for (const minimumRelevance of [-0.01, 1.01, Number.NaN]) {
+    assert.throws(() => new SemanticJudokaSearchService(client, { minimumRelevance }), RangeError);
+  }
 });
 
 test("duplicate shortlist matches accents and legacy slugs with deterministic ordering", () => {
@@ -385,6 +460,7 @@ test("semantic search uses code-unit ordering for equal relevance scores", async
 test("semantic search rejects oversized queries or candidate payloads before calling JEV", async () => {
   let called = false;
   const service = new SemanticJudokaSearchService({ async decide() { called = true; return { model: "test", usage: {}, answers: {} }; } });
+  await assert.rejects(service.search("   ", [candidate("a")]), /query must be non-empty/);
   await assert.rejects(service.search("x".repeat(1_001), [candidate("a")]), /1000 characters/);
   await assert.rejects(service.search("short query", [{ ...candidate("large"), bio: "x".repeat(64_000) }]), /64 KB/);
   assert.equal(called, false);
