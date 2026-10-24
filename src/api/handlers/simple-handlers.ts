@@ -20,7 +20,7 @@ export async function statusHandler(context: Context, catalog: RestCatalogDepend
 export async function coverageHandler(context: Context, catalog: RestCatalogDependency): Promise<Response> {
   return context.json(catalog.coverage(), 200, {
     deprecation: "true",
-    sunset: "Fri, 15 Jan 2027 00:00:00 GMT",
+    sunset: "Sun, 31 Jan 2027 00:00:00 GMT",
     link: '</v1/coverage/public>; rel="successor-version"',
   });
 }

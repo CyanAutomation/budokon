@@ -72,4 +72,4 @@ Action use does not need a credential.
 `GET /v1/coverage` is deprecated because its legacy `total` and `hidden`
 properties count internal records. Use `GET /v1/coverage/public`, which reports
 only visible real-judoka counts and distributions. The legacy route advertises
-its replacement and a 15 January 2027 sunset date.
+its replacement and a 31 January 2027 sunset date.

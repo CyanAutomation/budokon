@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { parse } from "yaml";
 import { createWorker } from "../worker/router.js";
 
 // Public-discovery requirement: README.md, "REST API" (the JSON document at /).
@@ -22,7 +23,7 @@ test("landing document derives all links from the supplied origin", async () => 
   });
 });
 
-test("documentation is user-visible and links to the OpenAPI contract", async () => {
+test("documentation page uses restrictive security headers", async () => {
   const documentation = await createWorker("openapi: 3.1.0").fetch(
     new Request("https://budokon.example/docs"),
     { API_KEY: "test-key" },
@@ -46,26 +47,39 @@ test("documentation is user-visible and links to the OpenAPI contract", async ()
     ["base-uri", new Set(["'none'"])],
     ["frame-ancestors", new Set(["'none'"])],
   ]));
+});
 
+test("documentation links to the OpenAPI contract and gives a usable example", async () => {
+  const documentation = await createWorker("openapi: 3.1.0").fetch(
+    new Request("https://budokon.example/docs"),
+    { API_KEY: "test-key" },
+  );
   const docs = await documentation.text();
+
+  assert.equal(documentation.status, 200);
   assert.match(docs, /<h1>BU-DO-KON API reference<\/h1>/);
   assert.match(docs, /href="\/openapi\/v1\.yaml"/);
-  assert.match(docs, /<span class="method get">GET<\/span><code>\/v1\/judoka<\/code>/);
-  assert.match(docs, /<span class="method post">POST<\/span><code>\/v1\/draw<\/code>/);
   assert.ok(docs.includes(`curl "https://budokon.example/v1/judoka?q=shozo&amp;countryCode=JP"`));
   assert.doesNotMatch(docs, /SwaggerUIBundle|swagger-ui\/swagger-ui/);
   assert.doesNotMatch(docs, /<script\b/i);
+});
 
-  const specification = await readFile(new URL("../openapi/v1.yaml", import.meta.url), "utf8");
-  const pathEntries = Array.from(specification.matchAll(/^  (\/[^:\n]+):[ \t]*$/gmu));
-  for (let index = 0; index < pathEntries.length; index += 1) {
-    const entry = pathEntries[index];
-    const blockStart = entry.index ?? 0;
-    const blockEnd = pathEntries[index + 1]?.index ?? specification.length;
-    const pathBlock = specification.slice(blockStart, blockEnd);
-    for (const [, method] of pathBlock.matchAll(/^    (get|post|put|patch|delete|options|head):/gmu)) {
-      const label = `<span class="method ${method.toLowerCase()}">${method.toUpperCase()}</span><code>${entry[1]}</code>`;
-      assert.ok(docs.includes(label), `The /docs endpoint list must include ${method.toUpperCase()} ${entry[1]}`);
+test("documentation lists every REST operation from the OpenAPI contract", async () => {
+  const documentation = await createWorker("openapi: 3.1.0").fetch(
+    new Request("https://budokon.example/docs"),
+    { API_KEY: "test-key" },
+  );
+  const docs = await documentation.text();
+  const specificationSource = await readFile(new URL("../openapi/v1.yaml", import.meta.url), "utf8");
+  const specification = parse(specificationSource) as {
+    paths?: Record<string, Record<string, unknown>>;
+  };
+  const methods = new Set(["get", "post", "put", "patch", "delete", "options", "head"]);
+
+  for (const [path, operations] of Object.entries(specification.paths ?? {})) {
+    for (const method of Object.keys(operations).filter(candidate => methods.has(candidate))) {
+      const label = `<span class="method ${method}">${method.toUpperCase()}</span><code>${path}</code>`;
+      assert.ok(docs.includes(label), `The /docs endpoint list must include ${method.toUpperCase()} ${path}`);
     }
   }
 });
