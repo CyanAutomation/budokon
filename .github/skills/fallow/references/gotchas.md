@@ -47,7 +47,7 @@ For projects using fallow regularly, add it to `devDependencies` in `package.jso
 
 ## Don't Create Config Unless Needed
 
-Fallow works with zero configuration for most projects thanks to 114 auto-detecting framework plugins. Creating an unnecessary config file can mask issues or override detection behavior.
+Fallow auto-detects many frameworks without configuration. Creating an unnecessary config file can mask issues or override detection behavior.
 
 ```bash
 # WRONG: creating config for a standard Next.js project
@@ -318,7 +318,7 @@ const handler = createStandardHandler(config);
 // fallow-ignore-file code-duplication
 ```
 
-This is separate from the dead code suppression tokens. See the full list of valid tokens in the [CLI Reference](cli-reference.md#inline-suppression-comments).
+This is separate from the dead code suppression tokens. See the full list of valid tokens in the [CLI Reference](ci-references.md#inline-suppression-comments).
 
 ---
 
