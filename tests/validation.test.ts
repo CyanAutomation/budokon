@@ -151,14 +151,19 @@ test('judoka schema accepts UUID versions and rejects malformed identifiers', ()
   }
 });
 
-test('filenames match canonical slugs', async () => {
+test('filenames match canonical slugs', async t => {
   const root = await fixtureSandbox();
+  t.after(() => rm(root, { recursive: true, force: true }));
   await change(path.join(root, 'data/judoka/fixture-judoka.json'), (record) => { record.slug = 'different-slug'; });
-  await assert.rejects(validateCanonical(root), /filename must match canonical slug/);
+  await assert.rejects(
+    validateCanonical(root),
+    /data\/judoka\/fixture-judoka\.json: filename must match canonical slug different-slug/,
+  );
 });
 
-test('technique filenames match canonical IDs', async () => {
+test('technique filenames match canonical IDs', async t => {
   const root = await fixtureSandbox();
+  t.after(() => rm(root, { recursive: true, force: true }));
   await rename(path.join(root, 'data/techniques/fixture-throw.json'), path.join(root, 'data/techniques/not-fixture-throw.json'));
   await assert.rejects(validateCanonical(root), /filename must match canonical ID fixture-throw/);
 });
