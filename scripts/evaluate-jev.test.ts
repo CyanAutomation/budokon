@@ -30,7 +30,17 @@ test("JEV evaluation cases refer to canonical records and relevant slugs are can
   const fixtures = JSON.parse(await readFile(new URL("../tests/fixtures/jev-evaluation.json", import.meta.url), "utf8")) as Array<{ candidateSlugs: string[]; relevantSlugs: string[] }>;
   for (const fixture of fixtures) {
     for (const slug of fixture.candidateSlugs) {
-      const record = JSON.parse(await readFile(new URL(`../data/judoka/${slug}.json`, import.meta.url), "utf8")) as { slug: string };
+      const candidateFile = new URL(`../data/judoka/${slug}.json`, import.meta.url);
+      let candidateSource: string;
+      try {
+        candidateSource = await readFile(candidateFile, "utf8");
+      } catch (error) {
+        if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+          assert.fail(`candidate file data/judoka/${slug}.json does not exist`);
+        }
+        throw error;
+      }
+      const record = JSON.parse(candidateSource) as { slug: string };
       assert.equal(record.slug, slug, `candidate file must resolve to canonical judoka ${slug}`);
     }
     for (const slug of fixture.relevantSlugs) assert.ok(fixture.candidateSlugs.includes(slug), `relevant judoka ${slug} is not a candidate`);

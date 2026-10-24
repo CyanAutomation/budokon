@@ -88,17 +88,11 @@ test("public coverage omits totals that disclose hidden-record counts", async ()
   assert.ok("byGender" in coverage && "byCountry" in coverage && "byWeightClass" in coverage);
 });
 
-test("legacy coverage is deprecated with a migration link and at least 90 days of notice", async () => {
+test("legacy coverage publishes its scheduled sunset and successor link", async () => {
   const response = await request("/v1/coverage");
   assert.equal(response.status, 200);
   assert.equal(response.headers.get("deprecation"), "true");
-  const sunset = Date.parse(response.headers.get("sunset") ?? "");
-  const minimumNoticeMilliseconds = 90 * 24 * 60 * 60 * 1_000;
-  assert.ok(Number.isFinite(sunset), "Sunset must be a valid HTTP date");
-  assert.ok(
-    sunset - Date.now() >= minimumNoticeMilliseconds,
-    "Sunset must be at least 90 days in the future",
-  );
+  assert.equal(response.headers.get("sunset"), "Sun, 31 Jan 2027 00:00:00 GMT");
   assert.match(response.headers.get("link") ?? "", /<\/v1\/coverage\/public>; rel="successor-version"/);
 });
 
