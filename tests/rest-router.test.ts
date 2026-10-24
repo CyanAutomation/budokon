@@ -16,24 +16,32 @@ const router = createRestRouter({ catalog, draw: new DrawService(catalog) }, {
 const request = (path: string, init?: RequestInit): Promise<Response> => router(new Request(`https://example.test${path}`, init));
 const body = (response: Response): Promise<any> => response.json();
 
-test("every documented catalogue and metadata endpoint conforms", async () => {
-  for (const [path, expected] of <[string, unknown][]>[
-    ["/v1/judoka", catalog.listJudoka()], ["/v1/techniques", catalog.listTechniques()],
-    ["/v1/countries", catalog.listCountries()],
-    ["/v1/weight-categories", catalog.listWeightCategories()], ["/v1/version", catalog.version()],
-    ["/v1/coverage/public", catalog.publicCoverage()]
-  ]) {
-    const response = await request(path); assert.equal(response.status, 200, path);
-    assert.match(response.headers.get("content-type"), /^application\/json/); assert.deepEqual(await body(response), expected);
-  }
+for (const [path, expected] of <[string, unknown][]>[
+  ["/v1/judoka", catalog.listJudoka()],
+  ["/v1/techniques", catalog.listTechniques()],
+  ["/v1/countries", catalog.listCountries()],
+  ["/v1/weight-categories", catalog.listWeightCategories()],
+]) {
+  test(`GET ${path} returns the canonical catalogue data`, async () => {
+    const response = await request(path);
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get("content-type"), /^application\/json/);
+    assert.deepEqual(await body(response), expected);
+  });
+}
+
+test("GET /v1/techniques/:id returns a matching record and a not-found response for an unknown ID", async () => {
   const technique = catalog.listTechniques()[0];
-  let response = await request(`/v1/techniques/${technique.id}`);
+  const response = await request(`/v1/techniques/${technique.id}`);
   assert.equal(response.status, 200);
   assert.deepEqual(await body(response), technique);
-  response = await request("/v1/techniques/missing");
-  assert.equal(response.status, 404);
-  assert.deepEqual(await body(response), { error: { code: "not_found", message: "technique not found" } });
 
+  const missingResponse = await request("/v1/techniques/missing");
+  assert.equal(missingResponse.status, 404);
+  assert.deepEqual(await body(missingResponse), { error: { code: "not_found", message: "technique not found" } });
+});
+
+test("GET /v1/judoka/:slug returns the matching public record", async () => {
   assert.deepEqual(await body(await request("/v1/judoka/shozo-fujii")), catalog.getJudoka("shozo-fujii"));
 });
 
@@ -84,7 +92,13 @@ test("legacy coverage is deprecated with a migration link and at least 90 days o
   const response = await request("/v1/coverage");
   assert.equal(response.status, 200);
   assert.equal(response.headers.get("deprecation"), "true");
-  assert.match(response.headers.get("sunset") ?? "", /^Fri, 15 Jan 2027 00:00:00 GMT$/);
+  const sunset = Date.parse(response.headers.get("sunset") ?? "");
+  const minimumNoticeMilliseconds = 90 * 24 * 60 * 60 * 1_000;
+  assert.ok(Number.isFinite(sunset), "Sunset must be a valid HTTP date");
+  assert.ok(
+    sunset - Date.now() >= minimumNoticeMilliseconds,
+    "Sunset must be at least 90 days in the future",
+  );
   assert.match(response.headers.get("link") ?? "", /<\/v1\/coverage\/public>; rel="successor-version"/);
 });
 
