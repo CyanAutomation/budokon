@@ -46,6 +46,34 @@ test("checks collected Markdown files and returns broken-link details", async ()
   }
 });
 
+test("checks skill Markdown and its nested references by default", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "budokon-doc-links-"));
+  try {
+    await mkdir(path.join(root, "docs"), { recursive: true });
+    await mkdir(path.join(root, "data", "judoka"), { recursive: true });
+    await mkdir(path.join(root, "migrations"), { recursive: true });
+    await mkdir(path.join(root, ".github", "skills", "fallow", "references"), { recursive: true });
+    await writeFile(path.join(root, "README.md"), "# Project\n");
+    await writeFile(
+      path.join(root, ".github", "skills", "fallow", "SKILL.md"),
+      "[Reference](references/missing.md)\n",
+    );
+    await writeFile(
+      path.join(root, ".github", "skills", "fallow", "references", "existing.md"),
+      "# Reference\n",
+    );
+
+    const result = await checkMarkdownLinks(root);
+    assert.ok(result.files.some(file => file.endsWith(path.join("fallow", "SKILL.md"))));
+    assert.ok(result.files.some(file => file.endsWith(path.join("references", "existing.md"))));
+    assert.deepEqual(result.errors, [
+      `${path.join(root, ".github", "skills", "fallow", "SKILL.md")}:1: local link target does not exist: references/missing.md`,
+    ]);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("local Markdown links resolve relative to the document", () => {
   const existing = new Set(["/repo/docs/API.md"]);
   const errors = findBrokenLocalMarkdownLinks(

@@ -5,7 +5,7 @@ import { findBrokenLocalMarkdownLinks } from "./doc-links.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ignoredDirectories = new Set([".git", "node_modules", "build", "coverage", "dist"]);
-const sourceDirectories = ["README.md", "docs", "data/judoka", "migrations"];
+const sourceDirectories = ["README.md", "docs", "data/judoka", "migrations", ".github/skills"];
 
 async function markdownFiles(directory: string): Promise<string[]> {
   const entries = await readdir(directory, { withFileTypes: true });
