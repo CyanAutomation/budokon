@@ -3,6 +3,7 @@ import type { RestCatalogDependency, RestEventDrawDependency } from "../router.j
 import type { RestHandlerContext as Context } from "./context.js";
 import { validateEventDrawBody } from "../event-draw-body-schema.js";
 import { parseEventListQuery } from "../event-list-query-schema.js";
+import { parseJsonRequestBody } from "../body-validation.js";
 
 export async function eventsListHandler(context: Context, url: URL, catalog: RestCatalogDependency): Promise<Response> {
   const query = parseEventListQuery(url.searchParams);
@@ -30,7 +31,7 @@ export async function eventsDrawHandler(
   }
   let body: EventDrawRequest;
   try {
-    body = validateEventDrawBody(await request.json());
+    body = validateEventDrawBody(await parseJsonRequestBody(request));
   } catch (error) {
     if (error instanceof SyntaxError) throw new TypeError("request body contains malformed JSON");
     throw error;

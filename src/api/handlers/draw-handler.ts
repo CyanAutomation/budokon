@@ -2,6 +2,7 @@ import type { DrawRequest } from "../../domain/types.js";
 import type { RestDrawDependency } from "../router.js";
 import type { RestHandlerContext as Context } from "./context.js";
 import { validateDrawBody } from "../draw-body-schema.js";
+import { parseJsonRequestBody } from "../body-validation.js";
 
 export async function drawHandler(
   context: Context,
@@ -14,7 +15,7 @@ export async function drawHandler(
   }
   let body: DrawRequest;
   try {
-    body = validateDrawBody(await request.json());
+    body = validateDrawBody(await parseJsonRequestBody(request));
   } catch (error) {
     if (error instanceof SyntaxError) throw new TypeError("request body contains malformed JSON");
     throw error;

@@ -15,6 +15,7 @@ import { SUPPORTED_DRAW_ALGORITHMS } from "../draw/draw-service.js";
 
 const MAX_MCP_PAGE_SIZE = 50;
 const MAX_MCP_DRAW_COUNT = 10;
+const MAX_MCP_REQUEST_BODY_BYTES = 128 * 1024;
 
 const stringOrStrings = z.union([z.string(), z.array(z.string()).min(1)]);
 const filters = z.object({
@@ -350,5 +351,5 @@ export function createBudokonMcpHandler(dependencies: BudokonMcpDependencies) {
     registerCatalogTools(register, tools, context);
     registerJevTools(register, tools, dependencies, context);
     return server;
-  }, { legacy: "stateless" });
+  }, { legacy: "stateless", maxRequestBodySize: MAX_MCP_REQUEST_BODY_BYTES });
 }

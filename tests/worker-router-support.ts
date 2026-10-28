@@ -15,6 +15,7 @@ export const mockEnv: Env = {
   INTERNAL_API_KEY: "internal-test-key",
   MCP_ALLOWED_HOSTNAMES: "example.test",
   PUBLIC_ALLOWED_ORIGINS: "https://example.com",
+  MCP_RATE_LIMITER: { async limit() { return { success: true }; } },
 };
 
 export const worker = createWorker("openapi: 3.0.0");

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { rateLimitMcpPrincipal, rateLimitPublicRequest } from "../worker/rate-limit.js";
+import { rateLimitMcpPrincipal, rateLimitMcpRequest, rateLimitPublicRequest } from "../worker/rate-limit.js";
 
 const request = new Request("https://api.example/v1/judoka", { headers: { "cf-connecting-ip": "203.0.113.7" } });
 
@@ -19,6 +19,36 @@ test("an absent or temporarily failing limiter does not make the read-only catal
   assert.equal(await rateLimitPublicRequest(request, { PUBLIC_RATE_LIMITER: { async limit() { throw new Error("unavailable"); } } }), undefined);
 });
 
+test("MCP requests fail closed when the IP limiter is missing or unavailable", async () => {
+  const absent = await rateLimitMcpRequest(request, {});
+  assert.equal(absent?.status, 503);
+  assert.deepEqual(await absent?.json(), {
+    error: { code: "rate_limit_unavailable", message: "MCP rate limiting is unavailable" },
+  });
+
+  const failed = await rateLimitMcpRequest(request, { MCP_RATE_LIMITER: { async limit() { throw new Error("unavailable"); } } });
+  assert.equal(failed?.status, 503);
+  assert.deepEqual(await failed?.json(), {
+    error: { code: "rate_limit_unavailable", message: "MCP rate limiting is unavailable" },
+  });
+});
+
+test("MCP IP and principal quotas expose the same configured rate-limit headers", async () => {
+  const limitHeaders = (response: Response) => [
+    response.headers.get("retry-after"),
+    response.headers.get("ratelimit-limit"),
+    response.headers.get("ratelimit-policy"),
+  ];
+  const ipLimited = await rateLimitMcpRequest(request, { MCP_RATE_LIMITER: { async limit() { return { success: false }; } } });
+  const principalLimited = await rateLimitMcpPrincipal({
+    API_KEY: "valid-secret",
+    MCP_RATE_LIMITER: { async limit() { return { success: false }; } },
+  }, "client:subject");
+
+  assert.deepEqual(limitHeaders(ipLimited!), ["60", "30", "30;w=60"]);
+  assert.deepEqual(limitHeaders(principalLimited!), ["60", "30", "30;w=60"]);
+});
+
 test("MCP principal rate limiting rejects blank HMAC secrets without calling the limiter", async () => {
   for (const API_KEY of [undefined, "", " \t\n "]) {
     let calls = 0;
@@ -35,7 +65,7 @@ test("MCP principal rate limiting rejects blank HMAC secrets without calling the
   }
 });
 
-test("MCP principal rate limiting keeps valid HMAC keys private and preserves the optional binding", async () => {
+test("MCP principal rate limiting keeps valid HMAC keys private and requires its binding", async () => {
   let limiterKey: string | undefined;
   const response = await rateLimitMcpPrincipal({
     API_KEY: "valid-secret",
@@ -45,5 +75,15 @@ test("MCP principal rate limiting keeps valid HMAC keys private and preserves th
   assert.equal(response, undefined);
   assert.match(limiterKey ?? "", /^[0-9a-f]{64}:mcp:principal$/u);
   assert.equal(limiterKey?.includes("client:subject"), false);
-  assert.equal(await rateLimitMcpPrincipal({}, "client:subject"), undefined);
+  const absent = await rateLimitMcpPrincipal({}, "client:subject");
+  assert.equal(absent?.status, 503);
+
+  const failed = await rateLimitMcpPrincipal({
+    API_KEY: "valid-secret",
+    MCP_RATE_LIMITER: { async limit() { throw new Error("unavailable"); } },
+  }, "client:subject");
+  assert.equal(failed?.status, 503);
+  assert.deepEqual(await failed?.json(), {
+    error: { code: "rate_limit_unavailable", message: "MCP rate limiting is unavailable" },
+  });
 });
