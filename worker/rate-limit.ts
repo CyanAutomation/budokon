@@ -2,9 +2,16 @@
 type RateLimitEnv = { PUBLIC_RATE_LIMITER?: { limit(options: { key: string }): Promise<{ success: boolean }> } };
 const RATE_LIMIT = 120;
 const RATE_LIMIT_WINDOW_SECONDS = 60;
+const MCP_RATE_LIMIT = 30;
+const MCP_RATE_LIMIT_WINDOW_SECONDS = 60;
 const rateLimitHeaders = {
   "ratelimit-limit": String(RATE_LIMIT),
   "ratelimit-policy": `${RATE_LIMIT};w=${RATE_LIMIT_WINDOW_SECONDS}`,
+};
+const mcpRateLimitHeaders = {
+  "retry-after": String(MCP_RATE_LIMIT_WINDOW_SECONDS),
+  "ratelimit-limit": String(MCP_RATE_LIMIT),
+  "ratelimit-policy": `${MCP_RATE_LIMIT};w=${MCP_RATE_LIMIT_WINDOW_SECONDS}`,
 };
 
 export async function rateLimitPublicRequest(request: Request, env: RateLimitEnv): Promise<Response | undefined> {
@@ -35,7 +42,7 @@ export async function rateLimitMcpRequest(request: Request, env: { MCP_RATE_LIMI
   try {
     const { success } = await env.MCP_RATE_LIMITER.limit({ key: `${client}:mcp` });
     if (success) return undefined;
-    return new Response(JSON.stringify({ error: { code: "rate_limited", message: "too many requests" } }), { status: 429, headers: { "content-type": "application/json; charset=utf-8", "retry-after": "60", "ratelimit-limit": "30", "ratelimit-policy": "30;w=60" } });
+    return new Response(JSON.stringify({ error: { code: "rate_limited", message: "too many requests" } }), { status: 429, headers: { "content-type": "application/json; charset=utf-8", ...mcpRateLimitHeaders } });
   } catch {
     console.error("MCP IP rate limiter failed; rejecting the request");
     return mcpRateLimitUnavailable();
@@ -62,7 +69,7 @@ export async function rateLimitMcpPrincipal(
     if (success) return undefined;
     return new Response(JSON.stringify({ error: { code: "rate_limited", message: "too many requests" } }), {
       status: 429,
-      headers: { "content-type": "application/json; charset=utf-8", "retry-after": "60", "ratelimit-limit": "30", "ratelimit-policy": "30;w=60" },
+      headers: { "content-type": "application/json; charset=utf-8", ...mcpRateLimitHeaders },
     });
   } catch {
     console.error("MCP principal rate limiter failed; rejecting the request");

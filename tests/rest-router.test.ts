@@ -218,6 +218,16 @@ test("draw rejects oversized JSON bodies with 413 before calling the draw servic
     error: { code: "payload_too_large", message: "request body exceeds the 16384-byte limit" },
   });
 
+  for (const contentLength of ["0", "invalid"]) {
+    const misleadingLengthRequest = new Request("https://example.test/v1/draw", {
+      method: "POST",
+      headers: { "content-type": "application/json", "content-length": contentLength },
+      body: oversizedBody,
+    });
+    const misleadingLengthResponse = await router(misleadingLengthRequest);
+    assert.equal(misleadingLengthResponse.status, 413, `Content-Length ${contentLength} must not bypass streamed size enforcement`);
+  }
+
   let eventDrawCalled = false;
   const eventRouter = createRestRouter({
     catalog,
