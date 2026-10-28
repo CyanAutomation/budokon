@@ -1,4 +1,4 @@
-export type RestHandlerErrorCode = "bad_request" | "forbidden" | "not_found" | "method_not_allowed" | "conflict" | "internal_error";
+export type RestHandlerErrorCode = "bad_request" | "forbidden" | "not_found" | "method_not_allowed" | "conflict" | "payload_too_large" | "internal_error";
 
 export type RestHandlerContext = {
   json: (body: unknown, status?: number, headers?: HeadersInit) => Response;

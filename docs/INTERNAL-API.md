@@ -67,9 +67,13 @@ OAuth MCP calls receive the existing IP-based MCP quota and an additional
 subject. The raw subject is not placed in rate-limit keys. Public REST/GPT
 Action use does not need a credential.
 
+MCP HTTP request bodies are capped at 128 KiB. Requests receive `503` if the
+MCP rate limiter is missing or unavailable; configure the `MCP_RATE_LIMITER`
+binding in each deployed environment.
+
 ## Coverage migration
 
-`GET /v1/coverage` is deprecated because its legacy `total` and `hidden`
-properties count internal records. Use `GET /v1/coverage/public`, which reports
-only visible real-judoka counts and distributions. The legacy route advertises
-its replacement and a 31 January 2027 sunset date.
+`GET /v1/coverage` is deprecated. It now returns only visible real-judoka
+counts and distributions, without the former internal `total` and `hidden`
+counts. Use `GET /v1/coverage/public` and migrate before the legacy route's
+31 January 2027 sunset date.

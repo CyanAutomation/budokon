@@ -51,7 +51,14 @@ test("public OpenAPI covers technique search and the privacy-safe coverage route
   assert.equal(document.components.schemas.Judoka.properties.stats.type, "object");
   assert.equal(document.components.schemas.Technique.properties.subCategory.type, "string");
   assert.equal(document.components.schemas.EventEffect.properties.action.enum.join(","), "modify,set");
-  assert.equal(document.components.schemas.Coverage.properties.hidden.deprecated, true);
+  assert.equal(
+    document.components.responses.LegacyCoverage.content["application/json"].schema.$ref,
+    "#/components/schemas/PublicCoverage",
+  );
+  assert.equal("hidden" in document.components.schemas.PublicCoverage.properties, false);
+  assert.equal("total" in document.components.schemas.PublicCoverage.properties, false);
+  assert.equal(document.paths["/v1/draw"].post.responses["413"].$ref, "#/components/responses/PayloadTooLarge");
+  assert.equal(document.paths["/v1/events/draw"].post.responses["413"].$ref, "#/components/responses/PayloadTooLarge");
   assert.equal(document.paths["/v1/draw"].post["x-openai-isConsequential"], false);
   assert.equal(document.paths["/v1/events/draw"].post["x-openai-isConsequential"], false);
 });

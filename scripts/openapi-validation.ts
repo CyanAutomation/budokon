@@ -49,14 +49,14 @@ const expectedResponses: Record<string, Record<string, Record<string, string>>> 
     "/v1/techniques/{id}": { get: { "200": "Technique", "304": "NotModified", "404": "NotFound", "405": "MethodNotAllowed", "429": "RateLimited", "500": "InternalError" } },
     "/v1/events": { get: { "200": "EventList", "304": "NotModified", "400": "BadRequest", "405": "MethodNotAllowed", "429": "RateLimited", "500": "InternalError" } },
     "/v1/events/{id}": { get: { "200": "Event", "304": "NotModified", "400": "BadRequest", "404": "NotFound", "405": "MethodNotAllowed", "429": "RateLimited", "500": "InternalError" } },
-    "/v1/events/draw": { post: { "200": "EventDraw", "400": "BadRequest", "405": "MethodNotAllowed", "409": "Conflict", "429": "RateLimited", "500": "InternalError" } },
+    "/v1/events/draw": { post: { "200": "EventDraw", "400": "BadRequest", "405": "MethodNotAllowed", "409": "Conflict", "413": "PayloadTooLarge", "429": "RateLimited", "500": "InternalError" } },
     "/v1/countries": { get: { "200": "Countries", "304": "NotModified", "405": "MethodNotAllowed", "429": "RateLimited", "500": "InternalError" } },
     "/v1/weight-categories": { get: { "200": "WeightCategories", "304": "NotModified", "405": "MethodNotAllowed", "429": "RateLimited", "500": "InternalError" } },
     "/v1/version": { get: { "200": "Version", "304": "NotModified", "405": "MethodNotAllowed", "429": "RateLimited", "500": "InternalError" } },
     "/v1/status": { get: { "200": "Status", "304": "NotModified", "405": "MethodNotAllowed", "429": "RateLimited", "500": "InternalError" } },
     "/v1/coverage": { get: { "200": "LegacyCoverage", "304": "NotModified", "405": "MethodNotAllowed", "429": "RateLimited", "500": "InternalError" } },
     "/v1/coverage/public": { get: { "200": "PublicCoverage", "304": "NotModified", "405": "MethodNotAllowed", "429": "RateLimited", "500": "InternalError" } },
-    "/v1/draw": { post: { "200": "JudokaDraw", "400": "BadRequest", "405": "MethodNotAllowed", "409": "Conflict", "429": "RateLimited", "500": "InternalError" } },
+    "/v1/draw": { post: { "200": "JudokaDraw", "400": "BadRequest", "405": "MethodNotAllowed", "409": "Conflict", "413": "PayloadTooLarge", "429": "RateLimited", "500": "InternalError" } },
 };
 
 const responseSchemas: Record<string, string> = {
@@ -66,7 +66,7 @@ const responseSchemas: Record<string, string> = {
   EventDraw: "EventDraw",
   Version: "Version",
   Status: "Status",
-  LegacyCoverage: "Coverage",
+  LegacyCoverage: "PublicCoverage",
   PublicCoverage: "PublicCoverage",
   JudokaDraw: "JudokaDraw",
 };

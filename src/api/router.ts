@@ -20,6 +20,7 @@ import type {
 import { createRequestAuthority } from "./request-authority.js";
 import { createResourceRouter } from "./resource-router.js";
 import { badRequest, failure, isExpectedInputError } from "./router-response.js";
+import { PayloadTooLargeError } from "./body-validation.js";
 
 export interface RestCatalogDependency {
   searchJudoka(options?: SearchJudokaOptions): Judoka[];
@@ -84,6 +85,7 @@ export function createRestRouter(
       if (extraSegments.length > 0) return failure(404, "not_found", "route not found");
       return await routeResource(resource, id, request, url, authorizedInternal);
     } catch (error) {
+      if (error instanceof PayloadTooLargeError) return failure(413, "payload_too_large", error.message);
       if (isExpectedInputError(error)) return badRequest(error.message);
       return failure(500, "internal_error", "internal server error");
     }
