@@ -9,7 +9,8 @@ export class PayloadTooLargeError extends Error {
 
 /** Parse JSON while enforcing a byte limit even when Content-Length is absent or inaccurate. */
 export async function parseJsonRequestBody(request: Request): Promise<unknown> {
-  const declaredLength = Number(request.headers.get("content-length"));
+  const contentLengthHeader = request.headers.get("content-length");
+  const declaredLength = contentLengthHeader !== null ? Number(contentLengthHeader) : Number.NaN;
   if (Number.isFinite(declaredLength) && declaredLength > MAX_REST_REQUEST_BODY_BYTES) {
     try { await request.body?.cancel(); } catch { /* The oversized request is already rejected. */ }
     throw new PayloadTooLargeError();
