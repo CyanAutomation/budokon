@@ -30,9 +30,13 @@ use the equivalent `POST /v1/events/draw` endpoint and require a `ruleset`.
 
 Use `GET /v1/coverage/public` for public real-judoka coverage metrics. It does
 not reveal all-record totals or hidden-record counts. The legacy
-`GET /v1/coverage` response is deprecated and scheduled to sunset on
-31 January 2027; it carries `Deprecation`, `Sunset`, and successor `Link`
-headers during the migration window.
+`GET /v1/coverage` response is deprecated, now returns the same public-only
+metrics, and is scheduled to sunset on 31 January 2027. It carries
+`Deprecation`, `Sunset`, and successor `Link` headers during the migration
+window.
+
+REST draw requests are limited to 16 KiB and return `413` when the body is
+larger.
 
 All public GET responses include an opaque `ETag`; clients should store and
 resend it without parsing its value. Send it as `If-None-Match` to receive

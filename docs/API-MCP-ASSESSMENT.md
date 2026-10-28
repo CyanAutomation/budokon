@@ -62,7 +62,7 @@ MCP collection tools return results as JSON text and structured content. Full ju
 | `GET /v1/weight-categories` | Returns supported senior weight categories grouped by gender. | **Keep.** Useful reference data for filters and UI. |
 | `GET /v1/version` | Returns dataset/service release identity, checksum, source commit, and draw algorithms. | **Keep.** Canonical machine-readable release metadata. |
 | `GET /v1/status` | Liveness response with `status: ok` and release metadata. It does not probe external services and overlaps with `/version`. | **Keep.** The distinct liveness meaning is useful; avoid adding dependency-readiness claims unless the handler checks them. |
-| `GET /v1/coverage` | Legacy coverage response includes all-record and hidden-record counts, while distributions describe public real judoka. It is deprecated and announces a successor and sunset date. | **Keep through the published migration window, then remove only under the compatibility policy.** Its total/hidden fields disclose internal catalogue counts; migrate clients to the public route. |
+| `GET /v1/coverage` | Deprecated response now contains only public real-judoka metrics; the former all-record and hidden-record totals have been removed. It still announces a successor and sunset date. | **Keep the route through the published migration window, then remove under the compatibility policy.** Consumers should migrate to `/v1/coverage/public`. |
 | `GET /v1/coverage/public` | Coverage metrics over visible real judoka only; omits all-record and hidden counts. | **Keep.** This is the safer public successor and has clear, limited semantics. |
 
 ### OpenAPI and discovery
@@ -128,7 +128,7 @@ Keep tool descriptions action-oriented, result bounds explicit, and draws marked
 4. Measure MCP payload sizes with the target ChatGPT client and tune page/draw budgets if needed.
 5. Keep the legacy coverage sunset and status/readiness semantics current in docs and monitoring.
 
-No endpoint removal is recommended. The existing status/version overlap is modest; the public coverage route is preferable to removing coverage; and the legacy coverage route should follow its already-published deprecation period.
+No endpoint removal is recommended before the published sunset. The existing status/version overlap is modest; the public coverage route is preferable to removing coverage; and the legacy route remains available during its deprecation period without disclosing internal record totals.
 
 ## Verification summary
 

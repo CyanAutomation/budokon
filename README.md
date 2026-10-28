@@ -229,6 +229,7 @@ assistance](docs/JEV.md).
 - [REST and MCP API guide](docs/API.md)
 - [OpenAPI contract](openapi/v1.yaml)
 - [Internal API credentials and OAuth](docs/INTERNAL-API.md)
+- [Security policy and vulnerability reporting](SECURITY.md)
 - [Deployment setup](docs/DEPLOYMENT.md)
 - [Operations and releases](docs/OPERATIONS.md)
 - [Judoka contribution guide](data/judoka/CONTRIBUTING.md)

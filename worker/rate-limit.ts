@@ -23,19 +23,23 @@ export async function rateLimitPublicRequest(request: Request, env: RateLimitEnv
       }
     });
   } catch {
+    console.warn("Public rate limiter failed; allowing the read-only request");
     return undefined;
   }
 }
 
 /** MCP credentials are separately rate-limited from public catalogue reads. */
 export async function rateLimitMcpRequest(request: Request, env: { MCP_RATE_LIMITER?: { limit(options: { key: string }): Promise<{ success: boolean }> } }): Promise<Response | undefined> {
-  if (!env.MCP_RATE_LIMITER) return undefined;
+  if (!env.MCP_RATE_LIMITER) return mcpRateLimitUnavailable();
   const client = request.headers.get("cf-connecting-ip") ?? "anonymous";
   try {
     const { success } = await env.MCP_RATE_LIMITER.limit({ key: `${client}:mcp` });
     if (success) return undefined;
     return new Response(JSON.stringify({ error: { code: "rate_limited", message: "too many requests" } }), { status: 429, headers: { "content-type": "application/json; charset=utf-8", "retry-after": "60", "ratelimit-limit": "30", "ratelimit-policy": "30;w=60" } });
-  } catch { return undefined; }
+  } catch {
+    console.error("MCP IP rate limiter failed; rejecting the request");
+    return mcpRateLimitUnavailable();
+  }
 }
 
 /** Apply a second MCP quota per OAuth principal without placing subject IDs in limiter keys. */
@@ -43,7 +47,7 @@ export async function rateLimitMcpPrincipal(
   env: { MCP_RATE_LIMITER?: { limit(options: { key: string }): Promise<{ success: boolean }> }; API_KEY?: string },
   principal: string,
 ): Promise<Response | undefined> {
-  if (!env.MCP_RATE_LIMITER) return undefined;
+  if (!env.MCP_RATE_LIMITER) return mcpRateLimitUnavailable();
   if (typeof env.API_KEY !== "string" || env.API_KEY.trim().length === 0) {
     return new Response(JSON.stringify({ error: { code: "not_configured", message: "principal rate limiting is not configured" } }), {
       status: 503,
@@ -60,5 +64,15 @@ export async function rateLimitMcpPrincipal(
       status: 429,
       headers: { "content-type": "application/json; charset=utf-8", "retry-after": "60", "ratelimit-limit": "30", "ratelimit-policy": "30;w=60" },
     });
-  } catch { return undefined; }
+  } catch {
+    console.error("MCP principal rate limiter failed; rejecting the request");
+    return mcpRateLimitUnavailable();
+  }
+}
+
+function mcpRateLimitUnavailable(): Response {
+  return new Response(JSON.stringify({ error: { code: "rate_limit_unavailable", message: "MCP rate limiting is unavailable" } }), {
+    status: 503,
+    headers: { "content-type": "application/json; charset=utf-8" },
+  });
 }

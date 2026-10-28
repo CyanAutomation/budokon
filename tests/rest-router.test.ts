@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   CatalogService, DrawService, JsonReadModelRepository, createRestRouter, summarizeCoverage,
-  type CoverageResponse, type Judoka, type RestCatalogDependency, type RestDrawDependency
+  type PublicCoverageResponse, type Judoka, type RestCatalogDependency, type RestDrawDependency
 } from "../src/index.js";
 import { createWorker } from "../worker/router.js";
 import type { Env } from "../worker/env.js";
@@ -72,8 +72,10 @@ test("coverage returns empty rarity percentages when no public real judoka exist
 test("coverage exposes public real-judoka counts and stable rarity percentages", async () => {
   const response = await request("/v1/coverage");
   assert.equal(response.status, 200);
-  const coverage = await body(response) as CoverageResponse;
+  const coverage = await body(response) as PublicCoverageResponse;
   assert.equal(coverage.publicReal, catalog.listJudoka().filter(record => record.personType === "real").length);
+  assert.equal("total" in coverage, false);
+  assert.equal("hidden" in coverage, false);
   assert.deepEqual(Object.keys(coverage.byRarity), ["Common", "Epic", "Legendary", "Rare"]);
   assert.ok(Math.abs(Object.values(coverage.rarityPercentages).reduce((sum, value) => sum + value, 0) - 100) <= 0.1);
 });
@@ -200,6 +202,35 @@ test("draw validates transport and body before calling the service", async () =>
     const response = await request("/v1/draw", init); assert.equal(response.status, 400);
     assert.match((await body(response)).error.message, new RegExp(message));
   }
+});
+
+test("draw rejects oversized JSON bodies with 413 before calling the draw service", async () => {
+  const oversizedBody = JSON.stringify({ seed: "x".repeat(16 * 1024) });
+  const oversizedRequest = new Request("https://example.test/v1/draw", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: oversizedBody,
+  });
+  assert.equal(oversizedRequest.headers.get("content-length"), null, "the streamed-size guard must work without Content-Length");
+  const response = await router(oversizedRequest);
+  assert.equal(response.status, 413);
+  assert.deepEqual(await body(response), {
+    error: { code: "payload_too_large", message: "request body exceeds the 16384-byte limit" },
+  });
+
+  let eventDrawCalled = false;
+  const eventRouter = createRestRouter({
+    catalog,
+    draw: new DrawService(catalog),
+    eventDraw: { draw() { eventDrawCalled = true; throw new Error("oversized body reached draw service"); } },
+  });
+  const eventResponse = await eventRouter(new Request("https://example.test/v1/events/draw", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: oversizedBody,
+  }));
+  assert.equal(eventResponse.status, 413);
+  assert.equal(eventDrawCalled, false);
 });
 
 test("draw succeeds and impossible counts have the documented conflict response", async () => {

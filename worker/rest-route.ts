@@ -15,12 +15,15 @@ export async function handleRestRequest(
   const revision = { dataset: catalog.version().datasetVersion, service: manifest.sourceGitCommit };
   const edgeCache = cacheOption === null ? undefined : cacheOption ?? defaultEdgeCache();
   const cached = await readPublicCache(edgeCache, request, revision);
+  if (cached?.status === 304) return cached;
+
+  const rateLimited = await rateLimitPublicRequest(request, env);
+  if (rateLimited) return rateLimited;
   if (cached) return cached;
 
   const rest = createRestRouter({ catalog, draw, eventDraw }, {
     authorizeInternal: candidate => authorized(candidate, distinctInternalApiKey(env)),
     onRepresentation: metadata => { cacheability.cacheablePublicly = metadata.cacheablePublicly; },
   });
-  const rateLimited = await rateLimitPublicRequest(request, env);
-  return rateLimited ?? await writePublicCache(edgeCache, request, await rest(request), revision, cacheability);
+  return await writePublicCache(edgeCache, request, await rest(request), revision, cacheability);
 }
