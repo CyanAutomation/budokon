@@ -7,7 +7,8 @@ Monitor:
 
 * availability and server-error rate (`5xx`);
 * request latency, including p95 and p99;
-* `429` responses by route and OAuth principal quota, to tune the limiters; and
+* `429` and `503` responses by route and OAuth principal quota, to tune the
+  limiters; and
 * deployment identity from `/v1/status` (`datasetVersion`, source commit, and
   checksum), so a rollout serves the intended release.
 
@@ -34,11 +35,12 @@ commit, plus normalized representation-affecting query parameters. A new data or
 service revision therefore misses old entries without requiring a purge (old
 entries expire under the configured cache policy).
 
-Matching public `If-None-Match` requests can bypass quota when a cached successful
-representation exists. Cache misses continue through rate limiting and REST
-routing before a conditional `304` is generated. This preserves normal `400` and
-`404` behavior for invalid requests and missing records. Authorization-sensitive
-requests do not use the public cache.
+Only a matching public `If-None-Match` request can bypass quota when a cached
+successful representation exists. Other cache hits pass through rate limiting;
+when permitted, the cached representation is returned. Cache misses continue
+through rate limiting and REST routing before a conditional `304` is generated.
+This preserves normal `400` and `404` behavior for invalid requests and missing
+records. Authorization-sensitive requests do not use the public cache.
 
 Only successful responses that the REST layer explicitly marks public are
 stored. Authorization/API-key requests, `includeHidden=true`, non-GET requests,
@@ -63,6 +65,11 @@ include the authorization server's availability and latency in upstream
 monitoring. Keep `API_KEY` configured as a nonblank secret: when the MCP
 limiter is enabled, OAuth requests receive `503` if it cannot safely derive a
 principal quota key.
+
+MCP requests fail closed with `503` when the IP or OAuth principal limiter is
+missing or unavailable. Public REST reads remain available when their optional
+limiter is missing or unavailable; Worker observability logs a warning for
+limiter errors so operators can detect reduced protection.
 
 ## Compiled read-model contract
 

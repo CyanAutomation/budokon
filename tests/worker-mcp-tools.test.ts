@@ -40,6 +40,23 @@ test("MCP initialize request returns proper protocol version and capabilities", 
   assert.equal(data.result.capabilities.tools.listChanged, true);
 });
 
+test("MCP rejects request bodies larger than its configured 128 KiB limit", async () => {
+  const requestBody = JSON.stringify({
+    jsonrpc: "2.0",
+    id: 2,
+    method: "initialize",
+    params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "test", version: "1.0.0" } },
+    padding: "x".repeat(128 * 1024),
+  });
+  const response = await worker.fetch(new Request("https://example.test/mcp", {
+    method: "POST",
+    headers: { host: "example.test", authorization: `Bearer ${mockEnv.API_KEY}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
+    body: requestBody,
+  }), mockEnv);
+
+  assert.equal(response.status, 413);
+});
+
 /**
  * Test MCP tools listing.
  */

@@ -139,6 +139,7 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '405': { $ref: '#/components/responses/MethodNotAllowed' }
         '409': { $ref: '#/components/responses/Conflict' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '429': { $ref: '#/components/responses/RateLimited' }
         '500': { $ref: '#/components/responses/InternalError' }
   /v1/countries:
@@ -188,9 +189,10 @@ paths:
       summary: Get legacy coverage metadata (deprecated)
       deprecated: true
       description: >-
-        This response includes all-record total and hidden-record counts. Migrate
-        to GET /v1/coverage/public, which contains public real-judoka metrics only.
-        This legacy operation sunsets on 2027-01-31.
+        The response now contains only public real-judoka metrics. Earlier
+        versions included all-record total and hidden-record counts; those
+        properties have been removed. Migrate to GET /v1/coverage/public. This
+        legacy operation sunsets on 2027-01-31.
       responses:
         '200': { $ref: '#/components/responses/LegacyCoverage' }
         '304': { $ref: '#/components/responses/NotModified' }
@@ -232,6 +234,7 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '405': { $ref: '#/components/responses/MethodNotAllowed' }
         '409': { $ref: '#/components/responses/Conflict' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '429': { $ref: '#/components/responses/RateLimited' }
         '500': { $ref: '#/components/responses/InternalError' }
 components:
@@ -404,18 +407,6 @@ components:
           required: [status]
           properties:
             status: { const: ok }
-    Coverage:
-      type: object
-      required: [total, publicReal, hidden, byGender, byCountry, byWeightClass, byRarity, rarityPercentages]
-      properties:
-        total: { type: integer }
-        publicReal: { type: integer }
-        hidden: { type: integer, deprecated: true, description: This all-record count is deprecated. Use /v1/coverage/public. }
-        byGender: { type: object, additionalProperties: { type: integer } }
-        byCountry: { type: object, additionalProperties: { type: integer } }
-        byWeightClass: { type: object, additionalProperties: { type: integer } }
-        byRarity: { type: object, additionalProperties: { type: integer } }
-        rarityPercentages: { type: object, additionalProperties: { type: number } }
     PublicCoverage:
       type: object
       required: [publicReal, byGender, byCountry, byWeightClass, byRarity, rarityPercentages]
@@ -481,11 +472,12 @@ components:
     WeightCategories: { description: Senior weight categories, headers: { ETag: { $ref: '#/components/headers/ETag' }, Cache-Control: { $ref: '#/components/headers/CacheControl' } }, content: { application/json: { schema: { type: array, minItems: 2, maxItems: 2, items: { $ref: '#/components/schemas/WeightCategory' } } } } }
     Version: { description: Immutable data and service release identity, headers: { ETag: { $ref: '#/components/headers/ETag' }, Cache-Control: { $ref: '#/components/headers/CacheControl' } }, content: { application/json: { schema: { $ref: '#/components/schemas/Version' } } } }
     Status: { description: Liveness and release metadata, headers: { ETag: { $ref: '#/components/headers/ETag' }, Cache-Control: { $ref: '#/components/headers/CacheControl' } }, content: { application/json: { schema: { $ref: '#/components/schemas/Status' } } } }
-    LegacyCoverage: { description: Deprecated coverage response. Migrate to /v1/coverage/public., headers: { ETag: { $ref: '#/components/headers/ETag' }, Cache-Control: { $ref: '#/components/headers/CacheControl' }, Deprecation: { $ref: '#/components/headers/Deprecation' }, Sunset: { $ref: '#/components/headers/Sunset' }, Link: { $ref: '#/components/headers/SuccessorLink' } }, content: { application/json: { schema: { $ref: '#/components/schemas/Coverage' } } } }
+    LegacyCoverage: { description: Deprecated coverage response. Contains public metrics only; migrate to /v1/coverage/public., headers: { ETag: { $ref: '#/components/headers/ETag' }, Cache-Control: { $ref: '#/components/headers/CacheControl' }, Deprecation: { $ref: '#/components/headers/Deprecation' }, Sunset: { $ref: '#/components/headers/Sunset' }, Link: { $ref: '#/components/headers/SuccessorLink' } }, content: { application/json: { schema: { $ref: '#/components/schemas/PublicCoverage' } } } }
     PublicCoverage: { description: Public visible real-judoka coverage, headers: { ETag: { $ref: '#/components/headers/ETag' }, Cache-Control: { $ref: '#/components/headers/CacheControl' } }, content: { application/json: { schema: { $ref: '#/components/schemas/PublicCoverage' } } } }
     JudokaDraw: { description: Draw result, content: { application/json: { schema: { $ref: '#/components/schemas/JudokaDraw' } } } }
     NotModified: { description: Public representation has not changed., headers: { ETag: { $ref: '#/components/headers/ETag' }, Cache-Control: { $ref: '#/components/headers/CacheControl' } } }
     BadRequest: { description: Invalid request, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    PayloadTooLarge: { description: Request body exceeds the 16 KiB limit, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
     NotFound: { description: Resource not found, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
     MethodNotAllowed: { description: Unsupported method for this route, headers: { Allow: { schema: { type: string } } }, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
     Conflict: { description: Requested draw cannot be fulfilled from the eligible pool, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }

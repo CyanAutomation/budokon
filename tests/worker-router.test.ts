@@ -90,6 +90,10 @@ test("matching cached public revalidation bypasses quota, while sensitive reques
     },
   };
 
+  const unconditioned = await revalidationWorker.fetch(new Request(url), env);
+  assert.equal(unconditioned.status, 429, "a warm cache entry without a matching validator must still use quota");
+  assert.equal(limiterCalls.length, 1);
+
   const notModified = await revalidationWorker.fetch(new Request(url, {
     headers: { "if-none-match": etag, origin: "https://example.com" },
   }), env);
@@ -99,13 +103,13 @@ test("matching cached public revalidation bypasses quota, while sensitive reques
   assert.equal(notModified.headers.get("cache-control"), "public, max-age=300, s-maxage=86400, stale-while-revalidate=86400");
   assert.equal(notModified.headers.get("vary"), "Origin");
   assert.equal(notModified.headers.get("access-control-allow-origin"), "https://example.com");
-  assert.equal(limiterCalls.length, 0, "a cached successful representation must bypass public quota");
+  assert.equal(limiterCalls.length, 1, "only matching cached revalidation may bypass public quota");
 
   const mismatched = await createWorker("openapi: 3.0.0", { cache: null }).fetch(new Request(url, {
     headers: { "if-none-match": '"unrelated"' },
   }), env);
   assert.equal(mismatched.status, 429);
-  assert.equal(limiterCalls.length, 1, "a validator mismatch must use the normal limiter");
+  assert.equal(limiterCalls.length, 2, "a validator mismatch must use the normal limiter");
 
   allow = true;
   const credentialed = await createWorker("openapi: 3.0.0", { cache: null }).fetch(new Request(url, {
@@ -121,7 +125,7 @@ test("matching cached public revalidation bypasses quota, while sensitive reques
   assert.equal(hidden.status, 403);
   assert.equal(hidden.headers.get("etag"), null);
   assert.equal(hidden.headers.get("cache-control"), "private, no-store");
-  assert.equal(limiterCalls.length, 3, "credentialed and hidden-record requests must retain normal quota handling");
+  assert.equal(limiterCalls.length, 4, "credentialed and hidden-record requests must retain normal quota handling");
 });
 
 test("conditional requests do not turn missing resources or invalid queries into 304", async () => {
