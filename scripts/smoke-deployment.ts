@@ -109,13 +109,20 @@ async function validatePublicCatalogue(send: DeploymentRequest): Promise<void> {
   const first = await send("/v1/judoka");
   const etag = first.headers.get("etag");
   if (!etag) throw new Error("public catalogue response is missing ETag");
+  if (!["HIT", "MISS"].includes(first.headers.get("x-budokon-cache") ?? "")) {
+    throw new Error("public catalogue response is missing a working edge-cache outcome");
+  }
   if (!first.headers.get("cache-control")?.includes("s-maxage=")) {
     throw new Error("public catalogue response is missing its shared-cache policy");
   }
   const revalidation = await send("/v1/judoka", { headers: { "if-none-match": etag } }, "any");
+  if (revalidation.headers.get("x-budokon-cache") !== "HIT") {
+    throw new Error("public catalogue revalidation did not report an edge-cache hit");
+  }
   if (revalidation.status !== 304) {
     const diagnosticHeaders = [
       ["ETag", revalidation.headers.get("etag")],
+      ["X-Budokon-Cache", revalidation.headers.get("x-budokon-cache")],
       ["CF-Cache-Status", revalidation.headers.get("cf-cache-status")],
       ["Age", revalidation.headers.get("age")],
       ["CF-Ray", revalidation.headers.get("cf-ray")],

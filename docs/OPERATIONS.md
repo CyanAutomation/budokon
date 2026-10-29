@@ -8,7 +8,9 @@ Monitor:
 * availability and server-error rate (`5xx`);
 * request latency, including p95 and p99;
 * `429` and `503` responses by route and OAuth principal quota, to tune the
-  limiters; and
+  limiters;
+* sampled `rest_cache` structured logs, grouped by `route`, `outcome`, `colo`,
+  and `status`, to measure cache reuse and spot regional misses;
 * deployment identity from `/v1/status` (`datasetVersion`, source commit, and
   checksum), so a rollout serves the intended release.
 
@@ -26,6 +28,13 @@ metadata, discovery/OpenAPI, cache revalidation, pagination, validation errors,
 CORS preflight, and deterministic judoka and event draws. If it fails, treat
 the deployment as unhealthy and investigate before relying on the new release.
 
+Workers Observability persists cache outcome logs at a 5% sampling rate. Each
+sample records the normalized route (record IDs are replaced by `:id`), cache
+outcome (`HIT`, `MISS`, `BYPASS`, `UNAVAILABLE`, or `ERROR`), status, and Cloudflare colo
+when available. Query strings are redacted. Compare hit share by route and colo;
+the response `X-Budokon-Cache` header is also available to synthetic probes and
+is exposed to configured browser origins.
+
 ## Edge response cache
 
 The Cloudflare Worker reads and writes cacheable public `GET /v1/*` responses
@@ -33,7 +42,10 @@ through the Cache API's `caches.default`; cache headers alone are not assumed to
 populate it. Keys contain both the compiled dataset version and manifest source
 commit, plus normalized representation-affecting query parameters. A new data or
 service revision therefore misses old entries without requiring a purge (old
-entries expire under the configured cache policy).
+entries expire under the configured cache policy). Search text and unordered
+filter inputs are canonicalized using the REST query semantics, so equivalent
+search spellings reuse entries without merging malformed scalar queries into
+valid representations.
 
 Only a matching public `If-None-Match` request can bypass quota when a cached
 successful representation exists. Other cache hits pass through rate limiting;
@@ -42,6 +54,13 @@ through rate limiting and REST routing before a conditional `304` is generated.
 This preserves normal `400` and `404` behavior for invalid requests and missing
 records. Authorization-sensitive requests do not use the public cache.
 
+Public REST responses carry `X-Budokon-Cache` with `HIT`, `MISS`, `BYPASS`,
+`UNAVAILABLE`, or `ERROR`. Cache failures are fail-open: the route continues
+after lookup failures, and write failures do not discard a successful route
+response. Both report `ERROR`. The Worker samples structured cache events into
+Observability; the response header lets smoke checks inspect cache outcomes
+without relying on logs.
+
 Only successful responses that the REST layer explicitly marks public are
 stored. Authorization/API-key requests, `includeHidden=true`, non-GET requests,
 errors, and draw routes bypass lookup and storage. Responses enter the cache
@@ -49,7 +68,15 @@ before request-specific CORS headers are applied. Preserve that ordering when
 changing middleware; otherwise an allowlisted `Access-Control-Allow-Origin`
 value could leak across callers. Local and non-Cloudflare deployments have no
 Cache API by default and must inject a compatible cache adapter if edge storage
-is desired.
+is desired. MCP JSON-RPC responses are not shared-cached because authentication,
+protocol state, and tool arguments affect their output. REST and MCP do share
+the catalogue's memoized normalized search terms, which avoid repeating Unicode
+normalization on each text-search request.
+
+Public REST responses advertise a five-minute browser lifetime and a one-day
+shared-cache lifetime. They do not advertise `stale-while-revalidate`: the
+Worker's explicit Cache API `match`/`put` path has no background refresh handler,
+so that directive would promise behavior the Worker does not implement.
 
 ## Rate-limit binding separation
 

@@ -52,6 +52,33 @@ test("dataset and service revisions invalidate edge cache entries", async () => 
   assert.equal(await readPublicCache(cache, request, { ...revision, service: "service-2" }), undefined);
 });
 
+test("search-equivalent public queries share cache identity and ETag validation", async () => {
+  const cache = new MemoryCache();
+  const first = new Request("https://api.test/v1/judoka?q=SH%C5%8CZ%C5%8D%20FUJII&countryCode=JP,FR");
+  const equivalent = new Request("https://api.test/v1/judoka?countryCode=FR&countryCode=JP&q=shozo-fujii");
+
+  assert.equal(publicCacheKey(first, revision)?.url, publicCacheKey(equivalent, revision)?.url);
+  const stored = await writePublicCache(cache, first, new Response("same representation"), revision, { cacheablePublicly: true });
+  const cached = await readPublicCache(cache, new Request(equivalent, {
+    headers: { "if-none-match": stored.headers.get("etag")! },
+  }), revision);
+  assert.equal(cached?.status, 304);
+});
+
+test("canonical cache identity keeps invalid public queries distinct from valid ones", () => {
+  const revision = { dataset: "dataset-1", service: "service-1" };
+  const validSearch = publicCacheKey(new Request("https://api.test/v1/judoka?q=shozo"), revision);
+  const duplicateSearch = publicCacheKey(new Request("https://api.test/v1/judoka?q=shozo&q=fujii"), revision);
+  const validLimit = publicCacheKey(new Request("https://api.test/v1/judoka?limit=1"), revision);
+  const invalidLimit = publicCacheKey(new Request("https://api.test/v1/judoka?limit=01"), revision);
+  const allTechniques = publicCacheKey(new Request("https://api.test/v1/techniques"), revision);
+  const invalidEmptyCategory = publicCacheKey(new Request("https://api.test/v1/techniques?category="), revision);
+
+  assert.notEqual(validSearch?.url, duplicateSearch?.url);
+  assert.notEqual(validLimit?.url, invalidLimit?.url);
+  assert.notEqual(allTechniques?.url, invalidEmptyCategory?.url);
+});
+
 test("cached responses use weak comparison for If-None-Match validators", async () => {
   const cache = new MemoryCache();
   const request = new Request("https://api.test/v1/version");
@@ -76,6 +103,14 @@ test("cached responses use weak comparison for If-None-Match validators", async 
   );
   assert.equal(miss?.status, 200);
   assert.equal(await miss?.text(), "public");
+
+  cache.entries.set(key.url, new Response("comma etag", { headers: { etag: '"opaque,tag"' } }));
+  const quotedCommaValidator = await readPublicCache(
+    cache,
+    new Request(request, { headers: { "if-none-match": '"other,tag", W/"opaque,tag"' } }),
+    revision,
+  );
+  assert.equal(quotedCommaValidator?.status, 304, "commas inside quoted entity tags must not split the validator list");
 });
 
 test("a conditional cache miss stores the successful representation rather than a 304", async () => {
@@ -129,7 +164,8 @@ test("hidden and unsuccessful representations cannot contaminate a public entry"
   assert.equal(await (await readPublicCache(cache, publicRequest, revision))?.text(), "[]");
 });
 
-test("worker uses the injected cache before REST routing and applies CORS after the cached representation", async () => {
+test("worker uses the injected cache before REST routing and applies CORS after the cached representation", async t => {
+  t.mock.method(console, "log", () => {});
   const cache = new MemoryCache();
   const worker = createWorker("openapi: 3.0.0", { cache });
   const env: Env = { API_KEY: "test", PUBLIC_ALLOWED_ORIGINS: "https://allowed.test" };
@@ -137,6 +173,8 @@ test("worker uses the injected cache before REST routing and applies CORS after 
 
   const miss = await worker.fetch(new Request(url, { headers: { origin: "https://allowed.test" } }), env);
   assert.equal(miss.status, 200);
+  assert.equal(miss.headers.get("x-budokon-cache"), "MISS");
+  assert.match(miss.headers.get("access-control-expose-headers") ?? "", /X-Budokon-Cache/);
   assert.equal(miss.headers.get("access-control-allow-origin"), "https://allowed.test");
   assert.equal(cache.puts, 1);
   const key = [...cache.entries.keys()][0];
@@ -146,7 +184,36 @@ test("worker uses the injected cache before REST routing and applies CORS after 
   cache.entries.set(key, new Response("from-cache", { status: 200, headers: stored?.headers }));
 
   const hit = await worker.fetch(new Request(url, { headers: { origin: "https://not-allowed.test" } }), env);
+  assert.equal(hit.headers.get("x-budokon-cache"), "HIT");
   assert.equal(await hit.text(), "from-cache", "the injected cache hit must bypass REST routing");
   assert.equal(hit.headers.get("access-control-allow-origin"), null);
   assert.equal(cache.puts, 1);
+});
+
+test("cache read and write failures fail open without losing the REST response", async () => {
+  const env: Env = {
+    API_KEY: "test",
+    PUBLIC_RATE_LIMITER: { async limit() { return { success: true }; } },
+  };
+  const readFailure = createWorker("openapi: 3.0.0", {
+    cache: {
+      async match() { throw new Error("cache unavailable"); },
+      async put() { throw new Error("should not write after a failed read"); },
+    },
+  });
+  const readResponse = await readFailure.fetch(new Request("https://api.test/v1/version"), env);
+  assert.equal(readResponse.status, 200);
+  assert.equal(readResponse.headers.get("x-budokon-cache"), "ERROR");
+  assert.ok(await readResponse.json());
+
+  const writeFailure = createWorker("openapi: 3.0.0", {
+    cache: {
+      async match() { return undefined; },
+      async put() { throw new Error("cache unavailable"); },
+    },
+  });
+  const writeResponse = await writeFailure.fetch(new Request("https://api.test/v1/version"), env);
+  assert.equal(writeResponse.status, 200);
+  assert.equal(writeResponse.headers.get("x-budokon-cache"), "ERROR");
+  assert.ok(await writeResponse.json());
 });

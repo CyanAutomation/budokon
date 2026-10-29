@@ -4,6 +4,30 @@ import { createFilterService } from "./filter-service.js";
 import { createSearchService } from "./search-service.js";
 import { createMetadataService } from "./metadata-service.js";
 import { normalizeSearchText } from "./catalog-filters.js";
+import type { Technique } from "./types.js";
+
+interface TechniqueSearchSnapshot {
+  source: readonly unknown[];
+  category: string;
+  subCategory: string;
+  values: string[];
+}
+
+const techniqueSearchByRecord = new WeakMap<Technique, TechniqueSearchSnapshot>();
+
+function techniqueSearchSnapshot(technique: Technique): TechniqueSearchSnapshot {
+  const source = [technique.id, technique.name, technique.japanese, technique.description, technique.category, technique.subCategory];
+  const cached = techniqueSearchByRecord.get(technique);
+  if (cached && source.every((value, index) => Object.is(value, cached.source[index]))) return cached;
+  const snapshot = {
+    source,
+    category: normalizeSearchText(technique.category),
+    subCategory: normalizeSearchText(technique.subCategory),
+    values: source.slice(0, 4).map(normalizeSearchText),
+  };
+  techniqueSearchByRecord.set(technique, snapshot);
+  return snapshot;
+}
 
 /**
  * Main catalog service providing access to judoka, techniques, events, and metadata.
@@ -70,11 +94,11 @@ export class CatalogService {
     const categories = stringValues(options.category);
     const subCategories = stringValues(options.subCategory);
     return this.repository.listTechniques().filter(technique => {
-      if (categories.length && !categories.includes(normalizeSearchText(technique.category))) return false;
-      if (subCategories.length && !subCategories.includes(normalizeSearchText(technique.subCategory))) return false;
+      const snapshot = techniqueSearchSnapshot(technique);
+      if (categories.length && !categories.includes(snapshot.category)) return false;
+      if (subCategories.length && !subCategories.includes(snapshot.subCategory)) return false;
       if (!query) return true;
-      return [technique.id, technique.name, technique.japanese, technique.description]
-        .some(value => normalizeSearchText(value).includes(query));
+      return snapshot.values.some(value => value.includes(query));
     });
   }
 
@@ -107,6 +131,3 @@ function stringValues(value: string | string[] | undefined): string[] {
   if (value === undefined) return [];
   return (Array.isArray(value) ? value : [value]).map(normalizeSearchText).filter(Boolean);
 }
-
-// Import types needed for methods
-import type { Technique } from "./types.js";

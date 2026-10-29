@@ -76,6 +76,32 @@ test("display aliases, diacritic-free names, and legacy slugs resolve consistent
   assert.deepEqual(catalog.searchJudoka({ query: "Askley McKenzie" }).map(j => j.slug), ["ashley-mckenzie"]);
 });
 
+test("cached judoka search terms are reused without becoming stale after record updates", () => {
+  const subject = new CatalogService(new JsonReadModelRepository(structuredClone(compiledModel)));
+  const shozo = subject.getJudoka("shozo-fujii");
+  assert.ok(shozo);
+  assert.ok(subject.searchJudoka({ query: "shozo" }).some(record => record.id === shozo.id));
+
+  shozo.slug = "keiko-fujii";
+  shozo.firstname = "Keiko";
+  shozo.aliases = [];
+  assert.equal(subject.searchJudoka({ query: "shozo" }).some(record => record.id === shozo.id), false);
+  assert.ok(subject.searchJudoka({ query: "keiko" }).some(record => record.id === shozo.id));
+});
+
+test("cached technique search terms reflect changed source fields", () => {
+  const subject = new CatalogService(new JsonReadModelRepository(structuredClone(compiledModel)));
+  const seoi = subject.getTechnique("seoi-nage");
+  assert.ok(seoi);
+  assert.ok(subject.searchTechniques({ query: "背負" }).some(record => record.id === seoi.id));
+
+  seoi.japanese = "New Japanese name";
+  seoi.name = "Renamed throw";
+  seoi.description = "A newly named technique.";
+  assert.equal(subject.searchTechniques({ query: "背負" }).some(record => record.id === seoi.id), false);
+  assert.ok(subject.searchTechniques({ query: "renamed" }).some(record => record.id === seoi.id));
+});
+
 test("multi-technique filters match any requested technique across catalog, REST, MCP, and draws", async () => {
   const filters = { signatureMoveIds: ["seoi-nage", "o-soto-gari"] };
   const expected = catalog.listJudoka({ filters }).map(j => j.slug);

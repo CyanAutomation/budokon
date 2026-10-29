@@ -8,6 +8,12 @@ preview_urls = false
 # Configure alerts from these signals as documented in docs/OPERATIONS.md.
 [observability]
 enabled = true
+redact_query_string = true
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 0.05
+invocation_logs = false
 
 [vars]
 # The catalogue contains no private records by default, so any browser game may
