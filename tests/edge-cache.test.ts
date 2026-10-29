@@ -103,6 +103,14 @@ test("cached responses use weak comparison for If-None-Match validators", async 
   );
   assert.equal(miss?.status, 200);
   assert.equal(await miss?.text(), "public");
+
+  cache.entries.set(key.url, new Response("comma etag", { headers: { etag: '"opaque,tag"' } }));
+  const quotedCommaValidator = await readPublicCache(
+    cache,
+    new Request(request, { headers: { "if-none-match": '"other,tag", W/"opaque,tag"' } }),
+    revision,
+  );
+  assert.equal(quotedCommaValidator?.status, 304, "commas inside quoted entity tags must not split the validator list");
 });
 
 test("a conditional cache miss stores the successful representation rather than a 304", async () => {

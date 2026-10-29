@@ -18,10 +18,12 @@ export function weaklyMatchesEtag(ifNoneMatch: string | null, etag: string): boo
     }
   }
 
+  const normalizedEtag = etag.startsWith("W/") ? etag.slice(2) : etag;
   return validators.some(validator => {
     if (validator === "*") return true;
     if (!/^(?:W\/)?"[\x21\x23-\x7e\x80-\xff]*"$/.test(validator)) return false;
-    return (validator.startsWith("W/") ? validator.slice(2) : validator) === etag;
+    const normalizedValidator = validator.startsWith("W/") ? validator.slice(2) : validator;
+    return normalizedValidator === normalizedEtag;
   });
 }
 
