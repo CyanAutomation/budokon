@@ -49,6 +49,13 @@ the normal rate-limit and authorization flow. On `429`, honour
 `Retry-After` before retrying; that response also includes `RateLimit-Limit`
 and `RateLimit-Policy`.
 
+REST responses include `X-Budokon-Cache` to identify the edge-cache outcome:
+`HIT` means a stored representation was found, `MISS` means an eligible request
+had no entry, `BYPASS` means the request is ineligible for public storage, and
+`UNAVAILABLE` means no Cache API adapter is available, while `ERROR` means cache
+storage failed and the REST response was served without it. Configured browser
+origins may read this diagnostic header.
+
 ## Routing errors and CORS
 
 An unknown `/v1` route returns `404` with the JSON error envelope and no

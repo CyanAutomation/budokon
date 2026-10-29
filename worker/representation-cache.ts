@@ -16,7 +16,7 @@ function privateResponse(response: Response): Response {
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
-const PUBLIC_CACHE_CONTROL = "public, max-age=300, s-maxage=86400, stale-while-revalidate=86400";
+const PUBLIC_CACHE_CONTROL = "public, max-age=300, s-maxage=86400";
 
 /** Add shared-cache policy and validators; edge-cache performs Cache API storage before CORS is applied. */
 export async function cachePublicGet(

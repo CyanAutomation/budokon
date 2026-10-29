@@ -1,3 +1,6 @@
+import { normalizeSearchText } from "../src/domain/catalog-filters.js";
+import { queryValues } from "../src/api/query-values.js";
+
 /** Compare an If-None-Match list using weak comparison for GET validators. */
 export function weaklyMatchesEtag(ifNoneMatch: string | null, etag: string): boolean {
   if (ifNoneMatch === null) return false;
@@ -57,9 +60,105 @@ function canonicalRepresentationKey(url: URL): string {
         return segment;
       }
     });
-  const parameterNames = [...new Set(url.searchParams.keys())].sort();
-  const parameters = parameterNames.map(name => [name, url.searchParams.getAll(name)]);
+  const parameters = canonicalQueryParameters(url);
   return JSON.stringify([pathname, parameters]);
+}
+
+const JUDOKA_FILTERS = ["countryCode", "gender", "weightClass", "rarity", "personType", "signatureMoveIds"] as const;
+
+function canonicalQueryParameters(url: URL): Array<[string, string[]]> {
+  const params = new URLSearchParams(url.searchParams);
+  const segments = url.pathname.split("/").filter(Boolean).map(segment => {
+    try {
+      return decodeURIComponent(segment);
+    } catch {
+      return segment;
+    }
+  });
+  if (segments[0] !== "v1") return sortedQuery(params);
+
+  const resource = segments[1];
+  const hasId = segments.length > 2;
+  if (!resource) return sortedQuery(params);
+
+  // These handlers do not inspect query parameters, so they select no variant.
+  if (["countries", "weight-categories", "version", "status", "coverage"].includes(resource)) return [];
+  if (resource === "techniques" && hasId) return [];
+
+  if (resource === "judoka") {
+    if (hasId) {
+      // Lookup accepts only includeHidden; other query parameters produce 400.
+      if ([...params.keys()].some(name => name !== "includeHidden")) return sortedQuery(params);
+      canonicalBoolean(params, "includeHidden");
+    } else {
+      for (const name of JUDOKA_FILTERS) canonicalSet(params, name);
+      canonicalSet(params, "exclude");
+      canonicalSearch(params, "q");
+      canonicalSingle(params, "includeHidden");
+      canonicalPage(params);
+    }
+  } else if (resource === "techniques" && !hasId) {
+    canonicalSearch(params, "q");
+    canonicalSet(params, "category", normalizeSearchText);
+    canonicalSet(params, "subCategory", normalizeSearchText);
+    canonicalPage(params);
+  } else if (resource === "events") {
+    if (hasId) return sortedQuery(params); // Event lookups reject every query parameter.
+    canonicalSingle(params, "ruleset");
+    canonicalSingle(params, "category");
+    canonicalPage(params);
+  }
+
+  return sortedQuery(params);
+}
+
+function sortedQuery(params: URLSearchParams): Array<[string, string[]]> {
+  const names = [...new Set(params.keys())].sort();
+  return names.map(name => [name, params.getAll(name).sort()]);
+}
+
+function canonicalSearch(params: URLSearchParams, name: string): void {
+  if (!params.has(name)) return;
+  const values = queryValues(params, name);
+  if (values.length === 0) params.delete(name);
+  else if (values.length === 1) params.set(name, normalizeSearchText(values[0]));
+  // More than one value is invalid for q; retaining its shape prevents it
+  // from colliding with a valid single-value search before route validation.
+}
+
+function canonicalSet(params: URLSearchParams, name: string, normalize: (value: string) => string = value => value): void {
+  if (!params.has(name)) return;
+  const values = queryValues(params, name);
+  if (values.length === 0) return; // Empty filters are invalid; preserve them as distinct.
+  params.delete(name);
+  for (const value of [...new Set(values.map(normalize))].sort()) params.append(name, value);
+}
+
+function canonicalSingle(params: URLSearchParams, name: string): void {
+  if (!params.has(name)) return;
+  const values = queryValues(params, name);
+  if (values.length === 1) params.set(name, values[0]);
+  // Repeated scalar values stay distinct because the route rejects them.
+}
+
+function canonicalBoolean(params: URLSearchParams, name: string): void {
+  if (!params.has(name)) return;
+  const values = queryValues(params, name);
+  if (values.length === 0) params.delete(name);
+  else if (values.length === 1 && (values[0] === "true" || values[0] === "false")) params.set(name, values[0]);
+}
+
+function canonicalPage(params: URLSearchParams): void {
+  if (params.has("limit")) {
+    const values = queryValues(params, "limit");
+    if (values.length === 1 && /^(?:[1-9]|[1-9][0-9]|100)$/.test(values[0])) params.set("limit", values[0]);
+  }
+  canonicalSingle(params, "cursor");
+}
+
+/** Query identity shared by edge keys and ETags; only valid-equivalent forms collapse. */
+export function canonicalRepresentationQuery(url: URL): Array<[string, string[]]> {
+  return canonicalQueryParameters(url);
 }
 
 export async function representationEtag(datasetVersion: string, representationRevision: string, request: Request): Promise<string> {
