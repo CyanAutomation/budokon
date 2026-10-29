@@ -15,6 +15,7 @@ export function corsHeaders(request: Request, env: PublicEnv): Headers {
     "access-control-allow-origin": allowed.has("*") ? "*" : origin,
     "access-control-allow-methods": METHODS,
     "access-control-allow-headers": HEADERS,
+    "access-control-expose-headers": "ETag, Cache-Control, X-Budokon-Cache",
     "access-control-max-age": "86400",
     ...(allowed.has("*") ? {} : { vary: "Origin" })
   });

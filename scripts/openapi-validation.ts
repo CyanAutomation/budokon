@@ -120,12 +120,17 @@ function validateVisibilityOperations(document: unknown): void {
 
 function validateResponseHeaders(document: unknown): void {
   const notModifiedHeaders = asObject(valueAt(document, "components", "responses", "NotModified", "headers")) ?? {};
-  assertEqual(Object.keys(notModifiedHeaders).sort(), ["Cache-Control", "ETag"].sort(), "NotModified response headers");
+  assertEqual(Object.keys(notModifiedHeaders).sort(), ["Cache-Control", "ETag", "X-Budokon-Cache"].sort(), "NotModified response headers");
+  assertEqual(
+    valueAt(document, "components", "headers", "BudokonCache", "schema", "enum"),
+    ["HIT", "MISS", "BYPASS", "UNAVAILABLE", "ERROR"],
+    "X-Budokon-Cache values",
+  );
 
   const rateLimitedHeaders = asObject(valueAt(document, "components", "responses", "RateLimited", "headers")) ?? {};
   assertEqual(
     Object.keys(rateLimitedHeaders).sort(),
-    ["RateLimit-Limit", "RateLimit-Policy", "Retry-After"].sort(),
+    ["RateLimit-Limit", "RateLimit-Policy", "Retry-After", "X-Budokon-Cache"].sort(),
     "RateLimited response headers",
   );
 }

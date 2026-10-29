@@ -14,6 +14,7 @@ const request = (origin?: string, init: RequestInit = {}): Request => {
 test("CORS returns headers only for exact configured origins", () => {
   const headers = corsHeaders(request("https://game.example"), env);
   assert.equal(headers.get("access-control-allow-origin"), "https://game.example");
+  assert.match(headers.get("access-control-expose-headers") ?? "", /X-Budokon-Cache/);
   assert.equal(headers.get("vary"), "Origin");
   assert.equal(corsHeaders(request("https://evil.example"), env).get("access-control-allow-origin"), null);
   assert.equal(corsHeaders(request(), env).get("access-control-allow-origin"), null);
@@ -134,7 +135,7 @@ test("representation validators canonicalize query parameter ordering", async ()
   assert.equal(reordered, first);
 });
 
-test("representation validators distinguish representation parameters and ordered repeated values", async () => {
+test("representation validators distinguish values that change responses and normalize set inputs", async () => {
   const etag = (query: string) => representationEtag(
     "2026.08.1",
     "revision-a",
@@ -142,10 +143,15 @@ test("representation validators distinguish representation parameters and ordere
   );
 
   assert.notEqual(await etag("countryCode=JP"), await etag("countryCode=FR"));
-  assert.notEqual(
+  assert.equal(
     await etag("exclude=judoka-a&exclude=judoka-b"),
     await etag("exclude=judoka-b&exclude=judoka-a"),
   );
+  assert.equal(
+    await etag("countryCode=JP,FR&q=SH%C5%8DZ%C5%8D%20FUJII"),
+    await etag("q=shozo-fujii&countryCode=FR&countryCode=JP"),
+  );
+  assert.notEqual(await etag("q=shozo"), await etag("q=shozo&q=fujii"));
 });
 
 test("authorization-sensitive responses are private and never reuse public validators", async () => {

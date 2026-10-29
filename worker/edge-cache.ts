@@ -1,4 +1,5 @@
 import { cachePublicGet, type RepresentationCacheability } from "./representation-cache.js";
+import { canonicalRepresentationQuery } from "./representation-identity.js";
 import type { EdgeCacheStorage } from "./edge-cache-types.js";
 
 export interface EdgeCacheRevision {
@@ -24,15 +25,18 @@ function isPrivateRequest(request: Request): boolean {
     || url.searchParams.getAll("includeHidden").includes("true");
 }
 
+export function isPublicCacheEligible(request: Request): boolean {
+  return !isPrivateRequest(request);
+}
+
 /**
- * Construct an origin-independent key. Query names and values are sorted because
- * the REST API treats repeated filter values as sets rather than ordered input.
+ * Construct an origin-independent key. Query normalization follows the REST
+ * route semantics while preserving invalid scalar shapes for normal validation.
  */
 export function publicCacheKey(request: Request, revision: EdgeCacheRevision): Request | undefined {
-  if (isPrivateRequest(request)) return undefined;
+  if (!isPublicCacheEligible(request)) return undefined;
   const source = new URL(request.url);
-  const query = [...source.searchParams.entries()].sort(([leftName, leftValue], [rightName, rightValue]) =>
-    leftName < rightName ? -1 : leftName > rightName ? 1 : leftValue < rightValue ? -1 : leftValue > rightValue ? 1 : 0);
+  const query = canonicalRepresentationQuery(source).flatMap(([name, values]) => values.map(value => [name, value] as const));
   const key = new URL(source.origin);
   key.pathname = source.pathname;
   for (const [name, value] of query) key.searchParams.append(name, value);
@@ -74,6 +78,7 @@ export async function writePublicCache(
   response: Response,
   revision: EdgeCacheRevision,
   metadata: RepresentationCacheability,
+  onCacheError?: () => void,
 ): Promise<Response> {
   const key = publicCacheKey(request, revision);
   const cacheable = cache !== undefined && key !== undefined && response.status === 200 && metadata.cacheablePublicly;
@@ -91,9 +96,17 @@ export async function writePublicCache(
         revision.service,
         metadata,
       );
-      await cache.put(key, successfulRepresentation);
+      try {
+        await cache.put(key, successfulRepresentation);
+      } catch {
+        onCacheError?.();
+      }
     } else {
-      await cache.put(key, decorated.clone());
+      try {
+        await cache.put(key, decorated.clone());
+      } catch {
+        onCacheError?.();
+      }
     }
   }
   return decorated;
