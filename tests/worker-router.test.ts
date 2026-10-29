@@ -12,7 +12,8 @@ test("assembled worker exposes exactly the public judoka catalogue without crede
   const response = await worker.fetch(request, mockEnv);
   assert.equal(response.status, 200);
   assert.equal(response.headers.get("content-type"), "application/json; charset=utf-8");
-  assert.equal(response.headers.get("cache-control"), "public, max-age=300, s-maxage=86400, stale-while-revalidate=86400");
+  assert.equal(response.headers.get("x-budokon-cache"), "UNAVAILABLE");
+  assert.equal(response.headers.get("cache-control"), "public, max-age=300, s-maxage=86400");
   assert.match(response.headers.get("etag") ?? "", /^"budokon-/);
 
   const validatorIdentity = JSON.stringify([
@@ -42,7 +43,7 @@ test("public coverage is included in public representation caching", async () =>
   const response = await worker.fetch(new Request("https://example.test/v1/coverage/public"), mockEnv);
   assert.equal(response.status, 200);
   assert.match(response.headers.get("etag") ?? "", /^"budokon-/);
-  assert.equal(response.headers.get("cache-control"), "public, max-age=300, s-maxage=86400, stale-while-revalidate=86400");
+  assert.equal(response.headers.get("cache-control"), "public, max-age=300, s-maxage=86400");
   const body = await response.json() as Record<string, unknown>;
   assert.equal("hidden" in body, false);
   assert.equal("total" in body, false);
@@ -100,7 +101,8 @@ test("matching cached public revalidation bypasses quota, while sensitive reques
   assert.equal(notModified.status, 304);
   assert.equal(await notModified.text(), "");
   assert.equal(notModified.headers.get("etag"), etag);
-  assert.equal(notModified.headers.get("cache-control"), "public, max-age=300, s-maxage=86400, stale-while-revalidate=86400");
+  assert.equal(notModified.headers.get("cache-control"), "public, max-age=300, s-maxage=86400");
+  assert.equal(notModified.headers.get("x-budokon-cache"), "HIT");
   assert.equal(notModified.headers.get("vary"), "Origin");
   assert.equal(notModified.headers.get("access-control-allow-origin"), "https://example.com");
   assert.equal(limiterCalls.length, 1, "only matching cached revalidation may bypass public quota");
@@ -117,6 +119,7 @@ test("matching cached public revalidation bypasses quota, while sensitive reques
   }), env);
   assert.equal(credentialed.status, 200);
   assert.equal(credentialed.headers.get("etag"), null);
+  assert.equal(credentialed.headers.get("x-budokon-cache"), "BYPASS");
   assert.equal(credentialed.headers.get("cache-control"), "private, no-store");
 
   const hidden = await createWorker("openapi: 3.0.0", { cache: null }).fetch(new Request(`${url}?includeHidden=true`, {
@@ -124,6 +127,7 @@ test("matching cached public revalidation bypasses quota, while sensitive reques
   }), env);
   assert.equal(hidden.status, 403);
   assert.equal(hidden.headers.get("etag"), null);
+  assert.equal(hidden.headers.get("x-budokon-cache"), "BYPASS");
   assert.equal(hidden.headers.get("cache-control"), "private, no-store");
   assert.equal(limiterCalls.length, 4, "credentialed and hidden-record requests must retain normal quota handling");
 });

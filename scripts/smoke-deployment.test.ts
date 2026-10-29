@@ -56,8 +56,8 @@ test("smoke deployment validates release identity, cache behavior, pagination, a
     }],
     ["GET /", () => Response.json({ openapi: `${base}/openapi/v1.yaml`, status: `${base}/v1/status` })],
     ["GET /openapi/v1.yaml", () => new Response("/v1/status:")],
-    ["GET /v1/judoka", () => new Response("[]", { headers: { etag: '"versioned"', "cache-control": "public, s-maxage=300" } })],
-    ["GET /v1/judoka#revalidate", () => new Response(null, { status: 304 })],
+    ["GET /v1/judoka", () => new Response("[]", { headers: { etag: '"versioned"', "cache-control": "public, s-maxage=300", "x-budokon-cache": "MISS" } })],
+    ["GET /v1/judoka#revalidate", () => new Response(null, { status: 304, headers: { "x-budokon-cache": "HIT" } })],
     ["GET /v1/judoka?q=shozo&limit=1", () => Response.json({ judoka: [{ slug: "shozo-fujii" }] })],
     ["GET /v1/judoka?limit=1", () => Response.json({ judoka: [{ slug: "first" }], nextCursor: "next" })],
     ["GET /v1/judoka?limit=1&cursor=next", () => Response.json({ judoka: [{ slug: "next" }] })],
@@ -115,11 +115,12 @@ test("smoke deployment reports conditional-cache headers when a matching ETag re
     if (url.pathname === "/") return Response.json({ openapi: `${base}/openapi/v1.yaml`, status: `${base}/v1/status` });
     if (url.pathname === "/openapi/v1.yaml") return new Response("/v1/status:");
     if (url.pathname === "/v1/judoka" && !new Headers(init?.headers).has("if-none-match")) {
-      return new Response("[]", { headers: { etag: '"versioned"', "cache-control": "public, s-maxage=300" } });
+      return new Response("[]", { headers: { etag: '"versioned"', "cache-control": "public, s-maxage=300", "x-budokon-cache": "MISS" } });
     }
     if (url.pathname === "/v1/judoka") {
       return new Response("[]", { headers: {
         etag: '"versioned"',
+        "x-budokon-cache": "HIT",
         "cf-cache-status": "HIT",
         age: "12",
         "cf-ray": "ray-id-LHR",
