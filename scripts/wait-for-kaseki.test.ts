@@ -3,9 +3,9 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { main, waitForKasekiRun } from "./wait-for-kaseki.js";
+import { DEFAULT_MAX_POLLS, DEFAULT_POLL_INTERVAL_MS, main, waitForKasekiRun } from "./wait-for-kaseki.js";
 
-test("default Kaseki polling stops after the 185-minute window", async () => {
+test("default Kaseki polling stops after its configured retry window", async () => {
   const polls: Array<{ attempt: number; maxPolls: number }> = [];
   const sleepIntervals: number[] = [];
 
@@ -16,14 +16,14 @@ test("default Kaseki polling stops after the 185-minute window", async () => {
     requestStatus: async () => ({ status: "running" }),
     sleep: async milliseconds => { sleepIntervals.push(milliseconds); },
     onPoll: (_status, attempt, maxPolls) => { polls.push({ attempt, maxPolls }); },
-  }), /No terminal status after 38 polls/u);
+  }), new RegExp(`No terminal status after ${DEFAULT_MAX_POLLS} polls`, "u"));
 
-  assert.equal(polls.length, 38);
-  assert.deepEqual(polls[0], { attempt: 1, maxPolls: 38 });
-  assert.deepEqual(polls.at(-1), { attempt: 38, maxPolls: 38 });
-  assert.equal(sleepIntervals.length, 37);
-  assert.ok(sleepIntervals.every(milliseconds => milliseconds === 5 * 60 * 1000));
-  assert.equal(sleepIntervals.reduce((total, milliseconds) => total + milliseconds, 0), 185 * 60 * 1000);
+  assert.equal(polls.length, DEFAULT_MAX_POLLS);
+  assert.deepEqual(polls[0], { attempt: 1, maxPolls: DEFAULT_MAX_POLLS });
+  assert.deepEqual(polls.at(-1), { attempt: DEFAULT_MAX_POLLS, maxPolls: DEFAULT_MAX_POLLS });
+  assert.equal(sleepIntervals.length, DEFAULT_MAX_POLLS - 1);
+  assert.ok(sleepIntervals.every(milliseconds => milliseconds === DEFAULT_POLL_INTERVAL_MS));
+  assert.equal(sleepIntervals.reduce((total, milliseconds) => total + milliseconds, 0), (DEFAULT_MAX_POLLS - 1) * DEFAULT_POLL_INTERVAL_MS);
 });
 
 test("polls queued and running runs until completion", async () => {
@@ -186,19 +186,16 @@ test("does not retry permanent Kaseki HTTP errors", async () => {
   }
 });
 
-test("treats the expected empty diff as a successful no-op", async () => {
-  const result = await waitForKasekiRun({
+test("expected empty diffs succeed while other terminal errors fail", async () => {
+  const noChanges = await waitForKasekiRun({
     apiBaseUrl: "https://kaseki.example/api/v1",
     token: "test-token",
     runId: "run_123",
     requestStatus: async () => ({ status: "failed", failureClass: "empty-diff" }),
     sleep: async () => assert.fail("a terminal result should not sleep"),
   });
+  assert.equal(noChanges, "no_changes");
 
-  assert.equal(result, "no_changes");
-});
-
-test("fails on a terminal Kaseki error", async () => {
   await assert.rejects(waitForKasekiRun({
     apiBaseUrl: "https://kaseki.example/api/v1",
     token: "test-token",

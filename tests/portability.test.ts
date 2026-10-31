@@ -40,7 +40,8 @@ function importedSpecifiers(source: string, file: string): string[] {
   return specifiers;
 }
 
-test("runtime import scanner detects ESM, dynamic, and CommonJS imports", () => {
+/** @see ../package-boundaries.json#sourcePackageRule */
+test("runtime boundary scanner recognizes static, dynamic, and CommonJS loading", () => {
   const source = [
     'import fs from "node:fs";',
     'export { readFile } from "node:fs/promises";',

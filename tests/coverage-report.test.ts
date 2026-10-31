@@ -76,7 +76,23 @@ test('coverage summary reports the visible catalogue and its balance', () => {
   });
 });
 
-test('coverage report and policy violations use their respective channels', (t) => {
+/** @see ../README.md#editorial-coverage-and-rarity-policy */
+test('coverage summaries omit missing and non-string categories while keeping stable counts', () => {
+  const summary = summarizeCoverage([
+    { personType: 'real', isHidden: false, gender: 'female', countryCode: 'JP' },
+    { personType: 'real', isHidden: false, gender: 'female', countryCode: 'FR' },
+    { personType: 'real', isHidden: false, gender: 'female', countryCode: 'JP' },
+    { personType: 'real', isHidden: false, gender: 'female', countryCode: '' },
+    { personType: 'real', isHidden: false, gender: 'female', countryCode: null },
+    { personType: 'real', isHidden: false, gender: 'female', countryCode: 42 },
+  ]);
+
+  assert.deepEqual(summary.byCountry, { FR: 1, JP: 2 });
+  assert.deepEqual(Object.keys(summary.byCountry), ['FR', 'JP']);
+});
+
+/** @see ../README.md#editorial-coverage-and-rarity-policy */
+test('coverage report returns failure and reports policy violations separately', (t) => {
   const summary = summarizeCoverage([]);
   const weights = [{ gender: 'female', categories: [{ weight: '-48' }, { weight: '-52' }] }];
   const log = t.mock.fn<(message: string) => void>();
@@ -85,12 +101,14 @@ test('coverage report and policy violations use their respective channels', (t) 
     log,
     error,
   });
+  const violations = coverageViolations(summary, weights);
 
   assert.equal(satisfied, false);
+  assert.ok(violations.some(violation => violation.includes('public real catalogue has 0; need at least 20')));
   assert.equal(log.mock.callCount(), 1);
   assert.equal(error.mock.callCount(), 1);
   assert.match(log.mock.calls[0].arguments[0], /Total judoka: 0/);
-  assert.match(error.mock.calls[0].arguments[0], /public real catalogue has 0; need at least 20/);
+  assert.ok(violations.every(violation => error.mock.calls[0].arguments[0].includes(violation)));
 });
 
 /** @see ../README.md#editorial-coverage-and-rarity-policy */
