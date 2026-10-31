@@ -208,24 +208,36 @@ test("release command writes a plan for the exact workflow commit without publis
   assert.match(messages[0] ?? "", /^Dry run: v1\.3\.0 \(minor\)/);
 });
 
-test("release command reports a no-release workflow plan", async t => {
-  const root = await createReleaseRepository(t, ["docs: clarify the release fixture"]);
-  const outputFile = path.join(root, "workflow-output.txt");
-  const messages: string[] = [];
+test("release command reports no-release outputs in plan-only and publish modes", async t => {
+  const planRoot = await createReleaseRepository(t, ["docs: clarify the release fixture"]);
+  const planOutputFile = path.join(planRoot, "workflow-output.txt");
+  const planMessages: string[] = [];
 
   await runReleaseCommand({
-    environment: { GITHUB_SHA: "fedcba9876543210fedcba9876543210fedcba98", GITHUB_OUTPUT: outputFile },
+    environment: { GITHUB_SHA: "fedcba9876543210fedcba9876543210fedcba98", GITHUB_OUTPUT: planOutputFile },
     args: ["--plan-only"],
-    root,
-    log(message) { messages.push(message); },
+    root: planRoot,
+    log(message) { planMessages.push(message); },
   });
 
-  assert.deepEqual(JSON.parse(await readFile(path.join(root, "release-plan.json"), "utf8")), {
+  assert.deepEqual(JSON.parse(await readFile(path.join(planRoot, "release-plan.json"), "utf8")), {
     releaseRequired: false,
     targetCommit: "fedcba9876543210fedcba9876543210fedcba98",
   });
-  assert.equal(await readFile(outputFile, "utf8"), "release_required=false\nversion=\n");
-  assert.deepEqual(messages, ["No release-worthy Conventional Commits found."]);
+  assert.equal(await readFile(planOutputFile, "utf8"), "release_required=false\nversion=\n");
+  assert.deepEqual(planMessages, ["No release-worthy Conventional Commits found."]);
+
+  const publishRoot = await createReleaseRepository(t, ["docs: clarify the release fixture"]);
+  const publishOutputFile = path.join(publishRoot, "workflow-output.txt");
+  const publishMessages: string[] = [];
+  await runReleaseCommand({
+    environment: { GITHUB_OUTPUT: publishOutputFile },
+    args: [],
+    root: publishRoot,
+    log(message) { publishMessages.push(message); },
+  });
+  assert.equal(await readFile(publishOutputFile, "utf8"), "released=false\nversion=\ndry_run=false\n");
+  assert.deepEqual(publishMessages, ["No release-worthy Conventional Commits found."]);
 });
 
 test("release command dry-run does not publish and reports workflow outputs", async t => {
@@ -276,20 +288,4 @@ test("release command delegates publishing and records a successful release", as
 
   assert.equal(publishedVersion, "1.2.4");
   assert.equal(await readFile(outputFile, "utf8"), "released=true\nversion=1.2.4\ndry_run=false\n");
-});
-
-test("release command reports no-release output without creating a plan", async t => {
-  const root = await createReleaseRepository(t, ["docs: clarify the release fixture"]);
-  const outputFile = path.join(root, "workflow-output.txt");
-  const messages: string[] = [];
-
-  await runReleaseCommand({
-    environment: { GITHUB_OUTPUT: outputFile },
-    args: [],
-    root,
-    log(message) { messages.push(message); },
-  });
-
-  assert.equal(await readFile(outputFile, "utf8"), "released=false\nversion=\ndry_run=false\n");
-  assert.deepEqual(messages, ["No release-worthy Conventional Commits found."]);
 });

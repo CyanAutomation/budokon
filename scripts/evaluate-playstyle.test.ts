@@ -63,7 +63,7 @@ test("playstyle evaluation reports per-facet accuracy and abstention accuracy", 
   assert.throws(() => scorePlaystyleEvaluation(fixtures, results.slice(1)), /counts must match/u);
 });
 
-test("playstyle report summarizes model, per-facet accuracy, usage, and non-gating status", async () => {
+test("playstyle evaluation report includes accuracy, usage, and its evaluation limits", async () => {
   const fixtures = JSON.parse(await readFile(new URL("../tests/fixtures/playstyle-evaluation.json", import.meta.url), "utf8")) as PlaystyleEvaluationFixture[];
   const results = fixtures.map(resultFor);
   const first = fixtures[0];
@@ -79,6 +79,7 @@ test("playstyle report summarizes model, per-facet accuracy, usage, and non-gati
   assert.match(report, /tacticalStyle \| 3 \| 4 \| 75\.0%/u);
   assert.match(report, /80 input tokens, 32 output tokens/u);
   assert.match(report, /non-gating/u);
+  assert.match(report, /does not estimate real-world athlete classification accuracy/u);
 });
 
 test("injected playstyle evaluation classifies every fixture and writes one report", async () => {
