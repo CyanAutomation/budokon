@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { request, runSmokeDeployment } from "./smoke-deployment.js";
 
-test("smoke request accepts successful responses and an explicitly expected status", async () => {
+test("smoke requests accept documented statuses and report failures with endpoint context", async () => {
   const ok = await request("https://example.test", "/status", undefined, undefined, async () => new Response("ok"));
   assert.equal(ok.status, 200);
   assert.equal(await ok.text(), "ok");
@@ -10,16 +10,10 @@ test("smoke request accepts successful responses and an explicitly expected stat
   const notModified = await request("https://example.test", "/catalog", undefined, 304, async () => new Response(null, { status: 304 }));
   assert.equal(notModified.status, 304);
   assert.equal(await notModified.text(), "");
-});
-
-test("smoke request reports unexpected HTTP statuses", async () => {
   await assert.rejects(request("https://example.test", "/status", undefined, undefined,
     async () => new Response("bad", { status: 503 })), /\/status returned 503/);
   await assert.rejects(request("https://example.test", "/catalog", undefined, 304,
     async () => new Response(null, { status: 200 })), /\/catalog returned 200, expected 304/);
-});
-
-test("smoke request adds endpoint context to network failures and preserves unexpected errors", async () => {
   const networkFailure = new TypeError("fetch failed");
   await assert.rejects(
     request("https://example.test", "/status", undefined, undefined, async () => { throw networkFailure; }),
