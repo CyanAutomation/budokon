@@ -225,7 +225,7 @@ test("MCP authentication boundary rejects unauthenticated GET and POST without d
 
   assert.equal(authenticatedResponse.status, 405);
   assert.equal(authenticatedResponse.headers.get("content-type"), "application/json");
-  assert.equal(authenticatedResponse.headers.get("allow"), null);
+  assert.equal(authenticatedResponse.headers.get("allow"), "POST");
   const methodError = await mcpJson(authenticatedResponse);
   assert.equal(methodError.jsonrpc, "2.0");
   assert.equal(methodError.error.code, -32000);
