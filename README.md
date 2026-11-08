@@ -140,7 +140,7 @@ data. BU-DO-KON owns reusable catalogue content.
 
 ## Develop locally
 
-Prerequisites: Node.js `^24.10.0` and npm. From the repository root:
+Prerequisites: Node.js 26 (see .nvmrc) and npm. From the repository root:
 
 ```sh
 npm ci

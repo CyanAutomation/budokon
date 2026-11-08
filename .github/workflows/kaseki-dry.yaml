@@ -43,7 +43,7 @@ jobs:
       # Adjust these paths for each repository.
       ALLOWLIST: src/**/*,scripts/**/*,test/**/*,tests/**/*
 
-      VALIDATION_COMMAND: node -e 'const [major, minor] = process.versions.node.split(".").map(Number); if (major !== 24 || minor < 10) process.exit(1)' && npm run check
+      VALIDATION_COMMAND: node -e 'const [major] = process.versions.node.split(".").map(Number); if (major !== 26) process.exit(1)' && npm run check
 
     steps:
       - name: Check out trusted main-branch helper
@@ -51,10 +51,10 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Node 24
+      - name: Set up Node 26
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: "24"
+          node-version-file: .nvmrc
 
       - name: Check required tools
         shell: bash

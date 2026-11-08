@@ -46,16 +46,19 @@ function containsRetryAllErrorsOption(run: string): boolean {
   return /--retry-all-errors/u.test(run);
 }
 
-test("Node 24 is the supported runtime and every workflow uses it", async () => {
+test("Node 26 is the supported runtime and every workflow uses the shared version file", async () => {
   const packageJson = JSON.parse(await readFile(path.join(repositoryRoot, "package.json"), "utf8")) as {
     engines: { node: string };
   };
   const packageLock = JSON.parse(await readFile(path.join(repositoryRoot, "package-lock.json"), "utf8")) as {
     packages: { "": { engines: { node: string } } };
   };
+  const readme = await readFile(path.join(repositoryRoot, "README.md"), "utf8");
 
-  assert.equal(packageJson.engines.node, "^24.10.0");
+  assert.equal(packageJson.engines.node, "^26.0.0");
   assert.equal(packageLock.packages[""].engines.node, packageJson.engines.node);
+  assert.equal((await readFile(path.join(repositoryRoot, ".nvmrc"), "utf8")).trim(), "26");
+  assert.match(readme, /Prerequisites: Node\.js 26 .*\.nvmrc.* and npm/u);
 
   const workflowDirectory = path.join(repositoryRoot, ".github", "workflows");
   const workflowFiles = (await readdir(workflowDirectory)).filter(file => /\.ya?ml$/u.test(file));
@@ -63,7 +66,8 @@ test("Node 24 is the supported runtime and every workflow uses it", async () => 
     const { document } = await readWorkflow(fileName);
     for (const job of Object.values(document.jobs)) {
       for (const step of job.steps.filter(candidate => candidate.uses?.startsWith("actions/setup-node@"))) {
-        assert.equal(String(step.with?.["node-version"]), "24", `${fileName} must use Node 24`);
+        assert.equal(String(step.with?.["node-version-file"]), ".nvmrc", `${fileName} must use .nvmrc`);
+        assert.equal(step.with?.["node-version"], undefined, `${fileName} must not duplicate the Node version`);
       }
     }
   }
@@ -322,15 +326,15 @@ test("Kaseki sweeps do not persist checkout credentials", async () => {
   }
 });
 
-test("Kaseki sweep validation checks the supported Node runtime before repository checks", async () => {
+test("Kaseki sweep validation checks the supported Node major before repository checks", async () => {
   const docs = await readWorkflow("kaseki-docs.yaml");
   const dry = await readWorkflow("kaseki-dry.yaml");
   for (const command of [
     String(docs.document.env?.VALIDATION_COMMAND),
     String(dry.document.jobs.dry_sweep.env?.VALIDATION_COMMAND),
   ]) {
-    assert.match(command, /major !== 24/u);
-    assert.match(command, /minor < 10/u);
+    assert.match(command, /major !== 26/u);
+    assert.doesNotMatch(command, /minor\s*</u);
     assert.match(command, /npm run check/u);
   }
 });

@@ -20,7 +20,7 @@ env:
   REF: main
   TASK_DESCRIPTION: Keep README.md and docs/ accurate against the current implementation.
   ALLOWLIST: README.md,docs/**/*.md
-  VALIDATION_COMMAND: node -e 'const [major, minor] = process.versions.node.split(".").map(Number); if (major !== 24 || minor < 10) process.exit(1)' && npm run check
+  VALIDATION_COMMAND: node -e 'const [major] = process.versions.node.split(".").map(Number); if (major !== 26) process.exit(1)' && npm run check
 
 jobs:
   system_status:
@@ -65,10 +65,10 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Node 24
+      - name: Set up Node 26
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: "24"
+          node-version-file: .nvmrc
 
       - name: Verify controller readiness
         run: node scripts/check-kaseki.ts readiness
@@ -90,10 +90,10 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Node 24
+      - name: Set up Node 26
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: "24"
+          node-version-file: .nvmrc
 
       - name: Verify Kaseki API readiness
         env:
@@ -117,10 +117,10 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Node 24
+      - name: Set up Node 26
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: "24"
+          node-version-file: .nvmrc
 
       - name: Check required tools
         shell: bash
