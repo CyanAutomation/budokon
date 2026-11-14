@@ -14,10 +14,14 @@ concurrency:
 
 jobs:
   build:
-    # Validate the default branch before requesting production approval.
+    # Validate the default branch before deployment credentials are available.
     if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && github.ref_protected
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -46,6 +50,11 @@ jobs:
       - name: Run tests
         run: npm run test
 
+      - name: Attest deployment dataset provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: dist/*.json
+
       - name: Compile runtime TypeScript
         run: npm run build:runtime
 
@@ -72,9 +81,12 @@ jobs:
     if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && github.ref_protected
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Restrict the production environment to the default branch in repository settings.
+    permissions:
+      contents: read
+      attestations: read
+    # Restrict the cloudflare environment to the default branch in repository settings.
     environment:
-      name: production
+      name: cloudflare
       url: ${{ vars.CLOUDFLARE_DEPLOYMENT_URL }}
 
     steps:
@@ -95,6 +107,23 @@ jobs:
           name: cloudflare-deployment-dataset
           path: dist
 
+      - name: Verify deployment artifact provenance
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          artifacts=(dist/*.json)
+          ((${#artifacts[@]} > 0))
+          for artifact in "${artifacts[@]}"; do
+            gh attestation verify "$artifact" \
+              --repo "$GITHUB_REPOSITORY" \
+              --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/deploy-cloudflare.yml" \
+              --source-ref "refs/heads/$DEFAULT_BRANCH"
+          done
+
       - name: Re-verify downloaded deployment dataset
         run: npm run check-artifacts
         env:
@@ -104,13 +133,13 @@ jobs:
         run: npm run deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Validate and identify deployed public target
         run: npm run validate:deployment-target
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           DEPLOYMENT_URL: ${{ vars.CLOUDFLARE_DEPLOYMENT_URL }}
 
       - name: Smoke-test deployed public API

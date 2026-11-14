@@ -136,9 +136,9 @@ const completeReleaseWorkflow = `jobs:
   release:
     needs: build
     steps:
-      - uses: softprops/action-gh-release@v2
-        with:
-          files: |
+      - name: Create GitHub release
+        run: |
+          release_assets=(
             dist/budokon.json
             dist/countries.json
             dist/events.json
@@ -146,6 +146,8 @@ const completeReleaseWorkflow = `jobs:
             dist/manifest.json
             dist/techniques.json
             dist/weight-categories.json
+          )
+          gh release create "$RELEASE_TAG" "\${release_assets[@]}"
 `;
 
 async function createArtifactWorkflowFixture(
