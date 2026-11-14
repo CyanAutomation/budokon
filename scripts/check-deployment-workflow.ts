@@ -122,20 +122,13 @@ function stepInvokingNpmScript(job: string, scriptName: string): string | undefi
 }
 
 function releaseUploadFiles(job: string): string[] | undefined {
-  const lines = job.split(/\r?\n/);
-  const uploadIndex = lines.findIndex(line => /^\s*-\s+uses:\s*softprops\/action-gh-release@/.test(line));
-  if (uploadIndex < 0) return undefined;
-  const stepIndent = lines[uploadIndex].match(/^\s*/)?.[0].length ?? 0;
-  const end = lines.findIndex(
-    (line, index) => index > uploadIndex && new RegExp(`^\\s{${stepIndent}}-\\s`).test(line),
-  );
-  const step = lines.slice(uploadIndex, end < 0 ? undefined : end);
-  const filesIndex = step.findIndex(line => /^\s+files:\s*(?:[|>][-+]?\s*)?$/.test(line));
-  if (filesIndex < 0) return [];
-  const filesIndent = step[filesIndex].match(/^\s*/)?.[0].length ?? 0;
-  return step
-    .slice(filesIndex + 1)
-    .filter(line => (line.match(/^\s*/)?.[0].length ?? 0) > filesIndent)
+  const releaseStep = job.split(/(?=^ {6}-\s)/m).find(step => /\bgh\s+release\s+create\b/.test(step));
+  if (!releaseStep) return undefined;
+  if (!/\$\{release_assets\[@\]\}/u.test(releaseStep)) return [];
+  const assets = releaseStep.match(/release_assets=\(([\s\S]*?)\)/u)?.[1];
+  if (assets === undefined) return [];
+  return assets
+    .split(/\r?\n/)
     .map(line => line.trim())
     .filter(line => line !== "" && !line.startsWith("#"));
 }
@@ -175,7 +168,7 @@ export async function checkDeploymentReleaseArtifacts(repositoryRoot: string): P
   if (!uploadedFiles) {
     throw new DeploymentWorkflowValidationError(
       "missing-release-upload",
-      "Release job does not contain a softprops/action-gh-release upload step",
+      "Release job does not contain a gh release create upload step",
       { workflowPath: releasePath },
     );
   }

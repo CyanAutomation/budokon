@@ -24,6 +24,7 @@ interface WorkflowJob {
 }
 
 interface Workflow {
+  on?: Record<string, unknown>;
   permissions?: Record<string, string>;
   env?: Record<string, unknown>;
   jobs: Record<string, WorkflowJob>;
@@ -117,23 +118,27 @@ test("read-only validation and deployment checkouts do not retain GitHub credent
   }
 });
 
-test("production deployment requires the protected default branch", async () => {
+test("Cloudflare deployment requires the protected default branch and cloudflare environment", async () => {
   const { document } = await readWorkflow("deploy-cloudflare.yml");
   const deploy = document.jobs.deploy;
 
   assert.match(deploy.if ?? "", /github\.event\.repository\.default_branch/u);
   assert.match(deploy.if ?? "", /github\.ref_protected/u);
-  assert.equal(typeof deploy.environment === "object" ? deploy.environment.name : deploy.environment, "production");
+  assert.equal(typeof deploy.environment === "object" ? deploy.environment.name : deploy.environment, "cloudflare");
+
+  const deploymentGuide = await readFile(path.join(repositoryRoot, "docs", "DEPLOYMENT.md"), "utf8");
+  assert.match(deploymentGuide, /environment named `cloudflare`/u);
+  assert.match(deploymentGuide, /deployment branch policy to allow only `main`/u);
 });
 
-test("production deployment validates and uploads artifacts before entering the production environment", async () => {
+test("Cloudflare deployment validates and uploads artifacts before entering its environment", async () => {
   const { document } = await readWorkflow("deploy-cloudflare.yml");
   const build = document.jobs.build;
   const deploy = document.jobs.deploy;
 
   assert.equal(build.environment, undefined);
   assert.equal(deploy.needs, "build");
-  assert.equal(typeof deploy.environment === "object" ? deploy.environment.name : deploy.environment, "production");
+  assert.equal(typeof deploy.environment === "object" ? deploy.environment.name : deploy.environment, "cloudflare");
   assert.ok(build.steps.some(step => step.run === "npm run test"));
   assert.ok(build.steps.some(step => step.run === "npm run build:data"));
   assert.ok(build.steps.some(step => step.run === "npm run check-artifacts"));
@@ -144,6 +149,20 @@ test("production deployment validates and uploads artifacts before entering the 
   assert.equal(download?.with?.name, upload?.with?.name);
   assert.ok(deploy.steps.some(step => step.run === "npm run check-artifacts"));
   assert.equal(deploy.steps.some(step => step.run === "npm run test"), false);
+});
+
+test("Cloudflare deployment credentials use the cloudflare environment secret and variable", async () => {
+  const { document } = await readWorkflow("deploy-cloudflare.yml");
+  const deploy = document.jobs.deploy;
+  const deployStep = deploy.steps.find(step => step.name === "Deploy Worker");
+  const validateStep = deploy.steps.find(step => step.name === "Validate and identify deployed public target");
+
+  assert.ok(deployStep);
+  assert.ok(validateStep);
+  for (const step of [deployStep, validateStep]) {
+    assert.equal(step.env?.CLOUDFLARE_API_TOKEN, "${{ secrets.CLOUDFLARE_API_TOKEN }}");
+    assert.equal(step.env?.CLOUDFLARE_ACCOUNT_ID, "${{ vars.CLOUDFLARE_ACCOUNT_ID }}");
+  }
 });
 
 test("credential-bearing manual workflows require the protected default branch", async () => {
@@ -193,6 +212,111 @@ test("external workflow actions are pinned to full commit SHAs", async () => {
   }
 
   assert.ok(externalActionCount > 0, "the pinning check must inspect at least one external workflow action");
+});
+
+test("CodeQL manual dispatch is limited to the protected default branch", async () => {
+  const { document } = await readWorkflow("codeql.yml");
+  const job = document.jobs.analyze;
+
+  assert.equal(
+    job.if,
+    "github.event_name != 'workflow_dispatch' || (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && github.ref_protected)",
+  );
+  assert.equal(document.permissions?.["security-events"], undefined);
+  assert.equal(job.permissions?.actions, "read");
+  assert.equal(job.permissions?.contents, "read");
+  assert.equal(job.permissions?.["security-events"], "write");
+});
+
+test("validation and CodeQL run for merge queue checks", async () => {
+  for (const fileName of ["validate.yml", "codeql.yml"]) {
+    const { document } = await readWorkflow(fileName);
+    assert.ok(Object.hasOwn(document.on ?? {}, "merge_group"), `${fileName} must run for merge queue checks`);
+  }
+});
+
+test("release dry-run input is passed through the environment", async () => {
+  const { document } = await readWorkflow("release.yaml");
+  const plan = document.jobs.prepare.steps.find(step => step.name === "Plan release");
+
+  assert.ok(plan);
+  assert.equal(plan.env?.DRY_RUN, "${{ inputs.dry_run }}");
+  assert.match(plan.run ?? "", /\$DRY_RUN/u);
+  assert.doesNotMatch(plan.run ?? "", /\$\{\{\s*inputs\.dry_run/u);
+});
+
+test("pull requests receive dependency review", async () => {
+  const { document } = await readWorkflow("validate.yml");
+  const job = document.jobs["dependency-review"];
+  assert.ok(job, "validation must include dependency review");
+  assert.equal(job.if, "github.event_name == 'pull_request'");
+  assert.equal(job.permissions?.contents, "read");
+  assert.equal(job.permissions?.["pull-requests"], "read");
+
+  const review = job.steps.find(step => step.uses?.startsWith("actions/dependency-review-action@"));
+  assert.ok(review);
+  assert.equal(review.with?.["fail-on-severity"], "high");
+  assert.match(review.uses ?? "", /@[0-9a-f]{40}$/u);
+});
+
+test("workflow lint job runs zizmor without requiring security-event write access", async () => {
+  const { document } = await readWorkflow("validate.yml");
+  const lint = document.jobs["lint-workflows"];
+  const scan = lint.steps.find(step => step.uses?.startsWith("zizmorcore/zizmor-action@"));
+
+  assert.ok(scan);
+  assert.match(scan.uses ?? "", /@[0-9a-f]{40}$/u);
+  assert.equal(scan.with?.version, "v1.32.0");
+  assert.equal(scan.with?.["advanced-security"], "false");
+  assert.equal(scan.with?.annotations, "true");
+});
+
+test("dataset release attests artifacts and verifies provenance before publishing", async () => {
+  const { document } = await readWorkflow("dataset-release.yml");
+  const build = document.jobs.build;
+  const publish = document.jobs.release;
+  const attest = build.steps.find(step => step.uses?.startsWith("actions/attest-build-provenance@"));
+  const verify = publish.steps.find(step => step.name === "Verify release artifact provenance");
+  const releaseIndex = publish.steps.findIndex(step => step.name === "Create GitHub release");
+  const verifyIndex = publish.steps.findIndex(step => step.name === "Verify release artifact provenance");
+
+  assert.ok(attest);
+  assert.match(attest.uses ?? "", /@[0-9a-f]{40}$/u);
+  assert.equal(attest.with?.["subject-path"], "dist/*.json");
+  assert.equal(build.permissions?.contents, "read");
+  assert.equal(build.permissions?.["id-token"], "write");
+  assert.equal(build.permissions?.attestations, "write");
+
+  assert.ok(verify);
+  assert.match(verify.run ?? "", /gh attestation verify/u);
+  assert.match(verify.run ?? "", /--signer-workflow.*dataset-release\.yml/u);
+  assert.equal(verify.env?.RELEASE_TAG, "${{ github.ref_name }}");
+  assert.match(verify.run ?? "", /--source-ref\s+"refs\/tags\/\$RELEASE_TAG"/u);
+  assert.equal(publish.permissions?.attestations, "read");
+  assert.ok(verifyIndex >= 0 && releaseIndex > verifyIndex, "provenance must be verified before release publication");
+});
+
+test("Cloudflare deployment attests its dataset and verifies it before deploy", async () => {
+  const { document } = await readWorkflow("deploy-cloudflare.yml");
+  const build = document.jobs.build;
+  const deploy = document.jobs.deploy;
+  const attest = build.steps.find(step => step.uses?.startsWith("actions/attest-build-provenance@"));
+  const verify = deploy.steps.find(step => step.name === "Verify deployment artifact provenance");
+  const deployIndex = deploy.steps.findIndex(step => step.name === "Deploy Worker");
+  const verifyIndex = deploy.steps.findIndex(step => step.name === "Verify deployment artifact provenance");
+
+  assert.ok(attest);
+  assert.match(attest.uses ?? "", /@[0-9a-f]{40}$/u);
+  assert.equal(attest.with?.["subject-path"], "dist/*.json");
+  assert.equal(build.permissions?.contents, "read");
+  assert.equal(build.permissions?.["id-token"], "write");
+  assert.equal(build.permissions?.attestations, "write");
+
+  assert.ok(verify);
+  assert.match(verify.run ?? "", /gh attestation verify/u);
+  assert.match(verify.run ?? "", /--signer-workflow.*deploy-cloudflare\.yml/u);
+  assert.equal(deploy.permissions?.attestations, "read");
+  assert.ok(verifyIndex >= 0 && deployIndex > verifyIndex, "provenance must be verified before deployment");
 });
 
 test("Kaseki sweeps always target main and request regular pull requests", async () => {
@@ -365,4 +489,43 @@ test("dataset releases run the repository test suite before publishing artifacts
   assert.notEqual(build.steps[testStepIndex]["continue-on-error"], true, "test failures must fail the build job");
   assert.notEqual(build["continue-on-error"], true, "build failures must block publication");
   assert.equal(document.jobs.release.needs, "build", "publishing must depend on the successful build job");
+});
+
+test("tag releases do not consume a shared npm cache", async () => {
+  const { document } = await readWorkflow("dataset-release.yml");
+  const setupNode = document.jobs.build.steps.find(step => step.uses?.startsWith("actions/setup-node@"));
+
+  assert.ok(setupNode);
+  assert.equal(setupNode.with?.cache, undefined);
+  assert.equal(setupNode.with?.["package-manager-cache"], false);
+});
+
+test("dataset release uses the runner GitHub CLI after provenance verification", async () => {
+  const { document } = await readWorkflow("dataset-release.yml");
+  const publish = document.jobs.release;
+  const verifyIndex = publish.steps.findIndex(step => step.name === "Verify release artifact provenance");
+  const createRelease = publish.steps.find(step => step.name === "Create GitHub release");
+
+  assert.ok(createRelease);
+  assert.match(createRelease.run ?? "", /gh release create/u);
+  assert.equal(createRelease.env?.GH_TOKEN, "${{ github.token }}");
+  assert.equal(createRelease.env?.RELEASE_TAG, "${{ github.ref_name }}");
+  assert.equal(publish.steps.some(step => step.uses?.startsWith("softprops/action-gh-release@")), false);
+  assert.ok(publish.steps.indexOf(createRelease) > verifyIndex, "verify provenance before creating the release");
+});
+
+test("Dependabot applies a seven-day cooldown to npm and GitHub Actions updates", async () => {
+  const source = await readFile(path.join(repositoryRoot, ".github", "dependabot.yml"), "utf8");
+  const document = parse(source) as {
+    updates: Array<{
+      "package-ecosystem": string;
+      cooldown?: { "default-days"?: number };
+    }>;
+  };
+
+  for (const ecosystem of ["npm", "github-actions"]) {
+    const update = document.updates.find(candidate => candidate["package-ecosystem"] === ecosystem);
+    assert.ok(update, `missing Dependabot config for ${ecosystem}`);
+    assert.ok((update.cooldown?.["default-days"] ?? 0) >= 7, `${ecosystem} needs at least a seven-day cooldown`);
+  }
 });
