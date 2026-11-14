@@ -68,9 +68,10 @@ jobs:
         id: plan
         env:
           GITHUB_SHA: ${{ github.sha }}
+          DRY_RUN: ${{ inputs.dry_run }}
         run: |
           set -euo pipefail
-          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+          if [[ "$DRY_RUN" == "true" ]]; then
             npm run release:plan -- --dry-run 2>&1 | tee release-output.log
           else
             npm run release:plan 2>&1 | tee release-output.log
@@ -81,7 +82,7 @@ jobs:
             echo
             if jq -e '.releaseRequired == true' release-plan.json >/dev/null; then
               echo "Planned version: $(jq -r '.version' release-plan.json)"
-              if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+              if [[ "$DRY_RUN" == "true" ]]; then
                 echo "Dry run only; no release will be published."
               fi
               echo

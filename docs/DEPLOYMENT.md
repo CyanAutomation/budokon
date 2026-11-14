@@ -1,17 +1,19 @@
 # Cloudflare deployment
 
-Production deployments use the [Deploy Cloudflare Worker workflow](../.github/workflows/deploy-cloudflare.yml). It runs on pushes to `main` and can be dispatched manually from the default branch. The workflow runs validation and tests, builds and verifies the dataset, deploys the Worker, validates its configured target, and smoke-tests the public API.
+Production deployments use the [Deploy Cloudflare Worker workflow](../.github/workflows/deploy-cloudflare.yml). It runs on pushes to `main` and can be dispatched manually from the default branch. The workflow runs validation and tests, builds and verifies the dataset and its provenance, deploys the Worker, validates its configured target, and smoke-tests the public API.
 
 ## GitHub Actions environment
 
-Create a protected GitHub environment named `production` and restrict it to the protected `main` branch. Configure:
+Create a GitHub environment named `cloudflare` and set its deployment branch policy to allow only `main`. Configure:
 
 | Name | Kind | Purpose |
 | --- | --- | --- |
 | `CLOUDFLARE_API_TOKEN` | Secret | Scoped Cloudflare Workers deployment token |
-| `CLOUDFLARE_ACCOUNT_ID` | Secret | Cloudflare account used for the Worker |
+| `CLOUDFLARE_ACCOUNT_ID` | Variable | Cloudflare account used for the Worker |
 | `CLOUDFLARE_DEPLOYMENT_URL` | Variable | Canonical HTTPS origin with no path, such as `https://budokon.<your-subdomain>.workers.dev` |
 | `CLOUDFLARE_DIRECT_DEPLOYMENT_URL` | Variable (optional) | Direct Worker origin used alongside a custom public domain to distinguish Worker behavior from domain-level caching |
+
+The workflow also checks that the deployed dataset has a valid GitHub artifact attestation from this repository's deployment workflow. Keep the attestation permissions in the workflow when changing its artifact path or build job.
 
 The configured workers.dev subdomain or custom-domain route must belong to that Cloudflare account and route to the Worker named `budokon` in `wrangler.toml`. The workflow checks this before its smoke requests. The smoke check also waits up to one minute for `/v1/status` to report the commit being deployed. When `CLOUDFLARE_DIRECT_DEPLOYMENT_URL` is configured, it runs the same smoke checks against that origin too; this is useful when the canonical URL is a custom domain with separate cache behavior.
 
