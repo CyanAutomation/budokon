@@ -301,6 +301,8 @@ test("Cloudflare deployment attests its dataset and verifies it before deploy", 
   const build = document.jobs.build;
   const deploy = document.jobs.deploy;
   const attest = build.steps.find(step => step.uses?.startsWith("actions/attest-build-provenance@"));
+  const attestIndex = build.steps.findIndex(step => step.uses?.startsWith("actions/attest-build-provenance@"));
+  const testIndex = build.steps.findIndex(step => step.name === "Run tests");
   const verify = deploy.steps.find(step => step.name === "Verify deployment artifact provenance");
   const deployIndex = deploy.steps.findIndex(step => step.name === "Deploy Worker");
   const verifyIndex = deploy.steps.findIndex(step => step.name === "Verify deployment artifact provenance");
@@ -311,10 +313,13 @@ test("Cloudflare deployment attests its dataset and verifies it before deploy", 
   assert.equal(build.permissions?.contents, "read");
   assert.equal(build.permissions?.["id-token"], "write");
   assert.equal(build.permissions?.attestations, "write");
+  assert.ok(testIndex >= 0 && attestIndex > testIndex, "provenance must be attested only after tests pass");
 
   assert.ok(verify);
   assert.match(verify.run ?? "", /gh attestation verify/u);
   assert.match(verify.run ?? "", /--signer-workflow.*deploy-cloudflare\.yml/u);
+  assert.equal(verify.env?.DEFAULT_BRANCH, "${{ github.event.repository.default_branch }}");
+  assert.match(verify.run ?? "", /--source-ref\s+"refs\/heads\/\$DEFAULT_BRANCH"/u);
   assert.equal(deploy.permissions?.attestations, "read");
   assert.ok(verifyIndex >= 0 && deployIndex > verifyIndex, "provenance must be verified before deployment");
 });
