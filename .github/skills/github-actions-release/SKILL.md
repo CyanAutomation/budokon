@@ -12,6 +12,8 @@ Read the relevant workflow and its runbook before changing automation:
 - [Deployment workflow](../../../.github/workflows/deploy-cloudflare.yml)
 - [Application release workflow](../../../.github/workflows/release.yaml)
 - [Dataset release workflow](../../../.github/workflows/dataset-release.yml)
+- [Kaseki documentation sweep](../../../.github/workflows/kaseki-docs.yaml)
+- [Kaseki DRY sweep](../../../.github/workflows/kaseki-dry.yaml)
 
 ## Workflow changes
 
@@ -24,6 +26,14 @@ Read the relevant workflow and its runbook before changing automation:
 - Keep workflow npm commands aligned with package.json scripts. Run
   **npm run check:deployment-workflow** and **npm test** after workflow edits.
 - Do not put secrets in workflow literals, logs, artifacts, or browser code.
+- For Kaseki workflows, treat the controller as an external job-submission
+  service. Preserve trusted-branch and protected-environment gates, fixed
+  controller URL validation, minimal path allowlists, scoped credentials,
+  idempotency keys, timeouts, and response-body redaction. Review any task
+  prompt and validation command as executable change-authority settings.
+- Use only the trusted main-branch helper scripts for controller preflight,
+  polling, and submission. Do not expose API tokens in command arguments,
+  summaries, artifacts, or response logs.
 
 ## Release and deployment
 
