@@ -101,5 +101,9 @@ export async function handleMcpRequest(request: Request, env: Env): Promise<Resp
     playstyleClassification: client ? new PlaystyleClassificationService(client, configuredProbability(env.JEV_PLAYSTYLE_THRESHOLD, 0.78)) : undefined,
     queryInterpreter: client ? new JevJudokaQueryInterpreter(client, { minimumConfidence: configuredProbability(env.JEV_QUERY_MINIMUM_CONFIDENCE, 0.7) }) : undefined,
   });
-  return mcp.fetch(request, authentication.authInfo ? { authInfo: authentication.authInfo } : undefined);
+  const response = await mcp.fetch(request, authentication.authInfo ? { authInfo: authentication.authInfo } : undefined);
+  if (response.status !== 405 || response.headers.has("allow")) return response;
+  const headers = new Headers(response.headers);
+  headers.set("allow", "POST");
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }

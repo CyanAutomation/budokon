@@ -1,5 +1,6 @@
 import { cachePublicGet, type RepresentationCacheability } from "./representation-cache.js";
-import { canonicalRepresentationQuery, weaklyMatchesEtag } from "./representation-identity.js";
+import { weaklyMatchesEtag } from "./etag.js";
+import { canonicalRepresentationQuery } from "./representation-query.js";
 import type { EdgeCacheStorage } from "./edge-cache-types.js";
 
 export interface EdgeCacheRevision {
