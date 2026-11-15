@@ -1,11 +1,17 @@
-import {
-  isAuthorizationSensitive,
-  representationEtag,
-  weaklyMatchesEtag,
-  type RepresentationCacheability,
-} from "./representation-identity.js";
+import { representationEtag, weaklyMatchesEtag } from "./etag.js";
 
-export type { RepresentationCacheability } from "./representation-identity.js";
+export interface RepresentationCacheability {
+  /** Explicit REST-layer assurance that the response is independent of internal visibility. */
+  cacheablePublicly: boolean;
+}
+
+function isAuthorizationSensitive(request: Request, metadata?: RepresentationCacheability): boolean {
+  const requestsHiddenRecords = new URL(request.url).searchParams.getAll("includeHidden").includes("true");
+  return metadata?.cacheablePublicly === false
+    || requestsHiddenRecords
+    || request.headers.has("authorization")
+    || request.headers.has("x-api-key");
+}
 
 function privateResponse(response: Response): Response {
   const headers = new Headers(response.headers);
