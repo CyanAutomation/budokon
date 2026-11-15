@@ -29,7 +29,7 @@
     "typecheck": "npm run build:runtime && npm run typecheck:tools",
     "typecheck:tools": "tsc -p tsconfig.tools.json",
     "check-artifacts": "tsx scripts/check-artifacts.ts",
-    "check:docs": "tsx scripts/check-doc-links.ts && markdownlint-cli2 README.md",
+    "check:docs": "tsx scripts/check-doc-links.ts && markdownlint-cli2 README.md '.github/skills/*/SKILL.md'",
     "check:typescript-only": "tsx scripts/check-typescript-only.ts",
     "check:deployment-workflow": "tsx scripts/check-deployment-workflow.ts",
     "check": "npm run check:docs && npm run typecheck && npm run check:typescript-only && npm run test && npm run validate",

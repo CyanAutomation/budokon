@@ -30,6 +30,14 @@ existing records before editing. Do not edit compiled files under dist directly.
    - [Judoka contribution guide](../../../data/judoka/CONTRIBUTING.md)
    - [Dataset and record schemas](../../../schema)
    - [Coverage and rarity policy](../../../README.md#editorial-coverage-and-rarity-policy)
+   - For events, read `schema/event.schema.json` and an existing record in
+     `data/events/`. Keep effects within the supported action/target/value
+     contract; do not encode match-state behavior that belongs to a consumer.
+   - For techniques, read `schema/technique.schema.json` and existing records
+     in `data/techniques/`. Keep technique identifiers stable because judoka
+     records refer to them through `signatureMoveIds`.
+   - For country and weight-category references, read the corresponding schema
+     and existing reference file before changing taxonomy values.
 2. Make the smallest canonical JSON change. Keep IDs, slugs, taxonomy values,
    and cross-record references consistent.
 3. Run **npm test**, **npm run validate**, and **npm run coverage** for data
@@ -40,3 +48,8 @@ existing records before editing. Do not edit compiled files under dist directly.
 For new real judoka, also confirm the name and basic sporting association,
 add useful spelling aliases when supported, and review the catalogue coverage
 impact before selecting more records.
+
+For events and techniques, separate objective judo facts from game-specific
+rules and prose. Cite sources for factual claims where available, avoid
+inventing authoritative rules from a gameplay description, and preserve IDs
+when correcting a record so existing references remain valid.
