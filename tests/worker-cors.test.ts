@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { corsHeaders, preflightResponse, withCors } from "../worker/cors.js";
 import { cachePublicGet } from "../worker/representation-cache.js";
-import { representationEtag } from "../worker/representation-identity.js";
+import { representationEtag, weaklyMatchesEtag } from "../worker/etag.js";
 
 const env = { PUBLIC_ALLOWED_ORIGINS: "https://game.example, http://localhost:5173" };
 const request = (origin?: string, init: RequestInit = {}): Request => {
@@ -152,6 +152,22 @@ test("representation validators distinguish values that change responses and nor
     await etag("q=shozo-fujii&countryCode=FR&countryCode=JP"),
   );
   assert.notEqual(await etag("q=shozo"), await etag("q=shozo&q=fujii"));
+});
+
+test("canonical path identity decodes segments without conflating encoded slashes", async () => {
+  const etag = async (path: string) => representationEtag(
+    "2026.08.1",
+    "revision-a",
+    new Request(`https://api.example${path}`),
+  );
+
+  assert.equal(await etag("/v1/judoka/%E5%91%A8"), await etag("/v1/judoka/周"));
+  assert.notEqual(await etag("/v1/judoka/a%2Fb"), await etag("/v1/judoka/a/b"));
+});
+
+test("If-None-Match parsing keeps commas inside quoted opaque tags", () => {
+  assert.equal(weaklyMatchesEtag('W/"opaque,tag", "other"', '"opaque,tag"'), true);
+  assert.equal(weaklyMatchesEtag('"opaque,tagx", "other"', '"opaque,tag"'), false);
 });
 
 test("authorization-sensitive responses are private and never reuse public validators", async () => {
