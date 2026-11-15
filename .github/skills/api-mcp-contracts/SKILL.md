@@ -13,6 +13,9 @@ Before changing behavior, read:
 - [Operations and cache invariants](../../../docs/OPERATIONS.md)
 - [OpenAPI contract](../../../openapi/v1.yaml)
 
+For changes centered on Worker authentication, CORS, rate limits, or edge
+cache behavior, also follow [Worker security and edge behavior](../worker-security-edge/SKILL.md).
+
 ## Contract rules
 
 - Public REST reads are unauthenticated and read-only. Keep hidden-record and
