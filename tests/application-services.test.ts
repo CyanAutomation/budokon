@@ -76,7 +76,8 @@ test("display aliases, diacritic-free names, and legacy slugs resolve consistent
   assert.deepEqual(catalog.searchJudoka({ query: "Askley McKenzie" }).map(j => j.slug), ["ashley-mckenzie"]);
 });
 
-test("cached judoka search terms are reused without becoming stale after record updates", () => {
+/** @see ../docs/OPERATIONS.md#compiled-read-model-contract */
+test("judoka search reflects searchable record changes between calls", () => {
   const subject = new CatalogService(new JsonReadModelRepository(structuredClone(compiledModel)));
   const shozo = subject.getJudoka("shozo-fujii");
   assert.ok(shozo);
@@ -89,7 +90,8 @@ test("cached judoka search terms are reused without becoming stale after record 
   assert.ok(subject.searchJudoka({ query: "keiko" }).some(record => record.id === shozo.id));
 });
 
-test("cached technique search terms reflect changed source fields", () => {
+/** @see ../docs/OPERATIONS.md#compiled-read-model-contract */
+test("technique search reflects searchable record changes between calls", () => {
   const subject = new CatalogService(new JsonReadModelRepository(structuredClone(compiledModel)));
   const seoi = subject.getTechnique("seoi-nage");
   assert.ok(seoi);

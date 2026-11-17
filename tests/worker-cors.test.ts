@@ -120,28 +120,19 @@ test("public GET validators change with the representation revision and remain s
   assert.notEqual(redeployed.headers.get("etag"), etag);
 });
 
-test("representation validators canonicalize query parameter ordering", async () => {
-  const first = await representationEtag(
-    "2026.08.1",
-    "revision-a",
-    new Request("https://api.example/v1/judoka?q=champion&countryCode=JP&limit=10"),
-  );
-  const reordered = await representationEtag(
-    "2026.08.1",
-    "revision-a",
-    new Request("https://api.example/v1/judoka?limit=10&q=champion&countryCode=JP"),
-  );
-
-  assert.equal(reordered, first);
-});
-
-test("representation validators distinguish values that change responses and normalize set inputs", async () => {
+/** @see ../docs/API.md#everyday-use */
+/** @see ../docs/OPERATIONS.md#edge-response-cache */
+test("representation validators match equivalent query forms and distinguish different requests", async () => {
   const etag = (query: string) => representationEtag(
     "2026.08.1",
     "revision-a",
     new Request(`https://api.example/v1/judoka?${query}`),
   );
 
+  assert.equal(
+    await etag("q=champion&countryCode=JP&limit=10"),
+    await etag("limit=10&q=champion&countryCode=JP"),
+  );
   assert.notEqual(await etag("countryCode=JP"), await etag("countryCode=FR"));
   assert.equal(
     await etag("exclude=judoka-a&exclude=judoka-b"),
@@ -154,6 +145,7 @@ test("representation validators distinguish values that change responses and nor
   assert.notEqual(await etag("q=shozo"), await etag("q=shozo&q=fujii"));
 });
 
+/** @see ../docs/OPERATIONS.md#edge-response-cache */
 test("canonical path identity decodes segments without conflating encoded slashes", async () => {
   const etag = async (path: string) => representationEtag(
     "2026.08.1",
