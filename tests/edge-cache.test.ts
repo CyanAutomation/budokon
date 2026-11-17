@@ -27,7 +27,8 @@ class MemoryCache implements EdgeCacheStorage {
 
 const revision = { dataset: "dataset-1", service: "service-1" };
 
-test("edge cache normalizes queries and serves a stored public hit", async () => {
+/** @see ../docs/OPERATIONS.md#edge-response-cache */
+test("edge cache normalizes equivalent set filters and serves a stored public hit", async () => {
   const cache = new MemoryCache();
   const first = new Request("https://api.test/v1/judoka?countryCode=JP&gender=female&countryCode=FR");
   const equivalent = new Request("https://api.test/v1/judoka?countryCode=FR&countryCode=JP&gender=female");
@@ -42,6 +43,7 @@ test("edge cache normalizes queries and serves a stored public hit", async () =>
   assert.equal(publicCacheKey(first, revision)?.url, publicCacheKey(equivalent, revision)?.url);
 });
 
+/** @see ../docs/OPERATIONS.md#edge-response-cache */
 test("dataset and service revisions invalidate edge cache entries", async () => {
   const cache = new MemoryCache();
   const request = new Request("https://api.test/v1/version");
@@ -52,19 +54,26 @@ test("dataset and service revisions invalidate edge cache entries", async () => 
   assert.equal(await readPublicCache(cache, request, { ...revision, service: "service-2" }), undefined);
 });
 
-test("search-equivalent public queries share cache identity and ETag validation", async () => {
+/** @see ../docs/OPERATIONS.md#edge-response-cache */
+test("equivalent public queries revalidate the same cached representation while distinct queries miss", async () => {
   const cache = new MemoryCache();
   const first = new Request("https://api.test/v1/judoka?q=SH%C5%8CZ%C5%8D%20FUJII&countryCode=JP,FR");
   const equivalent = new Request("https://api.test/v1/judoka?countryCode=FR&countryCode=JP&q=shozo-fujii");
+  const distinct = new Request("https://api.test/v1/judoka?countryCode=JP&q=shozo-fujii");
 
   assert.equal(publicCacheKey(first, revision)?.url, publicCacheKey(equivalent, revision)?.url);
+  assert.notEqual(publicCacheKey(first, revision)?.url, publicCacheKey(distinct, revision)?.url);
   const stored = await writePublicCache(cache, first, new Response("same representation"), revision, { cacheablePublicly: true });
   const cached = await readPublicCache(cache, new Request(equivalent, {
     headers: { "if-none-match": stored.headers.get("etag")! },
   }), revision);
   assert.equal(cached?.status, 304);
+  assert.equal(await readPublicCache(cache, new Request(distinct, {
+    headers: { "if-none-match": stored.headers.get("etag")! },
+  }), revision), undefined);
 });
 
+/** @see ../docs/OPERATIONS.md#edge-response-cache */
 test("canonical cache identity keeps invalid public queries distinct from valid ones", () => {
   const revision = { dataset: "dataset-1", service: "service-1" };
   const validSearch = publicCacheKey(new Request("https://api.test/v1/judoka?q=shozo"), revision);
@@ -79,6 +88,8 @@ test("canonical cache identity keeps invalid public queries distinct from valid 
   assert.notEqual(allTechniques?.url, invalidEmptyCategory?.url);
 });
 
+/** @see ../docs/API.md#everyday-use */
+/** @see ../docs/OPERATIONS.md#edge-response-cache */
 test("cached responses use weak comparison for If-None-Match validators", async () => {
   const cache = new MemoryCache();
   const request = new Request("https://api.test/v1/version");
@@ -113,6 +124,8 @@ test("cached responses use weak comparison for If-None-Match validators", async 
   assert.equal(quotedCommaValidator?.status, 304, "commas inside quoted entity tags must not split the validator list");
 });
 
+/** @see ../docs/API.md#everyday-use */
+/** @see ../docs/OPERATIONS.md#edge-response-cache */
 test("a conditional cache miss stores the successful representation rather than a 304", async () => {
   const cache = new MemoryCache();
   const url = "https://api.test/v1/version";
@@ -131,6 +144,7 @@ test("a conditional cache miss stores the successful representation rather than 
   assert.equal(await cached?.text(), "public");
 });
 
+/** @see ../docs/OPERATIONS.md#edge-response-cache */
 test("private and randomized requests bypass cache lookup and storage", async () => {
   const requests = [
     new Request("https://api.test/v1/judoka", { headers: { authorization: "Bearer secret" } }),
@@ -150,6 +164,7 @@ test("private and randomized requests bypass cache lookup and storage", async ()
   }
 });
 
+/** @see ../docs/OPERATIONS.md#edge-response-cache */
 test("hidden and unsuccessful representations cannot contaminate a public entry", async () => {
   const cache = new MemoryCache();
   const publicRequest = new Request("https://api.test/v1/judoka");
@@ -164,6 +179,7 @@ test("hidden and unsuccessful representations cannot contaminate a public entry"
   assert.equal(await (await readPublicCache(cache, publicRequest, revision))?.text(), "[]");
 });
 
+/** @see ../docs/OPERATIONS.md#edge-response-cache */
 test("worker uses the injected cache before REST routing and applies CORS after the cached representation", async t => {
   t.mock.method(console, "log", () => {});
   const cache = new MemoryCache();
@@ -190,6 +206,7 @@ test("worker uses the injected cache before REST routing and applies CORS after 
   assert.equal(cache.puts, 1);
 });
 
+/** @see ../docs/OPERATIONS.md#edge-response-cache */
 test("cache read and write failures fail open without losing the REST response", async () => {
   const env: Env = {
     API_KEY: "test",

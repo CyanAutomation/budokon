@@ -115,7 +115,12 @@ parser error as its `cause` for diagnostics.
 
 The repository sorts its loaded collections by ID and returns new arrays from
 list methods. Mutating a returned list does not change the repository's
-canonical collections.
+canonical collections. Judoka, technique, and event records inside those
+arrays, and records returned by their `get` methods, are shared references to
+the in-memory model. Library callers can mutate those records; later text
+searches reflect changes to searchable fields. REST clients receive serialized
+JSON and cannot mutate the Worker model this way. Country and weight-category
+methods return detached copies.
 
 The compiled `dist/manifest.json` identifies the canonical data commit used to
 create that artifact. It need not equal a later application-only commit in the
