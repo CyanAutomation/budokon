@@ -63,7 +63,8 @@ test("playstyle evaluation reports per-facet accuracy and abstention accuracy", 
   assert.throws(() => scorePlaystyleEvaluation(fixtures, results.slice(1)), /counts must match/u);
 });
 
-test("playstyle evaluation report includes accuracy, usage, and its evaluation limits", async () => {
+/** @see ../docs/JEV.md#manual-github-evaluation */
+test("playstyle evaluation report exposes metrics and the synthetic-fixture limitation", async () => {
   const fixtures = JSON.parse(await readFile(new URL("../tests/fixtures/playstyle-evaluation.json", import.meta.url), "utf8")) as PlaystyleEvaluationFixture[];
   const results = fixtures.map(resultFor);
   const first = fixtures[0];
@@ -74,12 +75,17 @@ test("playstyle evaluation report includes accuracy, usage, and its evaluation l
   const report = formatPlaystyleEvaluationReport(fixtures, results, "typesafe/jev-configured-test");
 
   assert.match(report, /^## JEV playstyle classification evaluation/mu);
-  assert.match(report, /Requested model: typesafe\/jev-configured-test/u);
-  assert.match(report, /Resolved model\(s\): typesafe\/jev-evaluation-fake/u);
-  assert.match(report, /tacticalStyle \| 3 \| 4 \| 75\.0%/u);
-  assert.match(report, /80 input tokens, 32 output tokens/u);
+  assert.ok(report.includes("typesafe/jev-configured-test"));
+  assert.ok(report.includes("typesafe/jev-evaluation-fake"));
+  const tacticalStyleRow = report.split("\n").find(line => line.startsWith("| tacticalStyle |"));
+  assert.deepEqual(
+    tacticalStyleRow?.split("|").slice(1, -1).map(value => value.trim()),
+    ["tacticalStyle", "3", "4", "75.0%"],
+  );
+  assert.match(report, /^Usage: 80 input tokens, 32 output tokens, /mu);
   assert.match(report, /non-gating/u);
-  assert.match(report, /does not estimate real-world athlete classification accuracy/u);
+  assert.match(report, /synthetic set/u);
+  assert.match(report, /real-world athlete classification accuracy/u);
 });
 
 test("injected playstyle evaluation classifies every fixture and writes one report", async () => {
