@@ -169,7 +169,7 @@ jobs:
             echo "| Ref | \`$REF\` |"
             echo "| Allowed paths | \`$ALLOWLIST\` |"
             echo "| Validation | \`$VALIDATION_COMMAND\` |"
-            echo '| Maximum refactorings | `1` |'
+            echo "| Maximum refactorings | \`1\` |"
             echo "| Submission | \`$SUBMISSION_STATUS\` |"
             echo "| Soyuz run | \`$DISPLAY_ID\` (\`$RUN_ID\`) |"
             echo "| Run status at submission | \`$RUN_STATUS\` |"
