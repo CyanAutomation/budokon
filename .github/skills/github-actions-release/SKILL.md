@@ -26,14 +26,14 @@ Read the relevant workflow and its runbook before changing automation:
 - Keep workflow npm commands aligned with package.json scripts. Run
   **npm run check:deployment-workflow** and **npm test** after workflow edits.
 - Do not put secrets in workflow literals, logs, artifacts, or browser code.
-- For Kaseki workflows, treat the controller as an external job-submission
-  service. Preserve trusted-branch and protected-environment gates, fixed
-  controller URL validation, minimal path allowlists, scoped credentials,
-  idempotency keys, timeouts, and response-body redaction. Review any task
-  prompt and validation command as executable change-authority settings.
-- Use only the trusted main-branch helper scripts for controller preflight,
-  polling, and submission. Do not expose API tokens in command arguments,
-  summaries, artifacts, or response logs.
+- For Kaseki sweeps that submit to Soyuz, preserve checks that limit runs to
+  protected `main` and the protected environment, fixed destination validation,
+  minimal path allowlists, scoped credentials, idempotency keys, bounded
+  submission timeouts, and response-body redaction. Review task prompts and
+  validation commands as executable change-authority settings.
+- Run validators and submit from the checkout at the protected `main` commit.
+  Do not expose API tokens in command arguments, summaries, artifacts, or
+  response logs.
 
 ## Release and deployment
 

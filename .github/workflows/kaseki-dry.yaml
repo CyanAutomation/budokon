@@ -1,106 +1,67 @@
-name: Kaseki DRY Sweep
+name: Kaseki DRY Sweep via Soyuz
 
 on:
   schedule:
     - cron: "0 2 * * 0"
   workflow_dispatch:
 
-run-name: >-
-  DRY sweep · ${{ github.repository }}@main
+run-name: DRY sweep · ${{ github.repository }}@${{ github.sha }}
 
 permissions:
   contents: read
 
-# Protect the complete external Kaseki run from overlapping sweeps.
+# Restrict the soyuz environment to main without reviewers.
 concurrency:
-  group: kaseki-dry-sweep-${{ github.repository }}
+  group: soyuz-dry-sweep-${{ github.repository }}
   cancel-in-progress: false
 
 jobs:
   dry_sweep:
-    name: Run Kaseki DRY sweep
+    name: Submit DRY sweep to Soyuz
     if: github.ref == 'refs/heads/main' && github.ref_protected
     runs-on: ubuntu-latest
-
-    # Kaseki allows a run to last three hours; leave time for
-    # preflight and final status polling.
-    timeout-minutes: 200
-
-    # Restrict `kaseki-agent` to `main` in repository environment settings.
-    # Configure KASEKI_API_TOKEN as a secret and KASEKI_BASE_URL as an environment variable.
-    environment: kaseki-agent
-
+    timeout-minutes: 15
+    environment: soyuz
     env:
-      KASEKI_BASE_URL: ${{ vars.KASEKI_BASE_URL }}
-      KASEKI_API_BASE_URL: ${{ vars.KASEKI_BASE_URL }}/api/v1
-
+      SOYUZ_BASE_URL: ${{ vars.SOYUZ_BASE_URL }}
       REPO_URL: ${{ github.server_url }}/${{ github.repository }}
       REF: main
-
       TASK_DESCRIPTION: >-
         Perform a conservative DRY-principle review of this repository.
-
-      # Adjust these paths for each repository.
-      ALLOWLIST: src/**/*,scripts/**/*,test/**/*,tests/**/*
-
-      VALIDATION_COMMAND: node -e 'const [major] = process.versions.node.split(".").map(Number); if (major !== 26) process.exit(1)' && npm run check
+      ALLOWLIST: >-
+        src/**/*,scripts/**/*,test/**/*,tests/**/*,worker/**/*,worker-tests/**/*
+      VALIDATION_COMMAND: >-
+        node -e 'const [major] = process.versions.node.split(".").map(Number); if (major !== 26) process.exit(1)' && npm run check
 
     steps:
-      - name: Check out trusted main-branch helper
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.sha }}
           persist-credentials: false
-
-      - name: Set up Node 26
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
 
-      - name: Check required tools
-        shell: bash
-        run: |
-          set -euo pipefail
+      - name: Validate Soyuz URL
+        run: node --experimental-strip-types scripts/validate-soyuz-url.ts
 
-          command -v curl >/dev/null
-          command -v jq >/dev/null
-          command -v uuidgen >/dev/null
-
-      - name: Validate Kaseki configuration
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          : "${KASEKI_BASE_URL:?Configure KASEKI_BASE_URL as an environment variable}"
-
-          if [[ "$KASEKI_BASE_URL" != "https://kaseki-tunnel.scheimann.xyz" ]]; then
-            echo "::error title=Invalid Kaseki URL::Use the approved HTTPS controller origin."
-            exit 1
-          fi
-
-      - name: Verify controller health
-        uses: CyanAutomation/kaseki-agent/.github/actions/verify-controller-health@30db5d15e117b8d8de13eb66766d48cf6b7d618b
-        with:
-          base-url: ${{ vars.KASEKI_BASE_URL }}
-
-      - name: Verify controller readiness
-        run: node scripts/check-kaseki.ts readiness
-
-      - name: Verify Kaseki API readiness
-        env:
-          KASEKI_API_TOKEN: ${{ secrets.KASEKI_API_TOKEN }}
-        run: node scripts/check-kaseki.ts api
-
-      - name: Submit DRY sweep
+      - name: Submit DRY sweep to Soyuz
         id: submit
         shell: bash
         env:
-          KASEKI_API_TOKEN: ${{ secrets.KASEKI_API_TOKEN }}
+          SOYUZ_SUBMISSION_API_TOKEN: ${{ secrets.SOYUZ_SUBMISSION_API_TOKEN }}
         run: |
           set -euo pipefail
+          umask 077
+          : "${SOYUZ_SUBMISSION_API_TOKEN:?SOYUZ_SUBMISSION_API_TOKEN is not configured}"
+          if [[ "$SOYUZ_SUBMISSION_API_TOKEN" =~ [[:cntrl:]] ]]; then
+            echo "::error title=Invalid Soyuz token::The token contains invalid control characters."
+            exit 1
+          fi
+          command -v curl >/dev/null
+          command -v jq >/dev/null
 
-          idempotency_key="$(
-            tr '[:upper:]' '[:lower:]' < /proc/sys/kernel/random/uuid
-          )"
+          idempotency_key="$(tr '[:upper:]' '[:lower:]' < /proc/sys/kernel/random/uuid)"
 
           payload="$(
             jq -n \
@@ -118,119 +79,100 @@ jobs:
                 timeoutSeconds: 10800,
                 maxDiffBytes: 102400,
                 idempotencyKey: $idempotencyKey,
-
                 changedFilesAllowlist: (
                   $allowlist
                   | split(",")
                   | map(gsub("^\\s+|\\s+$"; ""))
                   | map(select(length > 0))
                 ),
-
                 validationCommands: [$validationCommand],
-
-                goalCheck: {
-                  enabled: true,
-                  maxRetries: 1
-                },
-
+                goalCheck: { enabled: true, maxRetries: 1 },
                 taskPrompt: (
                   $taskDescription
-
                   + "\n\nLook for duplicated knowledge rather than merely duplicated text. "
                   + "Strong candidates include repeated business rules, validation rules, "
                   + "constants, configuration knowledge, parsing or normalisation logic, "
                   + "transformations, and substantially identical implementations that "
                   + "must remain synchronised. "
-
                   + "\n\nDo not assume that all repetition violates DRY. Similar-looking "
                   + "code may represent separate concepts or may need to evolve independently. "
                   + "Prefer clear duplication over an abstraction that increases coupling, "
                   + "indirection, or cognitive load. "
-
                   + "\n\nIdentify the single strongest DRY improvement available. Only act "
                   + "when the duplication represents the same underlying knowledge and "
                   + "consolidation has a clear maintenance benefit. "
-
                   + "\n\nPrefer reusing an existing abstraction. If a new abstraction is "
                   + "justified, keep it at the narrowest sensible scope. "
-
                   + "\n\nMake at most one focused refactoring. "
-
                   + "\n\nA no-change result is successful. If there is no sufficiently "
                   + "valuable, high-confidence DRY improvement, make no changes."
                 )
               }'
           )"
 
+          curl_config="$(mktemp)"
           response_file="$(mktemp)"
-          trap 'rm -f "$response_file"' EXIT
+          trap 'rm -f "$curl_config" "$response_file"' EXIT
+          chmod 600 "$curl_config" "$response_file"
+          escaped_token="${SOYUZ_SUBMISSION_API_TOKEN//\\/\\\\}"
+          escaped_token="${escaped_token//\"/\\\"}"
+          printf 'header = "Authorization: Bearer %s"\n' "$escaped_token" > "$curl_config"
+          unset escaped_token
 
           http_status="$(
-            curl --silent --show-error \
-              --retry 3 \
-              --connect-timeout 10 \
-              --max-time 60 \
-              --output "$response_file" \
-              --write-out '%{http_code}' \
-              --request POST "$KASEKI_API_BASE_URL/runs" \
-              --header "Authorization: Bearer $KASEKI_API_TOKEN" \
-              --header "Content-Type: application/json" \
-              --data "$payload"
+            curl --config "$curl_config" \
+              --proto '=https' --tlsv1.2 --fail-with-body --silent --show-error \
+              --retry 3 --connect-timeout 10 --max-time 60 --max-filesize 1048576 \
+              --output "$response_file" --write-out '%{http_code}' \
+              --request POST "$SOYUZ_BASE_URL/v1/runs" \
+              --header "Idempotency-Key: $idempotency_key" \
+              --header 'Content-Type: application/json' \
+              --data "$payload" || true
           )"
 
-          if [[ ! "$http_status" =~ ^2 ]]; then
-            echo "::error title=Kaseki submission failed::Kaseki returned HTTP $http_status"
-
+          if [[ ! "$http_status" =~ ^(200|202)$ ]]; then
+            echo "::error title=Soyuz submission failed::Soyuz returned HTTP $http_status"
             {
-              echo "## Kaseki submission failed"
-              echo
-              echo "Kaseki returned HTTP \`$http_status\`."
-              echo
-              echo "The controller response body is intentionally omitted from logs and summaries."
+              echo "Soyuz returned HTTP \`$http_status\`. Response body omitted."
             } >> "$GITHUB_STEP_SUMMARY"
-
             exit 1
           fi
 
-          run_id="$(jq -er '.id | strings | select(test("^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"))' "$response_file")"
-
-          output_delimiter="$(uuidgen)"
-
+          run_id="$(jq -er '.data.id | strings' "$response_file")"
+          run_id="$(SOYUZ_RUN_ID="$run_id" node --experimental-strip-types scripts/validate-soyuz-run-id.ts)"
+          display_id="$(jq -er '.data.displayId | strings | select(test("^soyuz-[0-9]+$"))' "$response_file")"
+          run_status="$(jq -er '.data.status | strings | select(test("^(admitting|queued|claimed|running|cancel_requested|cancelled|completed|failed|admission_failed)$"))' "$response_file")"
           {
-            echo "run_id<<$output_delimiter"
-            echo "$run_id"
-            echo "$output_delimiter"
+            printf 'run_id=%s\n' "$run_id"
+            printf 'display_id=%s\n' "$display_id"
+            printf 'run_status=%s\n' "$run_status"
+            printf 'submission_status=accepted\n'
           } >> "$GITHUB_OUTPUT"
 
-          echo "idempotency_key=$idempotency_key" >> "$GITHUB_OUTPUT"
+          echo "Soyuz accepted the DRY sweep as $display_id."
 
-          echo "Kaseki DRY sweep submitted."
-
-      - name: Wait for Kaseki completion
-        id: wait
-        shell: bash
-        env:
-          RUN_ID: ${{ steps.submit.outputs.run_id }}
-          KASEKI_API_TOKEN: ${{ secrets.KASEKI_API_TOKEN }}
-        run: node scripts/wait-for-kaseki.ts
-
-      - name: Publish run details
+      - name: Publish Soyuz submission details
         if: always()
         shell: bash
         env:
           RUN_ID: ${{ steps.submit.outputs.run_id || 'not submitted' }}
-          FINAL_STATUS: ${{ steps.wait.outputs.status || 'not completed' }}
+          DISPLAY_ID: ${{ steps.submit.outputs.display_id || 'not assigned' }}
+          RUN_STATUS: ${{ steps.submit.outputs.run_status || 'not received' }}
+          SUBMISSION_STATUS: ${{ steps.submit.outputs.submission_status || 'not accepted' }}
         run: |
           {
-            echo "## Kaseki DRY sweep"
+            echo '## Soyuz DRY submission'
             echo
-            echo "| Setting | Value |"
-            echo "|---|---|"
+            echo '| Setting | Value |'
+            echo '|---|---|'
             echo "| Repository | \`$REPO_URL\` |"
             echo "| Ref | \`$REF\` |"
             echo "| Allowed paths | \`$ALLOWLIST\` |"
             echo "| Validation | \`$VALIDATION_COMMAND\` |"
-            echo "| Maximum refactorings | \`1\` |"
-            echo "| Kaseki run | \`$RUN_ID\` |"
-            echo "| Final status | \`$FINAL_STATUS\` |"
+            echo '| Maximum refactorings | `1` |'
+            echo "| Submission | \`$SUBMISSION_STATUS\` |"
+            echo "| Soyuz run | \`$DISPLAY_ID\` (\`$RUN_ID\`) |"
+            echo "| Run status at submission | \`$RUN_STATUS\` |"
+            echo
+            echo "Accepted means Soyuz admitted the task; it does not confirm execution completion. Monitor the run in the Soyuz dashboard."
           } >> "$GITHUB_STEP_SUMMARY"
