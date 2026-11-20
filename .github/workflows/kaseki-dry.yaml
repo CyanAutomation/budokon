@@ -112,12 +112,15 @@ jobs:
 
           curl_config="$(mktemp)"
           response_file="$(mktemp)"
-          trap 'rm -f "$curl_config" "$response_file"' EXIT
-          chmod 600 "$curl_config" "$response_file"
+          payload_file="$(mktemp)"
+          trap 'rm -f "$curl_config" "$response_file" "$payload_file"' EXIT
+          chmod 600 "$curl_config" "$response_file" "$payload_file"
           escaped_token="${SOYUZ_SUBMISSION_API_TOKEN//\\/\\\\}"
           escaped_token="${escaped_token//\"/\\\"}"
           printf 'header = "Authorization: Bearer %s"\n' "$escaped_token" > "$curl_config"
           unset escaped_token
+          printf '%s' "$payload" > "$payload_file"
+          unset payload
 
           http_status="$(
             curl --config "$curl_config" \
@@ -127,7 +130,7 @@ jobs:
               --request POST "$SOYUZ_BASE_URL/v1/runs" \
               --header "Idempotency-Key: $idempotency_key" \
               --header 'Content-Type: application/json' \
-              --data "$payload" || true
+              --data @"$payload_file" || true
           )"
 
           if [[ ! "$http_status" =~ ^(200|202)$ ]]; then
