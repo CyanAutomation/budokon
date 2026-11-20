@@ -37,16 +37,6 @@ async function readWorkflow(fileName: string): Promise<{ document: Workflow; sou
   return { document: parse(source) as Workflow, source };
 }
 
-function runOf(job: WorkflowJob, stepName: string): string {
-  const step = job.steps.find(candidate => candidate.name === stepName);
-  assert.ok(step, `workflow is missing the ${stepName} step`);
-  return step.run ?? "";
-}
-
-function containsRetryAllErrorsOption(run: string): boolean {
-  return /--retry-all-errors/u.test(run);
-}
-
 test("Node 26 is the supported runtime and every workflow uses the shared version file", async () => {
   const packageJson = JSON.parse(await readFile(path.join(repositoryRoot, "package.json"), "utf8")) as {
     engines: { node: string };
@@ -74,23 +64,33 @@ test("Node 26 is the supported runtime and every workflow uses the shared versio
   }
 });
 
-test("Kaseki DRY dispatch is default-branch-only and pins the token destination", async () => {
-  const { document, source } = await readWorkflow("kaseki-dry.yaml");
-  const job = document.jobs.dry_sweep;
+test("Soyuz sweeps run only from protected main in the soyuz environment", async () => {
+  const docs = await readWorkflow("kaseki-docs.yaml");
+  const dry = await readWorkflow("kaseki-dry.yaml");
 
-  assert.equal(job.if, "github.ref == 'refs/heads/main' && github.ref_protected");
-  assert.match(source, /KASEKI_BASE_URL" != "https:\/\/kaseki-tunnel\.scheimann\.xyz"/u);
-  assert.equal(job.env?.KASEKI_API_TOKEN, undefined);
-  const tokenSteps = job.steps.filter(step => Object.hasOwn(step.env ?? {}, "KASEKI_API_TOKEN"));
-  assert.equal(tokenSteps.length, 3);
+  for (const [fileName, job] of [
+    ["kaseki-docs.yaml", docs.document.jobs.docs_sweep],
+    ["kaseki-dry.yaml", dry.document.jobs.dry_sweep],
+  ] as const) {
+    assert.equal(job.if, "github.ref == 'refs/heads/main' && github.ref_protected", fileName);
+    assert.equal(job.environment, "soyuz", fileName);
+    assert.equal(job.env?.SOYUZ_BASE_URL, "${{ vars.SOYUZ_BASE_URL }}", fileName);
+    assert.equal(job.env?.SOYUZ_SUBMISSION_API_TOKEN, undefined, fileName);
+    assert.equal(job.env?.KASEKI_BASE_URL, undefined, fileName);
+    assert.equal(job.env?.KASEKI_API_TOKEN, undefined, fileName);
+  }
+
+  assert.equal(docs.document.permissions?.contents, "read");
+  assert.equal(dry.document.permissions?.contents, "read");
 });
 
-test("every Kaseki Docs job is restricted to main", async () => {
-  const { document } = await readWorkflow("kaseki-docs.yaml");
-  assert.ok(Object.keys(document.jobs).length > 0);
-  for (const [jobName, job] of Object.entries(document.jobs)) {
-    assert.equal(job.if, "github.ref == 'refs/heads/main' && github.ref_protected", jobName);
-  }
+test("Soyuz environment setup documents the main-only deployment policy and credentials", async () => {
+  const guide = await readFile(path.join(repositoryRoot, "docs", "DEPLOYMENT.md"), "utf8");
+
+  assert.match(guide, /environment named `soyuz`/u);
+  assert.match(guide, /deployment branch\s+policy to `main`/u);
+  assert.match(guide, /`SOYUZ_BASE_URL` \| Variable/u);
+  assert.match(guide, /`SOYUZ_SUBMISSION_API_TOKEN` \| Secret/u);
 });
 
 test("application release builds read-only and publishes from a minimal write job", async () => {
@@ -324,147 +324,106 @@ test("Cloudflare deployment attests its dataset and verifies it before deploy", 
   assert.ok(verifyIndex >= 0 && deployIndex > verifyIndex, "provenance must be verified before deployment");
 });
 
-test("Kaseki sweeps always target main and request regular pull requests", async () => {
+test("Soyuz sweeps keep their repository-specific trigger, allowlist, and validation", async () => {
   const docs = await readWorkflow("kaseki-docs.yaml");
   const dry = await readWorkflow("kaseki-dry.yaml");
 
-  assert.equal(docs.document.env?.REF, "main");
+  assert.deepEqual(docs.document.on?.schedule, [{ cron: "0 1 * * 5" }]);
+  assert.deepEqual(dry.document.on?.schedule, [{ cron: "0 2 * * 0" }]);
+  assert.ok(Object.hasOwn(docs.document.on ?? {}, "workflow_dispatch"));
+  assert.ok(Object.hasOwn(dry.document.on ?? {}, "workflow_dispatch"));
+  assert.equal(docs.document.jobs.docs_sweep.env?.REF, "main");
   assert.equal(dry.document.jobs.dry_sweep.env?.REF, "main");
-
-  for (const source of [docs.source, dry.source]) {
-    assert.match(source, /publishMode: "pr"/u);
-    assert.doesNotMatch(source, /draft_pr/u);
-    assert.doesNotMatch(source, /github\.event\.repository\.default_branch/u);
-  }
+  assert.equal(docs.document.jobs.docs_sweep.env?.ALLOWLIST, "README.md,docs/**/*.md");
+  assert.match(String(dry.document.jobs.dry_sweep.env?.ALLOWLIST), /src\/\*\*\/\*,scripts\/\*\*\//u);
+  assert.match(String(docs.document.jobs.docs_sweep.env?.VALIDATION_COMMAND), /npm run check/u);
+  assert.match(String(dry.document.jobs.dry_sweep.env?.VALIDATION_COMMAND), /npm run check/u);
+  assert.match(docs.source, /publishMode: "pr"/u);
+  assert.match(dry.source, /publishMode: "pr"/u);
+  assert.doesNotMatch(docs.source + dry.source, /github\.event\.repository\.default_branch/u);
 });
 
-test("Kaseki sweeps use the versioned API base for checks and submissions", async () => {
+test("Soyuz sweeps validate the destination before exposing the submission token", async () => {
   const docs = await readWorkflow("kaseki-docs.yaml");
   const dry = await readWorkflow("kaseki-dry.yaml");
 
-  const expectedApiBase = "${{ vars.KASEKI_BASE_URL }}/api/v1";
-  assert.equal(docs.document.jobs.api_connection.env?.KASEKI_API_BASE_URL, expectedApiBase);
-  assert.equal(docs.document.jobs.dispatch.env?.KASEKI_API_BASE_URL, expectedApiBase);
-  assert.equal(dry.document.jobs.dry_sweep.env?.KASEKI_API_BASE_URL, expectedApiBase);
-
-  const workflows = [
-    {
-      name: "Kaseki Docs",
-      readiness: runOf(docs.document.jobs.readiness, "Verify controller readiness"),
-      api: runOf(docs.document.jobs.api_connection, "Verify Kaseki API readiness"),
-      submit: runOf(docs.document.jobs.dispatch, "Submit documentation sweep"),
-    },
-    {
-      name: "Kaseki DRY",
-      readiness: runOf(dry.document.jobs.dry_sweep, "Verify controller readiness"),
-      api: runOf(dry.document.jobs.dry_sweep, "Verify Kaseki API readiness"),
-      submit: runOf(dry.document.jobs.dry_sweep, "Submit DRY sweep"),
-    },
-  ];
-
-  for (const workflow of workflows) {
-    assert.equal(workflow.readiness, "node scripts/check-kaseki.ts readiness", workflow.name);
-    assert.equal(workflow.api, "node scripts/check-kaseki.ts api", workflow.name);
-    assert.match(workflow.submit, /--request POST "\$KASEKI_API_BASE_URL\/runs"/u, workflow.name);
-    assert.doesNotMatch(workflow.api, /curl/u, workflow.name);
-  }
-
-  assert.equal(docs.document.jobs.api_connection.steps.filter(step => Object.hasOwn(step.env ?? {}, "KASEKI_API_TOKEN")).length, 1);
-  assert.equal(dry.document.jobs.dry_sweep.steps.filter(step => Object.hasOwn(step.env ?? {}, "KASEKI_API_TOKEN")).length, 3);
-});
-
-test("retry flag detection finds options embedded in quoted shell arguments", () => {
-  for (const command of [
-    'FLAGS="--retry-all-errors" curl "$URL"',
-    'curl "$URL" "--retry-all-errors"',
-  ]) {
-    assert.equal(containsRetryAllErrorsOption(command), true, command);
-  }
-
-  assert.equal(containsRetryAllErrorsOption('curl --retry 3 "$URL"'), false);
-});
-
-test("Kaseki workflows do not retry permanent HTTP errors", async () => {
-  for (const fileName of ["kaseki-docs.yaml", "kaseki-dry.yaml"]) {
-    const { document } = await readWorkflow(fileName);
-    const curlSteps = Object.entries(document.jobs).flatMap(([jobName, job]) =>
-      job.steps
-        .filter(step => step.run?.split(/\s+/u).includes("curl"))
-        .map(step => ({ jobName, step })));
-
-    assert.ok(curlSteps.length > 0, `${fileName} must inspect its Kaseki HTTP commands`);
-    for (const { jobName, step } of curlSteps) {
-      assert.equal(
-        containsRetryAllErrorsOption(step.run ?? ""),
-        false,
-        `${fileName}:${jobName} must not retry permanent HTTP errors`,
-      );
-    }
-  }
-});
-
-test("Kaseki Docs API credentials are limited to request steps", async () => {
-  const { document } = await readWorkflow("kaseki-docs.yaml");
-  const apiConnection = document.jobs.api_connection;
-  const dispatch = document.jobs.dispatch;
-
-  assert.equal(apiConnection.env?.KASEKI_API_TOKEN, undefined);
-  assert.equal(apiConnection.steps.filter(step => Object.hasOwn(step.env ?? {}, "KASEKI_API_TOKEN")).length, 1);
-  assert.equal(dispatch.env?.KASEKI_API_TOKEN, undefined);
-  assert.equal(dispatch.steps.filter(step => Object.hasOwn(step.env ?? {}, "KASEKI_API_TOKEN")).length, 2);
-});
-
-test("Kaseki sweep workflows invoke the shared polling helper with run credentials", async () => {
-  const docs = await readWorkflow("kaseki-docs.yaml");
-  const dry = await readWorkflow("kaseki-dry.yaml");
-
-  const docsWait = docs.document.jobs.dispatch.steps.find(step => step.name === "Wait for Kaseki completion");
-  const dryWait = dry.document.jobs.dry_sweep.steps.find(step => step.name === "Wait for Kaseki completion");
-
-  for (const [fileName, step, expectedRunId] of [
-    ["kaseki-docs.yaml", docsWait, "${{ steps.submit.outputs.run_id }}"],
-    ["kaseki-dry.yaml", dryWait, "${{ steps.submit.outputs.run_id }}"],
+  for (const [fileName, job] of [
+    ["kaseki-docs.yaml", docs.document.jobs.docs_sweep],
+    ["kaseki-dry.yaml", dry.document.jobs.dry_sweep],
   ] as const) {
-    assert.ok(step, `${fileName} must wait for Kaseki completion`);
-    assert.equal(step.run, "node scripts/wait-for-kaseki.ts", fileName);
-    assert.equal(step.env?.RUN_ID, expectedRunId, fileName);
-    assert.equal(step.env?.KASEKI_API_TOKEN, "${{ secrets.KASEKI_API_TOKEN }}", fileName);
+    const checkout = job.steps.find(step => step.uses?.startsWith("actions/checkout@"));
+    const setupNode = job.steps.find(step => step.uses?.startsWith("actions/setup-node@"));
+    const validateIndex = job.steps.findIndex(step => step.name === "Validate Soyuz URL");
+    const submitIndex = job.steps.findIndex(step => step.name?.startsWith("Submit "));
+    const validate = job.steps[validateIndex];
+
+    assert.ok(checkout, `${fileName} must check out trusted main content`);
+    assert.equal(checkout.with?.ref, "${{ github.sha }}", fileName);
+    assert.equal(checkout.with?.["persist-credentials"], false, fileName);
+    assert.ok(setupNode, `${fileName} must set up Node`);
+    assert.equal(setupNode.with?.["node-version-file"], ".nvmrc", fileName);
+    assert.equal(validate?.run, "node --experimental-strip-types scripts/validate-soyuz-url.ts", fileName);
+    assert.ok(validateIndex >= 0 && submitIndex > validateIndex, `${fileName} must validate URL before submission`);
+
+    const tokenSteps = job.steps.filter(step => Object.hasOwn(step.env ?? {}, "SOYUZ_SUBMISSION_API_TOKEN"));
+    assert.equal(tokenSteps.length, 1, `${fileName} should expose the token to only one step`);
+    assert.equal(tokenSteps[0].env?.SOYUZ_SUBMISSION_API_TOKEN, "${{ secrets.SOYUZ_SUBMISSION_API_TOKEN }}", fileName);
+    assert.equal(job.steps.some(step => step.name?.startsWith("Wait for ")), false, fileName);
   }
 });
 
-test("Kaseki sweeps do not persist checkout credentials", async () => {
+test("Soyuz submissions use idempotent HTTPS requests and validate accepted responses", async () => {
   const docs = await readWorkflow("kaseki-docs.yaml");
   const dry = await readWorkflow("kaseki-dry.yaml");
 
-  for (const [fileName, jobs] of [
-    ["kaseki-docs.yaml", docs.document.jobs],
-    ["kaseki-dry.yaml", dry.document.jobs],
+  for (const [fileName, job, expectedName] of [
+    ["kaseki-docs.yaml", docs.document.jobs.docs_sweep, "Submit documentation sweep to Soyuz"],
+    ["kaseki-dry.yaml", dry.document.jobs.dry_sweep, "Submit DRY sweep to Soyuz"],
   ] as const) {
-    for (const [jobName, job] of Object.entries(jobs)) {
-      const checkout = job.steps.find(step => step.uses?.startsWith("actions/checkout@"));
-      if (checkout) assert.equal(checkout.with?.["persist-credentials"], false, `${fileName}:${jobName}`);
-    }
-  }
-
-  for (const [jobName, job] of [
-    ["readiness", docs.document.jobs.readiness],
-    ["api_connection", docs.document.jobs.api_connection],
-  ] as const) {
-    assert.ok(job.steps.some(step => step.uses?.startsWith("actions/checkout@")), `kaseki-docs:${jobName}`);
-    assert.ok(job.steps.some(step => step.uses?.startsWith("actions/setup-node@")), `kaseki-docs:${jobName}`);
+    const submit = job.steps.find(step => step.name === expectedName);
+    const run = submit?.run ?? "";
+    assert.ok(submit, `${fileName} must contain a Soyuz submission step`);
+    assert.match(run, /--request POST "\$SOYUZ_BASE_URL\/v1\/runs"/u, fileName);
+    assert.match(run, /curl --config "\$curl_config"/u, fileName);
+    assert.match(run, /Authorization: Bearer %s/u, fileName);
+    assert.doesNotMatch(run, /--header "Authorization: Bearer \$SOYUZ_SUBMISSION_API_TOKEN"/u, fileName);
+    assert.match(run, /--header "Idempotency-Key: \$idempotency_key"/u, fileName);
+    assert.match(run, /--arg idempotencyKey "\$idempotency_key"/u, fileName);
+    assert.match(run, /\[\[ "\$SOYUZ_SUBMISSION_API_TOKEN" =~ \[\[:cntrl:\]\] \]\]/u, fileName);
+    assert.match(run, /--proto '=https' --tlsv1\.2 --fail-with-body/u, fileName);
+    assert.match(run, /--max-filesize 1048576/u, fileName);
+    assert.match(run, /payload_file="\$\(mktemp\)"/u, fileName);
+    assert.match(run, /chmod 600 "\$curl_config" "\$response_file" "\$payload_file"/u, fileName);
+    assert.match(run, /printf '%s' "\$payload" > "\$payload_file"/u, fileName);
+    assert.match(run, /--data @"\$payload_file"/u, fileName);
+    assert.doesNotMatch(run, /--data "\$payload"/u, fileName);
+    assert.match(run, /rm -f "\$curl_config" "\$response_file" "\$payload_file"/u, fileName);
+    assert.match(run, /\^\(200\|202\)\$/u, fileName);
+    assert.match(run, /\.data\.id/u, fileName);
+    assert.match(run, /\.data\.displayId/u, fileName);
+    assert.match(run, /\.data\.status/u, fileName);
+    assert.match(run, /scripts\/validate-soyuz-run-id\.ts/u, fileName);
+    assert.doesNotMatch(run, /--retry-all-errors/u, fileName);
+    assert.doesNotMatch(run, /cat "\$response_file"/u, fileName);
   }
 });
 
-test("Kaseki sweep validation checks the supported Node major before repository checks", async () => {
+test("Soyuz summaries report admission without claiming task completion", async () => {
   const docs = await readWorkflow("kaseki-docs.yaml");
   const dry = await readWorkflow("kaseki-dry.yaml");
-  for (const command of [
-    String(docs.document.env?.VALIDATION_COMMAND),
-    String(dry.document.jobs.dry_sweep.env?.VALIDATION_COMMAND),
-  ]) {
-    assert.match(command, /major !== 26/u);
-    assert.doesNotMatch(command, /minor\s*</u);
-    assert.match(command, /npm run check/u);
+
+  for (const [fileName, job, expectedHeading] of [
+    ["kaseki-docs.yaml", docs.document.jobs.docs_sweep, "## Soyuz documentation submission"],
+    ["kaseki-dry.yaml", dry.document.jobs.dry_sweep, "## Soyuz DRY submission"],
+  ] as const) {
+    const summary = job.steps.find(step => step.name?.startsWith("Publish Soyuz submission details"));
+    assert.ok(summary, `${fileName} must publish the accepted submission details`);
+    assert.match(summary.run ?? "", new RegExp(expectedHeading.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "u"));
+    assert.match(summary.run ?? "", /Accepted means Soyuz admitted the task; it does not confirm execution completion/u);
+    assert.match(summary.run ?? "", /DISPLAY_ID/u);
+    assert.match(summary.run ?? "", /RUN_STATUS/u);
+    assert.equal(summary["continue-on-error"], undefined);
+    assert.equal(job.steps.some(step => step.name?.includes("Kaseki")), false, fileName);
   }
 });
 

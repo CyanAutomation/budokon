@@ -17,6 +17,22 @@ The workflow also checks that the deployed dataset has a valid GitHub artifact a
 
 The configured workers.dev subdomain or custom-domain route must belong to that Cloudflare account and route to the Worker named `budokon` in `wrangler.toml`. The workflow checks this before its smoke requests. The smoke check also waits up to one minute for `/v1/status` to report the commit being deployed. When `CLOUDFLARE_DIRECT_DEPLOYMENT_URL` is configured, it runs the same smoke checks against that origin too; this is useful when the canonical URL is a custom domain with separate cache behavior.
 
+## Soyuz submission environment
+
+The [Kaseki documentation sweep](../.github/workflows/kaseki-docs.yaml) and
+[Kaseki DRY sweep](../.github/workflows/kaseki-dry.yaml) submit jobs to Soyuz.
+Create a GitHub environment named `soyuz`, restrict its deployment branch
+policy to `main`, and do not require reviewers or a wait timer. Configure:
+
+| Name | Kind | Purpose |
+| --- | --- | --- |
+| `SOYUZ_BASE_URL` | Variable | The approved Soyuz HTTPS origin, `https://soyuz.scheimann.workers.dev` |
+| `SOYUZ_SUBMISSION_API_TOKEN` | Secret | Bearer token scoped to submitting Soyuz runs |
+
+The workflows validate the configured origin before the submission token is
+made available. A successful submission means Soyuz admitted the task; check
+the Soyuz dashboard for execution completion.
+
 ## Worker configuration
 
 `wrangler.toml` sets `PUBLIC_ALLOWED_ORIGINS` to `*` because public catalogue reads are intended for browser clients. Set it to a comma-separated list of exact origins if browser access should be limited. REST and MCP have separate rate-limit bindings in the Wrangler configuration; see [operations](OPERATIONS.md) before changing them.
