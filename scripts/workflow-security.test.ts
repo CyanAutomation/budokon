@@ -392,6 +392,12 @@ test("Soyuz submissions use idempotent HTTPS requests and validate accepted resp
     assert.match(run, /\[\[ "\$SOYUZ_SUBMISSION_API_TOKEN" =~ \[\[:cntrl:\]\] \]\]/u, fileName);
     assert.match(run, /--proto '=https' --tlsv1\.2 --fail-with-body/u, fileName);
     assert.match(run, /--max-filesize 1048576/u, fileName);
+    assert.match(run, /payload_file="\$\(mktemp\)"/u, fileName);
+    assert.match(run, /chmod 600 "\$curl_config" "\$response_file" "\$payload_file"/u, fileName);
+    assert.match(run, /printf '%s' "\$payload" > "\$payload_file"/u, fileName);
+    assert.match(run, /--data @"\$payload_file"/u, fileName);
+    assert.doesNotMatch(run, /--data "\$payload"/u, fileName);
+    assert.match(run, /rm -f "\$curl_config" "\$response_file" "\$payload_file"/u, fileName);
     assert.match(run, /\^\(200\|202\)\$/u, fileName);
     assert.match(run, /\.data\.id/u, fileName);
     assert.match(run, /\.data\.displayId/u, fileName);
