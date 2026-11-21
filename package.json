@@ -54,7 +54,7 @@
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
-    "markdownlint-cli2": "0.24.0",
+    "markdownlint-cli2": "0.24.1",
     "tsx": "^4.23.15",
     "typescript": "^5.7.2",
     "wrangler": "^4.158.0",
